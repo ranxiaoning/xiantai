@@ -16,7 +16,7 @@ extends Node
 
 const QUICK_SWORD_PI_SHAN := {
 	"id": "quick_sword_pi_shan", "name": "快剑·劈山",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 3,
+	"rarity": "黄", "ling_li": 0, "dao_hui": 2,
 	"card_type": "attack", "keywords": [],
 	"base_damage": 6, "base_damage_up": 9,
 	"desc": "造成 6 点伤害。", "desc_up": "造成 9 点伤害。",
@@ -24,7 +24,7 @@ const QUICK_SWORD_PI_SHAN := {
 
 const DING_XIN_ZHOU := {
 	"id": "ding_xin_zhou", "name": "定心咒",
-	"rarity": "黄", "ling_li": 1, "dao_hui": 3,
+	"rarity": "黄", "ling_li": 1, "dao_hui": 2,
 	"card_type": "skill", "keywords": [],
 	"base_shield": 6, "base_shield_up": 10,
 	"desc": "获得 6 点护体。", "desc_up": "获得 10 点护体。",
@@ -34,7 +34,7 @@ const DING_XIN_ZHOU := {
 
 const LING_JIAN_DIAN_XING := {
 	"id": "ling_jian_dian_xing", "name": "灵剑·点星",
-	"rarity": "黄", "ling_li": 2, "dao_hui": 4,
+	"rarity": "黄", "ling_li": 2, "dao_hui": 2,
 	"card_type": "attack", "keywords": [],
 	"base_damage": 10, "base_damage_up": 14, "extra_draw": 1,
 	"desc": "造成 10 点伤害，抽取 1 张牌。",
@@ -43,7 +43,7 @@ const LING_JIAN_DIAN_XING := {
 
 const DING_QI_CENG := {
 	"id": "ding_qi_ceng", "name": "凝气层",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 5,
+	"rarity": "黄", "ling_li": 0, "dao_hui": 3,
 	"card_type": "skill", "keywords": [],
 	"base_shield": 8, "base_shield_up": 12, "bonus_ling_li": 3,
 	"desc": "获得 8 点护体，3 点灵力。",
@@ -52,7 +52,7 @@ const DING_QI_CENG := {
 
 const ZHONG_JIAN_BENG_JIA := {
 	"id": "zhong_jian_beng_jia", "name": "重剑·崩甲",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 7,
+	"rarity": "黄", "ling_li": 0, "dao_hui": 4,
 	"card_type": "attack", "keywords": [],
 	"base_damage": 15, "base_damage_up": 20, "bonus_vs_shield": 8,
 	"desc": "造成 15 点伤害。若目标有护体，额外造成 8 点伤害。",

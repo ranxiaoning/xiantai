@@ -13,7 +13,7 @@ const CHEN_TIAN_FENG := {
 	"hp_regen":        5,   # 每经过地图节点回复
 	"ling_li_max":    20,
 	"ling_li_regen":   3,
-	"dao_hui_max":    10,
+	"dao_hui_max":     6,
 	"damage_mult":   1.1,
 
 	# ── 天赋 ──
@@ -23,8 +23,8 @@ const CHEN_TIAN_FENG := {
 
 	# ── 英雄技能 ──
 	"skill_name":     "剑意凝神",
-	"skill_desc":     "消耗 10 点道慧，获得 1 层【道行】。",
-	"skill_dao_hui_cost": 10,
+	"skill_desc":     "消耗 6 点道慧，获得 1 层【道行】。",
+	"skill_dao_hui_cost": 6,
 	"skill_dao_xing_gain": 1,
 }
 
