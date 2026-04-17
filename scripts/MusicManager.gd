@@ -41,8 +41,10 @@ func play(key: String) -> void:
 
 	var path: String
 	if entry is Array:
-		entry.shuffle()
-		path = entry[0]
+		# const 内的 Array 只读，duplicate() 后再 shuffle
+		var pick: Array = entry.duplicate()
+		pick.shuffle()
+		path = pick[0]
 	else:
 		path = entry
 
