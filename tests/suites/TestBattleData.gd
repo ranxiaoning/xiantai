@@ -64,10 +64,14 @@ func test_card_zhong_jian_beng_jia_dao_hui() -> void:
 # ── 内部工具 ──────────────────────────────────────
 
 func _load_char_db() -> Object:
-	return load("res://scripts/data/CharacterDatabase.gd").new()
+	var db: Object = load("res://scripts/data/CharacterDatabase.gd").new()
+	db.call("_ready")
+	return db
 
 func _load_card_db() -> Object:
-	return load("res://scripts/data/CardDatabase.gd").new()
+	var db: Object = load("res://scripts/data/CardDatabase.gd").new()
+	db.call("_ready")
+	return db
 
 func _t(method: String) -> void:
 	_cur = method
