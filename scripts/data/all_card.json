@@ -1,0 +1,515 @@
+{
+  "version": "8.0",
+  "cards": [
+    {
+      "id": 1,
+      "name": "点星剑法",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 2,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "造成 9(14) 点伤害，抽取 1 张牌。"
+    },
+    {
+      "id": 2,
+      "name": "枭首斩",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "造成 6(10) 点伤害。若这是本回合第一张牌，获得 3 点灵力。"
+    },
+    {
+      "id": 3,
+      "name": "连环剑",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 2,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "造成 7(10) 点伤害。若打出此牌后灵力剩余 ≥ 2，再造成 7(10) 点伤害。"
+    },
+    {
+      "id": 4,
+      "name": "蜻蜓点水剑",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 1,
+      "keywords": [],
+      "effect": "造成 2(2) 点伤害 连击1(2)。"
+    },
+    {
+      "id": 5,
+      "name": "剑气斩",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "造成 6(9) 点伤害。"
+    },
+    {
+      "id": 6,
+      "name": "双影斩",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 3,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "对所有敌人造成 5(7) 点伤害 连击1。"
+    },
+    {
+      "id": 7,
+      "name": "百脉连击",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 2,
+      "cost_dao": 6,
+      "keywords": [],
+      "effect": "对随机敌人造成 5(6) 点伤害 连击3(4)。"
+    },
+    {
+      "id": 8,
+      "name": "崩甲剑",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 15(20) 点伤害。若目标有护体，额外造成 8(12) 点伤害。"
+    },
+    {
+      "id": 9,
+      "name": "孤注一掷",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 6,
+      "keywords": [],
+      "effect": "造成 26(36) 点伤害。"
+    },
+    {
+      "id": 10,
+      "name": "藏锋积势",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "造成 6(9) 点伤害，下回合获得 1(2) 层【道行】。"
+    },
+    {
+      "id": 11,
+      "name": "逆鳞斩",
+      "type": "术法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 8(11) 点伤害，附加 2(3) 层【裂伤】。"
+    },
+    {
+      "id": 12,
+      "name": "破风刺",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 5,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 16(22) 点伤害，抽取 2 张牌。"
+    },
+    {
+      "id": 13,
+      "name": "万法合击",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 10,
+      "cost_dao": 6,
+      "keywords": [],
+      "effect": "造成 20(30) 点伤害，获得 2(3) 层【道行】，抽取 2(3) 张牌，获得 10(15) 点护体。"
+    },
+    {
+      "id": 14,
+      "name": "贯日剑",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 0,
+      "cost_dao": 6,
+      "keywords": [],
+      "effect": "造成 3(4) 点伤害 连击5(6)，无视护体。"
+    },
+    {
+      "id": 15,
+      "name": "剔骨诀",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 4(5) 点伤害 连击2(3)。若本次攻击使目标生命值降低，接下来 2(3) 回合各多抽 1 张牌。"
+    },
+    {
+      "id": 16,
+      "name": "断法斩",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 14(20) 点伤害，移除目标全部护体。"
+    },
+    {
+      "id": 17,
+      "name": "游丝连击",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 12(16) 点伤害。下回合开始时，对同一目标再次造成 12(16) 点伤害。"
+    },
+    {
+      "id": 18,
+      "name": "百剑回响",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 1,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "本回合已打出的术法牌数量 × 8(12)，造成等量伤害。"
+    },
+    {
+      "id": 19,
+      "name": "幻形剑",
+      "type": "术法",
+      "rarity": "玄品",
+      "cost_ling": 1,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "造成 8(12) 点伤害，附加 2(3) 层【虚弱】。"
+    },
+    {
+      "id": 20,
+      "name": "磐石剑",
+      "type": "术法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 12(16) 点伤害，获得等量护体。"
+    },
+    {
+      "id": 21,
+      "name": "绕指柔",
+      "type": "术法",
+      "rarity": "地品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "造成 7(10) 点伤害 连击4。"
+    },
+    {
+      "id": 22,
+      "name": "斩道剑",
+      "type": "术法",
+      "rarity": "天品",
+      "cost_ling": 0,
+      "cost_dao": 6,
+      "keywords": [],
+      "effect": "造成 20(30) 点伤害。若目标当前生命值低于 10(15)%，直接击杀。"
+    },
+    {
+      "id": 23,
+      "name": "万灵破",
+      "type": "术法",
+      "rarity": "天品",
+      "cost_ling": 0,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "造成 1 点伤害 连击5(7)，每次命中获得 1 点灵力。"
+    },
+    {
+      "id": 24,
+      "name": "剑气护体",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "获得 6(10) 点护体。"
+    },
+    {
+      "id": 25,
+      "name": "凝气层",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "获得 8(12) 点护体，3(4) 点灵力。"
+    },
+    {
+      "id": 26,
+      "name": "踏雪无痕",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "获得 4(6) 点护体。本回合下一张术法牌伤害 +4(6) 点。"
+    },
+    {
+      "id": 27,
+      "name": "引灵归元",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 3,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "本局永久提升每回合灵力回复 1(2) 点。"
+    },
+    {
+      "id": 28,
+      "name": "导气术",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 2,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "抽取 2(3) 张牌。"
+    },
+    {
+      "id": 29,
+      "name": "乱局重整",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "弃置所有手牌，抽取等量(+1) 张牌。"
+    },
+    {
+      "id": 30,
+      "name": "缓气式",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "获得 5(8) 点护体，下回合额外多抽 1 张牌。"
+    },
+    {
+      "id": 31,
+      "name": "断尾求生",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "弃置 1 张手牌，获得 9(13) 点护体。"
+    },
+    {
+      "id": 32,
+      "name": "神识扫视",
+      "type": "秘法",
+      "rarity": "黄品",
+      "cost_ling": 0,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "查看牌库顶 3(4) 张牌，选取 1 张加入手牌。"
+    },
+    {
+      "id": 33,
+      "name": "旧招重现",
+      "type": "秘法",
+      "rarity": "玄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "将弃牌堆顶 1 张术法牌加入手牌，该牌本回合灵力费用 -1(2)。"
+    },
+    {
+      "id": 34,
+      "name": "收敛锋芒",
+      "type": "秘法",
+      "rarity": "玄品",
+      "cost_ling": 0,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "获得 12(18) 点护体。"
+    },
+    {
+      "id": 35,
+      "name": "舍利求活",
+      "type": "秘法",
+      "rarity": "玄品",
+      "cost_ling": 0,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "弃置所有手牌，每弃 1 张获得 4(5) 点护体，然后抽取 2 张牌。"
+    },
+    {
+      "id": 36,
+      "name": "拔本塞源",
+      "type": "秘法",
+      "rarity": "玄品",
+      "cost_ling": 2,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "移除目标所有增益状态，获得 8(14) 点护体。"
+    },
+    {
+      "id": 37,
+      "name": "剑压锁喉",
+      "type": "秘法",
+      "rarity": "玄品",
+      "cost_ling": 1,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "附加 2(3) 层【虚弱】，附加 2(3) 层【裂伤】，抽取 1 张牌。"
+    },
+    {
+      "id": 38,
+      "name": "化剑为盾",
+      "type": "秘法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": ["耗尽"],
+      "effect": "获得 20(28) 点护体，获得 1 层【不侵】（受伤害 -50%）。"
+    },
+    {
+      "id": 39,
+      "name": "移星换斗",
+      "type": "秘法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "将自身所有负面状态全额转移给目标。"
+    },
+    {
+      "id": 40,
+      "name": "枯木逢春",
+      "type": "秘法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": ["耗尽"],
+      "effect": "消耗自身所有护体，回复等量护体值 × 40%(60%) 的生命（上限 20）。"
+    },
+    {
+      "id": 41,
+      "name": "时光回溯",
+      "type": "秘法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 5,
+      "keywords": ["耗尽"],
+      "effect": "将弃牌堆所有牌洗入牌库，恢复 10(15) 点生命。"
+    },
+    {
+      "id": 42,
+      "name": "逆天转命",
+      "type": "秘法",
+      "rarity": "天品",
+      "cost_ling": 3,
+      "cost_dao": 5,
+      "keywords": ["耗尽"],
+      "effect": "清除自身所有负面状态，自身所有增益效果翻倍（道行层数、护体均 ×2）。"
+    },
+    {
+      "id": 43,
+      "name": "养剑功",
+      "type": "道法",
+      "rarity": "黄品",
+      "cost_ling": 2,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "每回合开始时获得 1(2) 层【道行】。"
+    },
+    {
+      "id": 44,
+      "name": "斩将励气",
+      "type": "道法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "每次击杀一个敌人时，抽取 1(2) 张牌。"
+    },
+    {
+      "id": 45,
+      "name": "固本经",
+      "type": "道法",
+      "rarity": "黄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "每回合开始时获得 5(8) 点护体；每次受到攻击后额外获得 2(3) 点护体。"
+    },
+    {
+      "id": 46,
+      "name": "以战养战",
+      "type": "道法",
+      "rarity": "玄品",
+      "cost_ling": 1,
+      "cost_dao": 2,
+      "keywords": [],
+      "effect": "每回合打出的前 2(3) 张术法牌，各额外获得 1 层【道行】。"
+    },
+    {
+      "id": 47,
+      "name": "势如破竹",
+      "type": "道法",
+      "rarity": "玄品",
+      "cost_ling": 2,
+      "cost_dao": 3,
+      "keywords": [],
+      "effect": "每回合开始时，若当前【道行】层数 ≥ 3(2)，额外抽取 1 张牌并获得 1 点灵力。"
+    },
+    {
+      "id": 48,
+      "name": "余威绕梁",
+      "type": "道法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "每次弃牌时，对随机敌人造成 3(5) 点伤害。"
+    },
+    {
+      "id": 49,
+      "name": "连战连捷",
+      "type": "道法",
+      "rarity": "地品",
+      "cost_ling": 2,
+      "cost_dao": 4,
+      "keywords": [],
+      "effect": "你的所有连击次数+1。"
+    },
+    {
+      "id": 50,
+      "name": "破天立命",
+      "type": "道法",
+      "rarity": "天品",
+      "cost_ling": 3,
+      "cost_dao": 5,
+      "keywords": [],
+      "effect": "每当打出第 3(2) 张牌时，获得 1 点灵力（每回合触发 1 次）。"
+    },
+    {
+      "id": 51,
+      "name": "轮回印记",
+      "type": "道法",
+      "rarity": "天品",
+      "cost_ling": 3,
+      "cost_dao": 5,
+      "keywords": ["耗尽"],
+      "effect": "将本场战斗中打出次数最多的 1(2) 张牌各复制 1 份，加入弃牌堆（本局立即可用）。"
+    }
+  ]
+}

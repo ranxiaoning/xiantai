@@ -140,11 +140,6 @@ func end_turn() -> void:
 		else:
 			kept_hand.append(card)
 	s["hand"] = kept_hand
-	# 灵力消散 1/10（四舍五入）
-	var decay := roundi(s["player_ling_li"] * 0.1)
-	s["player_ling_li"] = max(0, s["player_ling_li"] - decay)
-	if decay > 0:
-		_log("灵力消散 %d → 剩余 %d" % [decay, s["player_ling_li"]])
 	# 道慧清零
 	s["player_dao_hui"] = 0
 	# 进入敌方回合

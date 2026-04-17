@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(powershell:*)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(run_tests.bat)",
+      "Bash(\"./Godot_v4.6.2-stable_win64.exe\" --headless --import)",
+      "Bash(\"./Godot_v4.6.2-stable_win64.exe\" --headless --path . -s res://tests/TestMain.gd)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(pip install *)"
     ]
   }
 }
