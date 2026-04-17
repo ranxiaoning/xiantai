@@ -1,0 +1,255 @@
+[gd_scene load_steps=4 format=3 uid="uid://char_select_v1"]
+
+[ext_resource type="Script" path="res://scripts/CharacterSelect.gd" id="1_cs"]
+[ext_resource type="Texture2D" path="res://assets/bg/wanjianmen.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/portraits/chen_tianfeng.png" id="3_portrait"]
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_cs")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.0, 0.0, 0.0, 0.1)
+
+[node name="PageTitle" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.03
+anchor_right = 1.0
+anchor_bottom = 0.1
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "角色选择"
+theme_override_font_sizes/font_size = 32
+
+[node name="SectLabel" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.1
+anchor_right = 1.0
+anchor_bottom = 0.16
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "── 万剑门 ──"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+
+[node name="Content" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.05
+anchor_top = 0.17
+anchor_right = 0.95
+anchor_bottom = 0.88
+theme_override_constants/separation = 24
+
+[node name="Left" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="CharPanel" type="PanelContainer" parent="Content/Left"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PadMargin" type="MarginContainer" parent="Content/Left/CharPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="InnerBox" type="VBoxContainer" parent="Content/Left/CharPanel/PadMargin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CharName" type="Label" parent="Content/Left/CharPanel/PadMargin/InnerBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "程天锋"
+theme_override_font_sizes/font_size = 36
+
+[node name="CharTitle" type="Label" parent="Content/Left/CharPanel/PadMargin/InnerBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "万剑门 · 剑修·入境"
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+
+[node name="Portrait" type="TextureRect" parent="Content/Left/CharPanel/PadMargin/InnerBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 260)
+size_flags_vertical = 3
+texture = ExtResource("3_portrait")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Lore" type="Label" parent="Content/Left/CharPanel/PadMargin/InnerBox"]
+layout_mode = 2
+autowrap_mode = 3
+text = "万剑门末代传人，一身剑道不曾磨灭。"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+
+[node name="Right" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 14
+
+[node name="StatsTitle" type="Label" parent="Content/Right"]
+layout_mode = 2
+text = "── 初始属性 ──"
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+theme_override_font_sizes/font_size = 15
+
+[node name="Stats" type="VBoxContainer" parent="Content/Right"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HPRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/HPRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "生命上限"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/HPRow"]
+layout_mode = 2
+text = "60"
+
+[node name="HPRegenRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/HPRegenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "生命回复"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/HPRegenRow"]
+layout_mode = 2
+text = "5"
+
+[node name="LingLiRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/LingLiRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "灵力上限"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/LingLiRow"]
+layout_mode = 2
+text = "20（回复 3/回合）"
+
+[node name="LingLiRegenRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/LingLiRegenRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "灵力回复"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/LingLiRegenRow"]
+layout_mode = 2
+text = "3"
+
+[node name="DaoHuiRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/DaoHuiRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "道慧上限"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/DaoHuiRow"]
+layout_mode = 2
+text = "10"
+
+[node name="DmgRow" type="HBoxContainer" parent="Content/Right/Stats"]
+layout_mode = 2
+
+[node name="Key" type="Label" parent="Content/Right/Stats/DmgRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "伤害倍率"
+
+[node name="Value" type="Label" parent="Content/Right/Stats/DmgRow"]
+layout_mode = 2
+text = "×1.1"
+
+[node name="HSep1" type="HSeparator" parent="Content/Right"]
+layout_mode = 2
+
+[node name="TalentTitle" type="Label" parent="Content/Right"]
+layout_mode = 2
+text = "── 天赋 ──"
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+theme_override_font_sizes/font_size = 15
+
+[node name="Talent" type="PanelContainer" parent="Content/Right"]
+layout_mode = 2
+
+[node name="TalentPad" type="MarginContainer" parent="Content/Right/Talent"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="TalentDesc" type="Label" parent="Content/Right/Talent/TalentPad"]
+layout_mode = 2
+autowrap_mode = 3
+text = "【剑道之基】战斗开始时获得 1 层【道行】。"
+theme_override_font_sizes/font_size = 14
+
+[node name="HSep2" type="HSeparator" parent="Content/Right"]
+layout_mode = 2
+
+[node name="SkillTitle" type="Label" parent="Content/Right"]
+layout_mode = 2
+text = "── 英雄技能 ──"
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+theme_override_font_sizes/font_size = 15
+
+[node name="Skill" type="PanelContainer" parent="Content/Right"]
+layout_mode = 2
+
+[node name="SkillPad" type="MarginContainer" parent="Content/Right/Skill"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="SkillDesc" type="Label" parent="Content/Right/Skill/SkillPad"]
+layout_mode = 2
+autowrap_mode = 3
+text = "【剑意凝神】消耗 10 点道慧，获得 1 层【道行】。"
+theme_override_font_sizes/font_size = 14
+
+[node name="StartBtn" type="Button" parent="."]
+layout_mode = 1
+anchor_left = 0.3
+anchor_top = 0.9
+anchor_right = 0.7
+anchor_bottom = 0.98
+text = "开始游戏"
+theme_override_font_sizes/font_size = 22
+
+[connection signal="pressed" from="StartBtn" to="." method="_on_btn_start_pressed"]

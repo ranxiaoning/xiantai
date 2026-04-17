@@ -1,0 +1,105 @@
+[gd_scene load_steps=3 format=3 uid="uid://game_map_v1"]
+
+[ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gm"]
+[ext_resource type="Texture2D" path="res://assets/bg/map.png" id="2_bg"]
+
+[node name="GameMap" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_gm")
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.0, 0.0, 0.0, 0.1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.02
+anchor_right = 1.0
+anchor_bottom = 0.08
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "登仙台 · 第一重天"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+
+[node name="Map" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.08
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Connector" type="Line2D" parent="Map"]
+points = PackedVector2Array(640, 480, 640, 260)
+width = 3.0
+default_color = Color(0.5, 0.5, 0.6, 0.8)
+
+[node name="BattleNode" type="Button" parent="Map"]
+offset_left = 580.0
+offset_top = 180.0
+offset_right = 700.0
+offset_bottom = 260.0
+text = "⚔️ 战斗"
+theme_override_font_sizes/font_size = 18
+disabled = true
+
+[node name="SpawnNode" type="Button" parent="Map"]
+offset_left = 580.0
+offset_top = 440.0
+offset_right = 700.0
+offset_bottom = 520.0
+text = "▶ 出发"
+theme_override_font_sizes/font_size = 18
+
+[node name="DialogPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.15
+anchor_top = 0.2
+anchor_right = 0.85
+anchor_bottom = 0.85
+visible = false
+
+[node name="VBox" type="VBoxContainer" parent="DialogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PadMargin" type="MarginContainer" parent="DialogPanel/VBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_bottom = 20
+
+[node name="DialogLabel" type="Label" parent="DialogPanel/VBox/PadMargin"]
+layout_mode = 2
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+text = ""
+
+[node name="ContinueBtn" type="Button" parent="DialogPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(200, 48)
+text = "继续前行"
+theme_override_font_sizes/font_size = 18
+
+[connection signal="pressed" from="Map/SpawnNode" to="." method="_on_spawn_node_pressed"]
+[connection signal="pressed" from="Map/BattleNode" to="." method="_on_battle_node_pressed"]
+[connection signal="pressed" from="DialogPanel/VBox/ContinueBtn" to="." method="_on_continue_btn_pressed"]
