@@ -31,6 +31,7 @@ func _initialize() -> void:
 	_run_suite(load("res://tests/suites/TestGlobalSettings.gd").new())
 	_run_suite(load("res://tests/suites/TestLogger.gd").new())
 	_run_suite(load("res://tests/suites/TestBattleData.gd").new())
+	_run_suite(load("res://tests/suites/TestHandLayout.gd").new())
 	# 新增套件在此继续 _run_suite(...)
 
 	# ── 汇总 ─────────────────────────────────────

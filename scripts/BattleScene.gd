@@ -37,7 +37,7 @@ var _preview_image: TextureRect
 @onready var dao_hui_label:       Label          = %DaoHuiLabel
 @onready var dao_xing_label:      Label          = %DaoXingLabel
 
-@onready var hand_container:      HBoxContainer  = %HandContainer
+@onready var hand_container:      Control        = %HandContainer
 @onready var end_turn_btn:        Button         = %EndTurnBtn
 @onready var skill_btn:           Button         = %SkillBtn
 @onready var log_label:           Label          = %LogLabel
@@ -144,19 +144,73 @@ func _update_ui() -> void:
 
 
 func _update_hand_display() -> void:
-	for child in hand_container.get_children():
-		child.queue_free()
-
 	var s: Dictionary = _engine.s
-	for card in s["hand"]:
-		var card_view := _make_card_view(card)
-		hand_container.add_child(card_view)
+	var hand_data = s["hand"]
+	var current_children = hand_container.get_children()
+	
+	var available_children = []
+	for child in current_children:
+		available_children.append(child)
+		
+	var new_children = []
+	
+	# 添加新卡并更新全量卡的状态
+	for i in range(hand_data.size()):
+		var c_data = hand_data[i]
+		var view = null
+		# 寻址
+		for j in range(available_children.size()):
+			var child = available_children[j]
+			if child.has_method("set_usable") and child.card_data == c_data:
+				view = child
+				available_children.remove_at(j)
+				break
+				
+		if view == null:
+			view = _make_card_view(c_data)
+			hand_container.add_child(view)
+			view.position = Vector2(hand_container.size.x / 2.0, hand_container.size.y + 200) # 初始在底端中心飞入
+			
+		view.set_usable(_engine.can_play_card(c_data))
+		new_children.append(view)
+
+	# 移除没有匹配到手牌的老卡片
+	for child in available_children:
+		var t = create_tween()
+		t.tween_property(child, "position", child.position + Vector2(0, -100), 0.2)
+		t.tween_property(child, "modulate:a", 0.0, 0.2)
+		t.tween_callback(child.queue_free)
+
+	# 执行丝滑扇形布局
+	if new_children.is_empty():
+		return
+		
+	var count = new_children.size()
+	var max_w = hand_container.size.x
+	if max_w < 100:
+		max_w = 900.0 # 强制初始fallback保证计算正确，避免启动时全部重叠
+		
+	var card_w = 100.0  # CardView custom_minimum_size
+	var sep = 8.0
+	
+	if count > 5:
+		var visual_max = 532.0 
+		sep = (visual_max - count * card_w) / (count - 1.0)
+		
+	var total_w = count * card_w + (count - 1) * sep
+	var start_x = (max_w - total_w) / 2.0
+	var center_i = (count - 1) / 2.0
+	
+	for i in range(count):
+		var view = new_children[i]
+		var t_pos = Vector2(start_x + i * (card_w + sep), 40)
+		view.move_to(t_pos, 0.0)
 
 
 func _make_card_view(card: Dictionary) -> Control:
 	var view: Control = CardViewScene.instantiate()
 	var can_play: bool = _engine.can_play_card(card)
-	var tex: Texture2D = _load_card_texture(card.get("id", ""))
+	var tex: Texture2D = _load_card_texture(card)
 	view.setup(card, tex, not can_play)
 	view.hovered.connect(_on_card_hovered)
 	view.unhovered.connect(_on_card_unhovered)
@@ -166,10 +220,11 @@ func _make_card_view(card: Dictionary) -> Control:
 
 # ── 卡牌图片加载 ─────────────────────────────────────────────────
 
-func _load_card_texture(card_id: String) -> Texture2D:
-	var path: String = _ART_MAP.get(card_id, "")
+func _load_card_texture(card: Dictionary) -> Texture2D:
+	var path: String = _ART_MAP.get(str(card.get("id", "")), "")
 	if path == "":
 		return null
+
 	# 优先走 Godot 已导入资源
 	if ResourceLoader.exists(path):
 		return load(path) as Texture2D
@@ -185,7 +240,7 @@ func _load_card_texture(card_id: String) -> Texture2D:
 # ── 卡牌悬停预览 ─────────────────────────────────────────────────
 
 func _on_card_hovered(card: Dictionary, card_rect: Rect2) -> void:
-	var tex := _load_card_texture(card.get("id", ""))
+	var tex := _load_card_texture(card)
 	if tex == null:
 		return
 

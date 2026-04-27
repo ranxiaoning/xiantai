@@ -73,6 +73,12 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 func start_battle() -> void:
 	_log("═══ 战斗开始 ═══")
 	_log("对手：%s  HP %d" % [s["enemy_data"]["name"], s["enemy_hp"]])
+	
+	# 首回合灵力回复
+	var regen: int = s["player_ling_li_regen"]
+	s["player_ling_li"] = min(s["player_ling_li"] + regen, s["player_ling_li_max"])
+	_log("  首回合灵力 +%d → %d" % [regen, s["player_ling_li"]])
+
 	# 战斗开始抽初始手牌
 	_draw_cards(s["hand_size"])
 	state_changed.emit()

@@ -6,7 +6,7 @@ var _pass_count: int = 0
 var _fail_count: int = 0
 var _lines: Array[String] = []
 var _cur: String = ""
-
+var _objects_to_free: Array[Object] = []
 
 func run_all() -> Dictionary:
 	_lines.append("\n[ TestBattleData ]")
@@ -20,6 +20,12 @@ func run_all() -> Dictionary:
 	_t("test_card_zhong_jian_beng_jia_dao_hui")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
+	
+	for o in _objects_to_free:
+		if is_instance_valid(o):
+			o.free()
+	_objects_to_free.clear()
+	
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
 
 
@@ -66,11 +72,13 @@ func test_card_zhong_jian_beng_jia_dao_hui() -> void:
 func _load_char_db() -> Object:
 	var db: Object = load("res://scripts/data/CharacterDatabase.gd").new()
 	db.call("_ready")
+	_objects_to_free.append(db)
 	return db
 
 func _load_card_db() -> Object:
 	var db: Object = load("res://scripts/data/CardDatabase.gd").new()
 	db.call("_ready")
+	_objects_to_free.append(db)
 	return db
 
 func _t(method: String) -> void:

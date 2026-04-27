@@ -9,7 +9,7 @@ var _pass_count: int = 0
 var _fail_count: int = 0
 var _lines: Array[String] = []
 var _cur: String = ""
-
+var _objects_to_free: Array[Object] = []
 
 func run_all() -> Dictionary:
 	_lines.append("\n[ TestGlobalSettings ]")
@@ -34,6 +34,12 @@ func run_all() -> Dictionary:
 	_t("test_volume_boundary_max")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
+	
+	for o in _objects_to_free:
+		if is_instance_valid(o):
+			o.free()
+	_objects_to_free.clear()
+	
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
 
 
@@ -131,7 +137,9 @@ func _t(method: String) -> void:
 	call(method)
 
 func _gs() -> Object:
-	return load(GS_SCRIPT).new()
+	var o = load(GS_SCRIPT).new()
+	_objects_to_free.append(o)
+	return o
 
 func _save(gs: Object) -> void:
 	var cfg := ConfigFile.new()
