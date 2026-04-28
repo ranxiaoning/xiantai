@@ -224,51 +224,117 @@ CharacterSelect (Control)
 
 ---
 
-## 八、游戏地图界面（GameMap）✅ 已实现（第一重天原型）
+## 八、游戏地图界面（GameMap）✅ 已实现（第一重天，16层动态生成）
 
 **场景文件**：`scenes/GameMap.tscn`  
-**脚本**：`scripts/GameMap.gd`
+**脚本**：`scripts/GameMap.gd`  
+**地图生成**：`scripts/MapGenerator.gd`  
+**连线绘制**：`scripts/MapDrawLayer.gd`
 
 ### 布局
 
-| 区域 | 内容 |
-|------|------|
-| 顶部标题 | "登仙台 · 第一重天"（24px，金色） |
-| 地图区（Map） | 出生节点 + 连线 + 战斗节点 |
-| 对话弹窗（DialogPanel） | 叙事文本 + 继续按钮，初始隐藏 |
-
-### 节点坐标（绝对像素，1280×720 基准）
-
-| 节点 | 位置 | 说明 |
+| 区域 | 锚点 | 内容 |
 |------|------|------|
-| SpawnNode（Button） | (580, 440)–(700, 520) | 出生节点，初始可点击 |
-| Connector（Line2D） | (640,480) → (640,260) | 节点连线，宽度3 |
-| BattleNode（Button） | (580, 180)–(700, 260) | 战斗节点，初始禁用 |
+| Header | 垂直 0–8% | 标题 + HP 显示 |
+| MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
+| NodePopup | 水平 15–85%，垂直 15–85% | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏 |
+| VictoryPanel | 水平 20–80%，垂直 20–80% | Boss 击败后胜利面板，初始隐藏 |
 
-### 交互流程
+### MapContainer 布局常量
+
+| 常量 | 值 | 说明 |
+|------|-----|------|
+| `FLOOR_COUNT` | 16 | 总层数（含 Boss 层） |
+| `FLOOR_SPACING` | 90px | 层间 Y 距离 |
+| `MAP_W` | 1280px | 容器宽度 |
+| `NODE_W / NODE_H` | 72 × 72px | 节点图片尺寸（正方形） |
+| `COL_SPACING` | 240px | 同层节点水平间距 |
+| `MAP_TOTAL_H` | 1520px | 容器总高度（含起始节点空间） |
+
+节点坐标公式：
+```
+x = MAP_W/2 + (col - (total_cols-1)/2.0) × COL_SPACING
+y = (FLOOR_COUNT - floor) × FLOOR_SPACING + MAP_H_PADDING
+```
+起始节点（floor 0）：`y = FLOOR_COUNT × FLOOR_SPACING + MAP_H_PADDING = 1480`
+
+### 节点类型与图片
+
+| 类型 | 图片 | 说明 |
+|------|------|------|
+| `__start__` | `assets/nodes/start.png` | 起始节点，每局游戏入口 |
+| `normal` | `assets/nodes/monster.png` | 普通战斗 |
+| `elite` | `assets/nodes/elite.png` | 精英战斗 |
+| `bonfire` | `assets/nodes/rest.png` | 篝火（调息回复 HP） |
+| `shop` | `assets/nodes/shop.png` | 商店（暂未实装） |
+| `event` | `assets/nodes/adventure.png` | 奇遇事件（暂未实装） |
+| `boss` | `assets/nodes/boss.png` | Boss 节点（第16层唯一） |
+
+所有节点图片通过 canvas_item shader 裁切为圆形（smoothstep 抗锯齿）。
+
+### 完整交互流程
 
 ```
-点击 SpawnNode
-  → 显示 DialogPanel（叙事文本）
-  → 点击"继续前行"
-  → 隐藏弹窗，GameState.spawn_node_visited = true
-  → SpawnNode 变灰，BattleNode 解锁
+CharacterSelect → start_run() → GameMap 加载
+  → 地图动态生成（MapGenerator.generate()）
+  → 起始节点亮起（⬤），第1层节点暗淡
 
-点击 BattleNode（需先访问 SpawnNode）
-  → GameState.pending_battle_node = "battle_node_01"
-  → 跳转 Battle.tscn
+点击起始节点（start.png）
+  → NodePopup 显示起始叙事文本
+  → 点击"踏入轮回"
+  → GameState.start_map() → 第1层节点全部解锁（⬤）
+  → 地图自动滚动至第1层
+
+点击第 N 层节点（已解锁）
+  → GameState.visit_map_node(node_id) 标记已访问
+  → battle / bonfire / shop / event 分支处理
+  → 战斗节点：跳转 Battle.tscn；非战斗：NodePopup
+
+返回地图（战斗胜利后）
+  → map_accessible_ids 已更新为第 N+1 层节点
+  → 地图自动滚动至第 N+1 层
+
+点击第16层 Boss 并胜利
+  → VictoryPanel 显示
+  → 点击"返回主菜单"
 ```
 
-### 出生节点叙事文本
+### 节点视觉状态
 
-> 登仙台的大门轰然洞开。无尽的杀戮与轮回在等待着你。你还记得，上一次死在这里的感觉。但这一次，你的剑更稳了。
+| 状态 | modulate | disabled |
+|------|----------|---------|
+| 可访问（当前可选） | `Color(1,1,1,1)` 亮白 | false |
+| 已访问 | `Color(0.4,0.4,0.4,0.85)` 灰暗 | true |
+| 未来层 | `Color(0.6,0.6,0.65,0.55)` 半透明 | true |
+| 本层不可达 | `Color(0.3,0.3,0.3,0.4)` 暗 | true |
 
-### 状态持久化
+连线颜色：已访问路径金色 `Color(0.75,0.7,0.3,0.8)`，未访问灰色 `Color(0.45,0.45,0.55,0.5)`。
+
+### GameState 地图相关字段
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `GameState.spawn_node_visited` | bool | 出生节点是否已访问，控制战斗节点可用性 |
-| `GameState.pending_battle_node` | String | 待进入的战斗节点 ID，传递给战斗场景 |
+| `map_nodes` | Dictionary | node_id → 节点数据（含 floor/col/type/next_ids/visited） |
+| `map_floors` | Array | `floors[i]` = 第 i+1 层节点 ID 列表 |
+| `map_current_floor` | int | 最近访问的层号（0=未开始） |
+| `map_accessible_ids` | Array[String] | 当前可点击的节点 ID 列表 |
+| `map_started` | bool | 是否已通过起始节点进入地图 |
+| `pending_battle_node` | String | 待进入的战斗节点 ID |
+| `pending_battle_node_type` | String | 节点类型（normal/elite/boss） |
+| `pending_battle_node_floor` | int | 节点层号，供 EnemyDatabase 选敌 |
+
+### 手动验证要点
+
+（headless 不可测，需 Godot Editor 运行）
+
+- [ ] 进入地图时只有起始节点亮起，第1层全部灰暗
+- [ ] 点击起始节点弹出叙事文本，内容正确
+- [ ] 点击"踏入轮回"后第1层节点全部解锁，地图滚动至第1层
+- [ ] 点击战斗节点正确跳转战斗场景，返回后下一层解锁
+- [ ] 起始节点在访问后变灰，不可再次点击
+- [ ] 起始节点→第1层连线在访问后变为金色
+- [ ] 篝火节点回复30%HP，HP 显示正确更新
+- [ ] 第16层 Boss 节点战斗后显示胜利面板
 
 ---
 

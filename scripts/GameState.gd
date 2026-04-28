@@ -27,6 +27,7 @@ var map_floors: Array = []              # floors[i] = [node_id, ...]
 var map_current_floor: int = 0          # 当前所在层（0表示未开始）
 var map_accessible_ids: Array[String] = []  # 当前可点击的节点id
 var map_last_node_id: String = ""       # 上一个访问的节点id
+var map_started: bool = false           # 是否已经过起始节点进入地图
 var pending_battle_node_type: String = ""   # 即将进入的战斗节点类型
 var pending_battle_node_floor: int = 0      # 即将进入的战斗节点层数
 
@@ -45,13 +46,11 @@ func start_run(char_id: String) -> void:
 	map_floors = map_data["floors"]
 	map_current_floor = 0
 	map_last_node_id = ""
+	map_started = false
 	pending_battle_node_type = ""
 	pending_battle_node_floor = 0
-	# 初始可访问节点 = 第1层所有节点
+	# 初始不解锁任何节点——等玩家点击起始节点后再开放第1层
 	map_accessible_ids.clear()
-	if map_floors.size() > 0:
-		for nid in map_floors[0]:
-			map_accessible_ids.append(nid)
 	Log.info("GameState", "新局开始：%s  HP=%d  地图层数=%d" % [character["name"], current_hp, map_floors.size()])
 
 
@@ -86,6 +85,16 @@ func visit_map_node(node_id: String) -> void:
 		map_accessible_ids.append(next_id)
 
 	Log.info("GameState", "访问节点 %s（类型=%s 层=%d）" % [node_id, nd["type"], map_current_floor])
+
+
+## 玩家点击起始节点确认后调用：解锁第1层所有节点
+func start_map() -> void:
+	map_started = true
+	map_accessible_ids.clear()
+	if map_floors.size() > 0:
+		for nid in map_floors[0]:
+			map_accessible_ids.append(nid)
+	Log.info("GameState", "起始节点已确认，第1层已解锁")
 
 
 ## 获取节点数据（安全拷贝）
