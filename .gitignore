@@ -23,8 +23,8 @@ Desktop.ini
 .DS_Store
 
 # 美术与音频资源（体积过大，不入库）
-assets/
-bug_image/
+# assets/
+# bug_image/
 
 # 编辑器配置（按需取消注释）
 # .vscode/
