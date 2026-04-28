@@ -1,16 +1,27 @@
 ## CharacterDatabase.gd  (Autoload: CharacterDatabase)
 extends Node
 
+## 门派注册表：控制显示顺序，未来可在此扩展锁定/解锁状态
+const SECTS := {
+	"万剑门": {
+		"name": "万剑门",
+		"bg_path": "res://assets/bg/wanjianmen.png",
+	},
+}
+
+const SECT_ORDER: Array = ["万剑门"]
+
 const CHEN_TIAN_FENG := {
 	"id": "chen_tian_feng",
 	"name": "程天锋",
 	"sect": "万剑门",
 	"title": "剑修·入境",
 	"lore": "万剑门末代传人，一身剑道不曾磨灭。\n登上仙台，只为找回那被天宫夺走的一切。",
+	"portrait_path": "res://assets/portraits/chen_tianfeng.png",
 
 	# ── 战斗属性 ──
 	"hp_max":         60,
-	"hp_regen":        5,   # 每经过地图节点回复
+	"hp_regen":        5,
 	"ling_li_max":    20,
 	"ling_li_regen":   3,
 	"dao_hui_max":     6,
@@ -44,3 +55,13 @@ func get_sect_characters(sect: String) -> Array:
 		if c["sect"] == sect:
 			result.append(c.duplicate())
 	return result
+
+
+## 返回门派名称列表（按 SECT_ORDER 顺序）
+func get_all_sects() -> Array:
+	return SECT_ORDER.duplicate()
+
+
+## 返回门派元数据（bg_path 等）
+func get_sect_data(sect: String) -> Dictionary:
+	return SECTS.get(sect, {}).duplicate()

@@ -93,6 +93,21 @@ func can_play_card(card: Dictionary) -> bool:
 		   s["player_dao_hui"] >= card.get("dao_hui", 0)
 
 
+## 返回卡牌无法打出的原因文本；可打出时返回空字符串。
+func get_play_block_reason(card: Dictionary) -> String:
+	if s["phase"] != "player":
+		return ""
+	var lack_ling: bool = int(s["player_ling_li"]) < card.get("ling_li", 0)
+	var lack_dao: bool  = int(s["player_dao_hui"]) < card.get("dao_hui", 0)
+	if lack_ling and lack_dao:
+		return "灵力不足 · 道慧不足"
+	if lack_ling:
+		return "灵力不足"
+	if lack_dao:
+		return "道慧不足"
+	return ""
+
+
 func play_card(card: Dictionary) -> void:
 	if not can_play_card(card):
 		return

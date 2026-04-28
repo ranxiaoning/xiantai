@@ -7,6 +7,7 @@ extends Control
 signal hovered(card_data: Dictionary, card_global_rect: Rect2)
 signal unhovered
 signal activated(card_data: Dictionary)
+signal play_blocked(card_data: Dictionary)
 
 const HOVER_SCALE  := Vector2(1.1, 1.1)
 const NORMAL_SCALE := Vector2.ONE
@@ -55,10 +56,11 @@ func _on_exited() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if _disabled:
-		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		activated.emit(card_data)
+		if _disabled:
+			play_blocked.emit(card_data)
+		else:
+			activated.emit(card_data)
 
 
 func _animate(to_scale: Vector2, to_pos: Vector2, to_rot: float) -> void:

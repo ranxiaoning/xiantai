@@ -22,6 +22,11 @@ var _engine: RefCounted
 var _preview_root:  Control
 var _preview_image: TextureRect
 
+# 资源不足提示 toast
+var _toast_tween:  Tween
+var _toast_root:   Control
+var _toast_label:  Label
+
 # ── UI 节点引用 ────────────────────────────────────────────────────
 @onready var enemy_name_label:    Label          = %EnemyName
 @onready var enemy_hp_bar:        ProgressBar    = %EnemyHPBar
@@ -52,6 +57,7 @@ func _ready() -> void:
 	MusicManager.play("battle")
 	result_panel.hide()
 	_build_preview_overlay()
+	_build_toast_layer()
 	_init_battle()
 
 
@@ -71,6 +77,46 @@ func _build_preview_overlay() -> void:
 	_preview_image.stretch_mode   = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_preview_image.size           = Vector2(PREVIEW_W, PREVIEW_H)
 	_preview_root.add_child(_preview_image)
+
+
+# ── Toast 提示层 ─────────────────────────────────────────────────────
+
+func _build_toast_layer() -> void:
+	_toast_root = Control.new()
+	_toast_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_toast_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_root.z_index = 25
+	_toast_root.hide()
+	add_child(_toast_root)
+
+	_toast_label = Label.new()
+	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.add_theme_font_size_override("font_size", 26)
+	_toast_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.15))
+	_toast_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.85))
+	_toast_label.add_theme_constant_override("shadow_offset_x", 2)
+	_toast_label.add_theme_constant_override("shadow_offset_y", 2)
+	_toast_label.add_theme_constant_override("shadow_outline_size", 2)
+	_toast_label.anchor_left   = 0.0
+	_toast_label.anchor_right  = 1.0
+	_toast_label.anchor_top    = 0.48
+	_toast_label.anchor_bottom = 0.48
+	_toast_label.offset_bottom = 40
+	_toast_label.grow_vertical = Control.GROW_DIRECTION_END
+	_toast_root.add_child(_toast_label)
+
+
+func _show_toast(text: String) -> void:
+	if _toast_tween:
+		_toast_tween.kill()
+	_toast_label.text = text
+	_toast_root.modulate.a = 1.0
+	_toast_root.show()
+	_toast_tween = create_tween()
+	_toast_tween.tween_interval(0.8)
+	_toast_tween.tween_property(_toast_root, "modulate:a", 0.0, 0.35)
+	_toast_tween.tween_callback(_toast_root.hide)
 
 
 # ── 战斗初始化 ──────────────────────────────────────────────────────
@@ -215,6 +261,7 @@ func _make_card_view(card: Dictionary) -> Control:
 	view.hovered.connect(_on_card_hovered)
 	view.unhovered.connect(_on_card_unhovered)
 	view.activated.connect(_on_card_activated)
+	view.play_blocked.connect(_on_card_play_blocked)
 	return view
 
 
@@ -264,6 +311,12 @@ func _on_card_unhovered() -> void:
 func _on_card_activated(card: Dictionary) -> void:
 	_preview_root.hide()
 	_engine.play_card(card)
+
+
+func _on_card_play_blocked(card: Dictionary) -> void:
+	var reason: String = _engine.get_play_block_reason(card)
+	if not reason.is_empty():
+		_show_toast(reason)
 
 
 # ── 格式化状态词条 ────────────────────────────────────────────────

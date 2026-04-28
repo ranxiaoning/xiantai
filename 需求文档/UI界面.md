@@ -149,53 +149,78 @@ Master（默认）
 
 | 区域 | 位置 | 内容 |
 |------|------|------|
-| 页面标题 | 顶部 3%–10% | "角色选择"（32px，居中） |
-| 门派标签 | 顶部 10%–16% | "── 万剑门 ──"（20px，金色，居中） |
-| 左侧角色面板 | 水平 5%–50%，垂直 17%–88% | 角色名、副标题、立绘占位、背景故事 |
-| 右侧属性面板 | 水平 50%–95%，垂直 17%–88% | 初始属性 / 天赋 / 英雄技能 |
+| 页面标题 | 顶部 2%–10% | "角色选择"（32px，居中） |
+| 门派选择栏 SectBar | 顶部 10%–19%，水平 10%–90%，居中 | 每个门派一个 ToggleButton，ButtonGroup 互斥 |
+| 主内容区 MainContent | 垂直 20%–88%，水平 2%–98% | 三栏横排 |
+| ├ 弟子列表 CharListPanel | 固定宽 155px | 当前门派所有角色按钮（ButtonGroup 互斥） |
+| ├ 角色详情 CharDetailPanel | 弹性 ratio 1.8 | 角色名、副标题、立绘、背景故事 |
+| └ 属性面板 StatsPanel | 弹性 ratio 2.2 | 初始属性 / 天赋 / 英雄技能 |
 | 开始游戏按钮 | 水平 30%–70%，垂直 90%–98% | 确认选择，跳转地图 |
 
-### 左侧面板节点结构
+### 节点结构
 
 ```
-Content/Left/CharPanel/PadMargin/InnerBox/
-├── CharName       # 角色名（36px）
-├── CharTitle      # "门派 · 职位"（15px，金色）
-├── Portrait       # 立绘占位 ColorRect（200px 高，深蓝背景）
-│   └── PortraitHint   # "[ 角色立绘 ]"提示文字
-└── Lore           # 背景介绍文本（14px，自动换行）
+CharacterSelect (Control)
+├── BG (TextureRect)              # 全屏背景图，随门派切换
+├── Overlay (ColorRect)           # 半透明暗化遮罩
+├── PageTitle (Label)             # "角色选择" 32px
+├── SectBar (HBoxContainer) *    # 门派按钮行，动态创建
+├── MainContent (HBoxContainer)
+│   ├── CharListPanel (VBoxContainer, min 155px)
+│   │   ├── CharListTitle (Label) # "── 弟子 ──"
+│   │   └── CharListBox (VBoxContainer) *  # 角色按钮，动态创建
+│   ├── VSep1 (VSeparator)
+│   ├── CharDetailPanel (VBoxContainer, ratio 1.8)
+│   │   └── CharPanelContainer/PadMargin/InnerBox/
+│   │       ├── CharName (Label) *   # 36px
+│   │       ├── CharTitle (Label) *  # 15px 金色
+│   │       ├── Portrait (TextureRect) *  # 动态加载立绘
+│   │       └── Lore (Label) *       # 自动换行
+│   ├── VSep2 (VSeparator)
+│   └── StatsPanel (VBoxContainer, ratio 2.2)
+│       ├── StatsTitle / Stats（HPValue* / HPRegenValue* / LingLiValue* / DaoHuiValue* / DmgValue*）
+│       ├── TalentPanel/TalentPad/TalentDesc *
+│       └── SkillPanel/SkillPad/SkillDesc *
+└── StartBtn (Button)             # 开始游戏
 ```
 
-### 右侧属性面板节点结构
-
-```
-Content/Right/
-├── StatsTitle         # "── 初始属性 ──"
-├── Stats/             # 属性行列表（VBoxContainer）
-│   ├── HPRow          # 生命上限
-│   ├── HPRegenRow     # 生命回复
-│   ├── LingLiRow      # 灵力上限
-│   ├── LingLiRegenRow # 灵力回复
-│   ├── DaoHuiRow      # 道慧上限
-│   └── DmgRow         # 伤害倍率
-├── HSep1
-├── TalentTitle        # "── 天赋 ──"
-├── Talent/TalentPad/TalentDesc   # 天赋描述文本
-├── HSep2
-├── SkillTitle         # "── 英雄技能 ──"
-└── Skill/SkillPad/SkillDesc      # 英雄技能描述文本
-```
+> `*` = `unique_name_in_owner = true`，脚本通过 `%NodeName` 访问
 
 ### 数据来源
 
-- 属性和文本由 `CharacterDatabase.get_character(id)` 提供
-- 当前只有 `chen_tian_feng`（程天锋），`_selected_char_id` 硬编码
+- `CharacterDatabase.get_all_sects()` → 门派名称列表（按 `SECT_ORDER` 顺序）
+- `CharacterDatabase.get_sect_data(sect)` → 门派元数据（`bg_path` 等）
+- `CharacterDatabase.get_sect_characters(sect)` → 该门派所有角色列表
+- `CharacterDatabase.get_character(id)` → 单个角色完整数据（含 `portrait_path`）
+
+### 扩展指南
+
+新增门派：
+1. 在 `CharacterDatabase.SECTS` 字典中添加门派条目（含 `bg_path`）
+2. 在 `CharacterDatabase.SECT_ORDER` 数组末尾追加门派名
+3. 新建角色常量并在 `_ready()` 中注册到 `_all`
+
+新增角色：
+1. 在 `CharacterDatabase` 中定义角色常量（含 `portrait_path`、`sect` 等完整字段）
+2. 在 `_ready()` 中注册到 `_all`
+3. 立绘存放于 `assets/portraits/`
 
 ### 交互
 
 | 操作 | 结果 |
 |------|------|
-| 点击"开始游戏" | `GameState.start_run("chen_tian_feng")` → 跳转 `GameMap.tscn` |
+| 点击门派按钮 | 切换 `_selected_sect`，刷新弟子列表，更新背景图 |
+| 点击弟子按钮 | 切换 `_selected_char_id`，刷新右侧属性面板 |
+| 点击"开始游戏" | `GameState.start_run(_selected_char_id)` → 跳转 `GameMap.tscn` |
+
+### 手动验证要点
+
+（headless 不可测，需 Godot Editor 运行）
+
+- [ ] 默认进入时选中"万剑门"按钮，弟子列表显示"程天锋"，右侧属性/天赋正确
+- [ ] 切换门派按钮时，弟子列表和背景图同步更新
+- [ ] 点击弟子按钮，右侧面板立即刷新
+- [ ] 点击"开始游戏"正常跳转至 GameMap.tscn
 
 ---
 

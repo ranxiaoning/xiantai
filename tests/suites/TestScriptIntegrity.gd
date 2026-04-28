@@ -20,6 +20,8 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/CharacterSelect.gd",
 	"res://scripts/GameMap.gd",
 	"res://scripts/BattleScene.gd",
+	"res://scripts/MapGenerator.gd",
+	"res://scripts/MapDrawLayer.gd",
 ]
 
 # 必须在 project.godot [autoload] 中注册的脚本 → [autoload名, 脚本路径]
@@ -40,6 +42,9 @@ const TEST_SCRIPTS: Array[String] = [
 	"res://tests/suites/TestGlobalSettings.gd",
 	"res://tests/suites/TestLogger.gd",
 	"res://tests/suites/TestScriptIntegrity.gd",
+	"res://tests/suites/TestCharacterSelect.gd",
+	"res://tests/suites/TestBattleEngineLogic.gd",
+	"res://tests/suites/TestMapGenerator.gd",
 ]
 
 var _pass_count: int = 0
