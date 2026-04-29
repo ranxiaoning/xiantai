@@ -12,9 +12,16 @@ extends RefCounted
 signal state_changed()
 signal log_added(text: String)
 signal battle_ended(player_won: bool)
+signal deck_reshuffled(cards: Array)
+signal cards_drawn(cards: Array)
+
+const STARTING_HAND_SIZE := 3
+const HAND_LIMIT := 10
 
 # ── 战斗状态 ──────────────────────────────────────────────────────
 var s: Dictionary = {}   # 全部状态都在这个字典里
+
+var _next_instance_id: int = 1
 
 ## 初始化战斗
 func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> void:
@@ -39,7 +46,7 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 		"draw_pile":    [],
 		"hand":         [],     # Array of card dicts
 		"discard_pile": [],
-		"hand_size":    5,
+		"hand_size":    STARTING_HAND_SIZE,
 
 		# 本回合临时加成
 		"next_attack_bonus":  0,  # 踏雪无痕
@@ -62,9 +69,12 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 		"battle_won": false,
 	}
 	# 初始化牌堆
+	_next_instance_id = 1
 	for id in deck_ids:
 		var card = CardDatabase.get_card(id)
 		if not card.is_empty():
+			card["_instance_id"] = _next_instance_id
+			_next_instance_id += 1
 			s["draw_pile"].append(card)
 	s["draw_pile"].shuffle()
 	_update_enemy_intent()
@@ -351,7 +361,9 @@ func _insert_curse_card(insert_data: Dictionary) -> void:
 		"card_type": "curse",
 		"keywords":  ["unplayable"],  # 禁锢：不可打出
 		"is_curse":  true,
+		"_instance_id": _next_instance_id,
 	}
+	_next_instance_id += 1
 	match target:
 		"discard":
 			s["discard_pile"].append(curse_card)
@@ -712,34 +724,42 @@ func _apply_card_effect(card: Dictionary) -> void:
 # ── 牌库管理 ──────────────────────────────────────────────────────
 
 func _draw_cards(count: int) -> void:
-	for _i in range(count):
-		if s["hand"].size() >= 10:
-			_log("  手牌已达上限 (10张)")
-			break
+	var drawn_cards: Array = []
+	var remaining: int = count
+	while remaining > 0:
 		if s["draw_pile"].is_empty():
-			_reshuffle_deck()
-			if s["draw_pile"].is_empty():
+			if _reshuffle_deck():
+				remaining = int(s["hand_size"])
+			else:
 				_log("  牌库已耗尽")
 				break
+		if s["hand"].size() >= HAND_LIMIT:
+			_log("  手牌已达上限 (10张)")
+			break
 		var card = s["draw_pile"].pop_front()
 		s["hand"].append(card)
+		drawn_cards.append(card)
+		remaining -= 1
 	_log("  手牌 %d 张" % s["hand"].size())
+	if not drawn_cards.is_empty():
+		cards_drawn.emit(drawn_cards.duplicate(true))
 
 
-func _reshuffle_deck() -> void:
-	## 抽牌堆归零：弃掉所有手牌 → 与弃牌堆合并洗牌 → 重抽5张
-	_log("  ── 牌库归零，洗牌重置 ──")
+func _reshuffle_deck() -> bool:
+	var cards_to_shuffle: Array = []
 	for card in s["hand"]:
-		s["discard_pile"].append(card)
+		cards_to_shuffle.append(card)
+	for card in s["discard_pile"]:
+		cards_to_shuffle.append(card)
+	if cards_to_shuffle.is_empty():
+		return false
+	_log("  ── 牌库耗尽：手牌与弃牌洗回抽牌堆，重抽%d张 ──" % s["hand_size"])
+	s["draw_pile"] = cards_to_shuffle.duplicate()
 	s["hand"].clear()
-	s["draw_pile"] = s["discard_pile"].duplicate()
 	s["discard_pile"].clear()
 	s["draw_pile"].shuffle()
-	# 重抽5张
-	for _i in range(s["hand_size"]):
-		if s["draw_pile"].is_empty():
-			break
-		s["hand"].append(s["draw_pile"].pop_front())
+	deck_reshuffled.emit(cards_to_shuffle.duplicate(true))
+	return true
 
 
 # ── 状态管理 ──────────────────────────────────────────────────────

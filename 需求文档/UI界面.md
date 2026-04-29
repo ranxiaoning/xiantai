@@ -338,90 +338,63 @@ CharacterSelect → start_run() → GameMap 加载
 
 ---
 
-## 九、战斗界面（Battle）✅ 已实现
+## 九、战斗界面（Battle）✅ 已优化
 
-**场景文件**：`scenes/Battle.tscn`  
+**场景文件**：`scenes/Battle.tscn`
 **脚本**：`scripts/BattleScene.gd`
+**全局主题**：`theme/main_theme.tres`
 
-### 布局区域
+### 视觉风格
+- **整体色调**：深色调（墨色/深蓝），搭配金色/古铜色边框。
+- **组件样式**：
+    - **PanelContainer**：使用 `StyleBoxFlat` 实现半透明毛玻璃感 + 金色细边框。
+    - **ProgressBar**：深红填充（敌人/玩家 HP），带有深色背景和精致边框。
+    - **按钮**：统一古风按钮样式，悬停时带有金色外发光。
 
-| 区域 | 锚点（屏幕占比）| 内容 |
+### 布局分布
+
+| 区域 | 锚点/位置 | 内容 |
 |------|----------------|------|
-| EnemyArea | 水平 25–75%，垂直 2–35% | 敌人信息 |
-| PlayerArea | 水平 2–55%，垂直 58–78% | 玩家资源 |
-| SidePanel | 水平 82–99%，垂直 38–78% | 操作按钮 |
-| LogPanel | 水平 56–81%，垂直 38–78% | 战斗日志 |
-| HandArea | 水平全宽，垂直 79–100% | 手牌区 |
-| ResultPanel | 水平 25–75%，垂直 20–80% | 结算弹窗（初始隐藏） |
+| LogPanel | 顶部居中 (y:15) | 战斗实时日志，宽 500px，高度自适应 |
+| Entities Area | 屏幕中上部 | 玩家与敌人的角色卡片 |
+| ├ PlayerCard | 左侧 (x:40, y:100) | 玩家立绘、HP条、护体值 |
+| └ EnemyCard | 右侧 (x:960, y:100) | 敌人立绘、名称、HP条、意图、状态 |
+| BottomUI | 屏幕底部 (h:260) | 资源与手牌交互区 |
+| ├ ResourceDock | 左下 (x:22, y:-118) | 灵力、道慧圆盘，道行徽章，抽牌堆/弃牌堆入口 |
+| ├ Actions | 右下 (x:1070, y:-150) | 英雄技能、结束回合按钮 |
+| └ HandArea | 中下 (居中) | 手牌容器（HandContainer） |
 
-### 敌人区节点（EnemyArea/）
-
-```
-EnemyName       # 敌人名（22px，红色）
-EnemyHPBar      # HP进度条
-EnemyHPLabel    # "HP X / Y"
-EnemyShieldLabel # "护体 X"（蓝色，为0时隐藏文字）
-IntentLabel     # "意图：XXX"（金色）
-EnemyStatusLabel # 状态词条（紫色）
-```
-
-### 玩家区节点（PlayerArea/）
+### 关键节点结构
 
 ```
-HPSection/
-├── HPBar       # HP进度条
-└── HPLabel     # "HP X / Y"
-ResourceSection/
-├── ShieldLabel  # "护体 X"（蓝色）
-├── LingLiLabel  # "灵力 X/Y"（绿色）
-├── DaoHuiLabel  # "道慧 X/Y"（紫色）
-└── DaoXingLabel # "道行 X 层"（金色）
+Battle (Control, Theme: main_theme.tres)
+├── BG (TextureRect)
+├── Overlay (ColorRect, Alpha 0.4)
+├── LogPanel (PanelContainer)
+│   └── LogScroll/LogLabel (%)
+├── Entities (Control)
+│   ├── EnemyCard (PanelContainer)
+│   │   └── VBox/EnemyPortrait + InfoVBox/Margin/V/
+│   │       ├── EnemyName (%) + EnemyHPBar (%)
+│   │       └── HBox (IntentLabel% + EnemyShieldLabel%)
+│   └── PlayerCard (PanelContainer)
+│       └── VBox/PlayerPortrait + InfoVBox/Margin/V/
+│           └── PlayerName + HPBar (%) + ShieldLabel (%)
+└── BottomUI (Control)
+    ├── ResourceDock (Runtime Control) -> ResourceOrb(灵力) / ResourceOrb(道慧) / DaoXingBadge / DrawPileBtn / DiscardPileBtn
+    ├── PileOverlay (Runtime Control) -> ScrollContainer / GridContainer(columns=5)
+    ├── Actions (VBoxContainer) -> SkillBtn% / EndTurnBtn%
+    └── HandArea (Control) -> HandContainer (%)
 ```
 
-### 操作按钮（SidePanel/）
-
-| 按钮 | 回调 | 禁用条件 |
-|------|------|----------|
-| EndTurnBtn | `_on_end_turn_pressed` | 非玩家回合 |
-| SkillBtn | `_on_skill_btn_pressed` | 非玩家回合或道慧不足 |
-
-技能按钮文字动态显示：`"剑意凝神\n(道慧X)"`
-
-### 手牌区（HandArea/HandScroll/HandContainer）
-
-手牌区容器已变更为 Control 节点，以此实现平滑的扇形铺展：
-- 每张牌是动态创建的 Button（CardView 组件），尺寸 120×160 （`CardView` 中为 `100×179` 等比例）
-- 布局逻辑：
-  - **<= 5张时**：按固定间距（8px），计算每个卡片的坐标并执行平滑动画飞入，水平排开。
-  - **> 5张时**：程序计算在保证不超出设计宽度下的收缩间距，卡牌会紧密水平排开且互相重叠，同样通过平滑进入展示，强制控制在一屏展示面内但没有任何扇形扭转。
-- 交互悬停（Hover）：鼠标放到重叠卡牌上方时，该卡牌 `z_index` 设定为10，调用 Tween 动画并以一定距离弹出重叠堆。离开后动画归位。
-- 状态展示：
-  - 目前去掉了视觉上的灰色遮挡反馈，不可用时只进行了程序互动拦截而依然保持明亮的卡面展示。
-- 点击 → 通过验证后执行 `_engine.play_card(card)`
-
-### 日志区
-
-最多显示 12 行，超出时滚动丢弃最旧行。
-
-### 结算弹窗（ResultPanel）
-
-| 结果 | 文本 | 按钮 | 跳转 |
-|------|------|------|------|
-| 胜利 | "战斗胜利！\nHP 剩余：X" | 返回地图 | `GameMap.tscn` |
-| 失败 | "你已倒下……\n但记忆留存，下次会更强。" | 返回主菜单 | `MainMenu.tscn` |
-
-### 战斗初始化流程
-
-```
-BattleScene._ready()
-  → _init_battle()
-      → 读取 GameState.character / deck / pending_battle_node
-      → 实例化 BattleEngine（preload 加载）
-      → 连接信号：state_changed / log_added / battle_ended
-      → engine.init() + engine.start_battle()
-      → _update_ui()
-```
-
+### 交互优化
+- **手牌布局**：动态计算间距，卡牌在 5 张以上时自动压缩重叠。
+- **资源展示**：`scripts/ResourceOrb.gd` 绘制灵力、道慧圆盘，左下道行以金色徽章展示；旧 Resources 面板在运行时隐藏。
+- **牌堆查看**：点击抽牌堆或弃牌堆按钮打开 `PileOverlay`，按一行 5 张卡展示当前牌堆内容，空堆显示占位提示。
+- **抽牌动画**：普通抽牌、战斗开始抽 3 张、牌库耗尽后的洗牌重抽都从抽牌堆锚点飞入手牌；洗牌时旧手牌先飞回抽牌堆，再延迟飞出重抽卡。
+- **悬停反馈**：卡牌悬停时 `z_index` 提升，平滑向上弹出并放大。
+- **预览功能**：悬停卡牌时在上方显示高清预览。
+- **提示信息**：资源不足时通过 Toast 弹出提示。
 ---
 
 ## 十、待办 / 后续界面

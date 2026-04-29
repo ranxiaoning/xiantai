@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://battle_v2"]
+[gd_scene load_steps=7 format=3 uid="uid://battle_v2"]
 
 [ext_resource type="Script" path="res://scripts/BattleScene.gd" id="1_bs"]
 [ext_resource type="Texture2D" path="res://assets/portraits/chen_tianfeng.png" id="2_portrait"]
 [ext_resource type="Texture2D" path="res://assets/bg/fight.png" id="3_bg"]
 [ext_resource type="Texture2D" path="res://assets/portraits/enemy.png" id="4_enemy"]
+[ext_resource type="Theme" uid="uid://main_theme" path="res://theme/main_theme.tres" id="5_theme"]
+[ext_resource type="Script" path="res://scripts/CombinedHPBar.gd" id="6_hpbar"]
 
 [node name="Battle" type="Control"]
 layout_mode = 3
@@ -12,6 +14,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("5_theme")
 script = ExtResource("1_bs")
 
 [node name="BG" type="TextureRect" parent="."]
@@ -28,279 +31,333 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.0, 0.0, 0.0, 0.1)
+color = Color(0, 0, 0, 0.45)
 
-[node name="MainLayout" type="VBoxContainer" parent="."]
+[node name="LogPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(500, 70)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 15.0
+offset_right = 250.0
+offset_bottom = 85.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="LogScroll" type="ScrollContainer" parent="LogPanel"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LogLabel" type="Label" parent="LogPanel/LogScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 13
+text = "战斗开始..."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Entities" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+
+[node name="EnemyCard" type="PanelContainer" parent="Entities"]
+custom_minimum_size = Vector2(280, 380)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_top = 100.0
+offset_right = -40.0
+offset_bottom = 480.0
+grow_horizontal = 0
+
+[node name="VBox" type="VBoxContainer" parent="Entities/EnemyCard"]
+layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="TopHalf" type="CenterContainer" parent="MainLayout"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="EnemyCard" type="ColorRect" parent="MainLayout/TopHalf"]
-custom_minimum_size = Vector2(240, 320)
-layout_mode = 2
-color = Color(0.12, 0.12, 0.15, 1)
-
-[node name="VBox" type="VBoxContainer" parent="MainLayout/TopHalf/EnemyCard"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="EnemyPortrait" type="TextureRect" parent="MainLayout/TopHalf/EnemyCard/VBox"]
+[node name="EnemyPortrait" type="TextureRect" parent="Entities/EnemyCard/VBox"]
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("4_enemy")
 expand_mode = 1
-stretch_mode = 5
-horizontal_alignment = 1
-vertical_alignment = 1
+stretch_mode = 6
 
-[node name="EnemyInfoPad" type="MarginContainer" parent="MainLayout/TopHalf/EnemyCard/VBox"]
+[node name="InfoVBox" type="VBoxContainer" parent="Entities/EnemyCard/VBox"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Entities/EnemyCard/VBox/InfoVBox"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 4
 theme_override_constants/margin_bottom = 8
 
-[node name="InfoVBox" type="VBoxContainer" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad"]
+[node name="V" type="VBoxContainer" parent="Entities/EnemyCard/VBox/InfoVBox/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="EnemyName" type="Label" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox"]
+[node name="EnemyName" type="Label" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 22
 text = "敌人名称"
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(1, 0.4, 0.4, 1)
-theme_override_font_sizes/font_size = 20
 
-[node name="EnemyHPBar" type="ProgressBar" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox"]
+[node name="EnemyHPShieldBar" type="Control" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-value = 100
-show_percentage = false
-
-[node name="HPLay" type="HBoxContainer" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox"]
-layout_mode = 2
-
-[node name="EnemyHPLabel" type="Label" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox/HPLay"]
-unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "HP ?/?"
-theme_override_font_sizes/font_size = 12
+script = ExtResource("6_hpbar")
 
-[node name="EnemyShieldLabel" type="Label" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox/HPLay"]
+[node name="EnemyStatusLabel" type="Label" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "护体 0"
-theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="HBox2" type="HBoxContainer" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox"]
-layout_mode = 2
-
-[node name="IntentLabel" type="Label" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox/HBox2"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = "意图: ?"
-theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="EnemyStatusLabel" type="Label" parent="MainLayout/TopHalf/EnemyCard/VBox/EnemyInfoPad/InfoVBox/HBox2"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "状态"
 theme_override_colors/font_color = Color(0.8, 0.4, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 13
+text = "状态词条"
+horizontal_alignment = 1
 
-[node name="BottomHalf" type="HBoxContainer" parent="MainLayout"]
+[node name="IntentLabel" type="Label" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 3
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 15
+text = "意图: ?"
+horizontal_alignment = 1
+
+[node name="PlayerCard" type="PanelContainer" parent="Entities"]
+custom_minimum_size = Vector2(280, 380)
+layout_mode = 1
+offset_left = 40.0
+offset_top = 100.0
+offset_right = 320.0
+offset_bottom = 480.0
+
+[node name="VBox" type="VBoxContainer" parent="Entities/PlayerCard"]
+layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="HandArea" type="Control" parent="MainLayout/BottomHalf"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 3.0
-
-[node name="HandContainer" type="Control" parent="MainLayout/BottomHalf/HandArea"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-
-[node name="PlayerSide" type="VBoxContainer" parent="MainLayout/BottomHalf"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-theme_override_constants/separation = 8
-
-[node name="PlayerPortrait" type="TextureRect" parent="MainLayout/BottomHalf/PlayerSide"]
+[node name="PlayerPortrait" type="TextureRect" parent="Entities/PlayerCard/VBox"]
+clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("2_portrait")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
-[node name="PlayerControlPanel" type="MarginContainer" parent="MainLayout/BottomHalf/PlayerSide"]
+[node name="InfoVBox" type="VBoxContainer" parent="Entities/PlayerCard/VBox"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 8
+
+[node name="Margin" type="MarginContainer" parent="Entities/PlayerCard/VBox/InfoVBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 4
 theme_override_constants/margin_bottom = 8
 
-[node name="VBox" type="VBoxContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel"]
+[node name="V" type="VBoxContainer" parent="Entities/PlayerCard/VBox/InfoVBox/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
-[node name="HBox" type="HBoxContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox"]
+[node name="PlayerName" type="Label" parent="Entities/PlayerCard/VBox/InfoVBox/Margin/V"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_font_sizes/font_size = 22
+text = "程天锋"
+horizontal_alignment = 1
 
-[node name="StatsVBox" type="VBoxContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox"]
+[node name="PlayerHPShieldBar" type="Control" parent="Entities/PlayerCard/VBox/InfoVBox/Margin/V"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 size_flags_horizontal = 3
+script = ExtResource("6_hpbar")
 
-[node name="HPBarLay" type="Control" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox"]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-
-[node name="HPBar" type="ProgressBar" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/HPBarLay"]
-unique_name_in_owner = true
+[node name="BottomUI" type="Control" parent="."]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 12
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = -260.0
 grow_horizontal = 2
-grow_vertical = 2
-value = 100
-show_percentage = false
+grow_vertical = 0
+mouse_filter = 2
 
-[node name="HPLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/HPBarLay"]
-unique_name_in_owner = true
+[node name="Resources" type="PanelContainer" parent="BottomUI"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = 2
+anchor_top = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "HP 60/60"
-horizontal_alignment = 1
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 12
+offset_left = 20.0
+offset_top = -180.0
+offset_right = 210.0
+offset_bottom = -20.0
+grow_vertical = 0
 
-[node name="Grid" type="GridContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox"]
+[node name="Margin" type="MarginContainer" parent="BottomUI/Resources"]
 layout_mode = 2
-columns = 2
-theme_override_constants/h_separation = 8
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="ShieldLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/Grid"]
-unique_name_in_owner = true
+[node name="VBox" type="VBoxContainer" parent="BottomUI/Resources/Margin"]
 layout_mode = 2
-text = "护体 0"
-theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="LingLiLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/Grid"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "灵力 0/0"
-theme_override_colors/font_color = Color(0.4, 1, 0.4, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="DaoHuiLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/Grid"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "道慧 0/0"
-theme_override_colors/font_color = Color(0.8, 0.4, 1, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="DaoXingLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/StatsVBox/Grid"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "道行 0"
-theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
-theme_override_font_sizes/font_size = 12
-
-[node name="BtnsVBox" type="VBoxContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox"]
-layout_mode = 2
+theme_override_constants/separation = 10
 alignment = 1
 
-[node name="EndTurnBtn" type="Button" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/BtnsVBox"]
+[node name="LingLiBar" type="ProgressBar" parent="BottomUI/Resources/Margin/VBox"]
 unique_name_in_owner = true
-layout_mode = 2
-text = "结束回合"
-
-[node name="SkillBtn" type="Button" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/BtnsVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "英雄技能"
-
-[node name="LogPanel" type="PanelContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox"]
-custom_minimum_size = Vector2(0, 80)
-layout_mode = 2
-
-[node name="LogScroll" type="ScrollContainer" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/LogPanel"]
-layout_mode = 2
-
-[node name="LogLabel" type="Label" parent="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/LogPanel/LogScroll"]
-unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 3
+max_value = 10.0
+value = 0.0
+show_percentage = false
+
+[node name="LingLiLabel" type="Label" parent="BottomUI/Resources/Margin/VBox/LingLiBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "灵力 0/0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DaoHuiBar" type="ProgressBar" parent="BottomUI/Resources/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 10.0
+value = 0.0
+show_percentage = false
+
+[node name="DaoHuiLabel" type="Label" parent="BottomUI/Resources/Margin/VBox/DaoHuiBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.1, 0.1, 0.1, 1)
+text = "道慧 0/0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DaoXingLabel" type="Label" parent="BottomUI/Resources/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 20
+text = "道行 0"
+
+[node name="Actions" type="VBoxContainer" parent="BottomUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -210.0
+offset_top = -150.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="SkillBtn" type="Button" parent="BottomUI/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "英雄技能"
+
+[node name="EndTurnBtn" type="Button" parent="BottomUI/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "结束回合"
+
+[node name="HandArea" type="Control" parent="BottomUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 220.0
+offset_right = -220.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HandContainer" type="Control" parent="BottomUI/HandArea"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="ResultPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
+z_index = 100
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -100.0
-offset_right = 150.0
-offset_bottom = 100.0
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="ResultPanel"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 32
 alignment = 1
 
 [node name="ResultLabel" type="Label" parent="ResultPanel/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "结算"
+theme_override_font_sizes/font_size = 32
+text = "结算文本"
 horizontal_alignment = 1
 
 [node name="ResultBtn" type="Button" parent="ResultPanel/VBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 40)
+custom_minimum_size = Vector2(160, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "继续"
+text = "确定"
 
-[connection signal="pressed" from="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/BtnsVBox/EndTurnBtn" to="." method="_on_end_turn_pressed"]
-[connection signal="pressed" from="MainLayout/BottomHalf/PlayerSide/PlayerControlPanel/VBox/HBox/BtnsVBox/SkillBtn" to="." method="_on_skill_btn_pressed"]
+[connection signal="pressed" from="BottomUI/Actions/SkillBtn" to="." method="_on_skill_btn_pressed"]
+[connection signal="pressed" from="BottomUI/Actions/EndTurnBtn" to="." method="_on_end_turn_pressed"]
 [connection signal="pressed" from="ResultPanel/VBox/ResultBtn" to="." method="_on_result_btn_pressed"]

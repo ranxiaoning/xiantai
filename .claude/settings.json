@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {
+    "cascade-content-creation-misc-1": {
+      "source": {
+        "source": "github",
+        "repo": "joshuarweaver/cascade-content-creation-misc-1"
+      }
+    }
+  }
+}
