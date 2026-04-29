@@ -63,6 +63,7 @@ var _start_btn: TextureButton = null   # 起始节点按钮
 var _pending_node_id: String = ""      # 当前弹窗对应的节点id
 var _circle_mat: ShaderMaterial = null # 所有节点共享的圆形裁切 shader
 var _pulse_tween: Tween = null         # 当前节点脉冲动画
+var _tex_cache: Dictionary = {}        # res://路径 → Texture2D 缓存（避免重复读文件）
 
 
 func _ready() -> void:
@@ -157,26 +158,52 @@ void fragment() {
 	return _circle_mat
 
 
-## 加载贴图：优先走已导入缓存；降级时用 FileAccess 读 res:// 字节流，
-## 逐格式尝试解码（避免绝对路径中文问题，也兼容 WebP/JPG 改名为 .png 的情况）
+## 加载贴图：绕过 ResourceLoader（import valid=false 会触发 ERROR），
+## 直接通过绝对路径读取字节流，用魔术字节判断真实格式后解码。
+## 结果缓存在 _tex_cache，相同路径只读一次磁盘。
 func _load_texture(path: String) -> Texture2D:
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex
-	var file := FileAccess.open(path, FileAccess.READ)
+	if _tex_cache.has(path):
+		return _tex_cache[path]
+
+	# 绝对路径（兼容中文目录；res:// 虚拟路径在中文绝对路径下 FileAccess 可能失败）
+	var abs_path: String = ProjectSettings.globalize_path(path)
+	var open_path: String = abs_path if FileAccess.file_exists(abs_path) else path
+	var file := FileAccess.open(open_path, FileAccess.READ)
 	if not file:
-		push_warning("GameMap: 无法打开 %s" % path)
+		push_warning("GameMap: 无法打开贴图 %s" % path)
+		_tex_cache[path] = null
 		return null
+
 	var data := file.get_buffer(file.get_length())
 	file.close()
+
+	if data.size() < 4:
+		push_warning("GameMap: 贴图文件过小 %s" % path)
+		_tex_cache[path] = null
+		return null
+
 	var img := Image.new()
-	if img.load_png_from_buffer(data) == OK \
-	or img.load_webp_from_buffer(data) == OK \
-	or img.load_jpg_from_buffer(data) == OK:
-		return ImageTexture.create_from_image(img)
-	push_warning("GameMap: 不支持的图片格式 %s" % path)
-	return null
+	var b0 := data[0]; var b1 := data[1]; var b2 := data[2]; var b3 := data[3]
+	var loaded := false
+	if b0 == 0xFF and b1 == 0xD8 and b2 == 0xFF:
+		loaded = img.load_jpg_from_buffer(data) == OK   # JPEG（含 .jpg 改名为 .png 的情况）
+	elif b0 == 0x89 and b1 == 0x50 and b2 == 0x4E and b3 == 0x47:
+		loaded = img.load_png_from_buffer(data) == OK   # PNG
+	elif b0 == 0x52 and b1 == 0x49 and b2 == 0x46 and b3 == 0x46:
+		loaded = img.load_webp_from_buffer(data) == OK  # WebP（RIFF 容器）
+	else:
+		loaded = img.load_png_from_buffer(data) == OK \
+			or img.load_webp_from_buffer(data) == OK \
+			or img.load_jpg_from_buffer(data) == OK
+
+	if not loaded:
+		push_warning("GameMap: 不支持的贴图格式 %s" % path)
+		_tex_cache[path] = null
+		return null
+
+	var tex := ImageTexture.create_from_image(img)
+	_tex_cache[path] = tex
+	return tex
 
 
 func _create_node_button(node_id: String, nd: Dictionary) -> void:

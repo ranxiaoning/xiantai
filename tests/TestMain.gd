@@ -35,6 +35,9 @@ func _initialize() -> void:
 	_run_suite(load("res://tests/suites/TestCharacterSelect.gd").new())
 	_run_suite(load("res://tests/suites/TestBattleEngineLogic.gd").new())
 	_run_suite(load("res://tests/suites/TestMapGenerator.gd").new())
+	_run_suite(load("res://tests/suites/TestCardEffects.gd").new())
+	_run_suite(load("res://tests/suites/TestEnemyDebug.gd").new())
+	_run_suite(load("res://tests/suites/TestEnemyBehavior.gd").new())
 	# 新增套件在此继续 _run_suite(...)
 
 	# ── 汇总 ─────────────────────────────────────

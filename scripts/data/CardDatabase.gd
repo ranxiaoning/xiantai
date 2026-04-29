@@ -1,88 +1,78 @@
 ## CardDatabase.gd  (Autoload: CardDatabase)
 ## 所有卡牌的静态数据定义。
-## 字段说明：
-##   id          唯一标识（snake_case）
-##   name        显示名
-##   rarity      稀有度 "黄"/"玄"/"地"/"天"
-##   ling_li     灵力消耗
-##   dao_hui     道慧消耗
-##   card_type   "attack" / "skill" / "power"
-##   keywords    Array[String]  e.g. ["exhaust","ethereal"]
-##   desc        效果文字（未升级）
-##   desc_up     效果文字（升级后）
 extends Node
-
-## ── 初始牌组 ──────────────────────────────────────────────────────
-
-const QUICK_SWORD_PI_SHAN := {
-	"id": "quick_sword_pi_shan", "name": "快剑·劈山",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 2,
-	"card_type": "attack", "keywords": [],
-	"base_damage": 6, "base_damage_up": 9,
-	"desc": "造成 6 点伤害。", "desc_up": "造成 9 点伤害。",
-}
-
-const DING_XIN_ZHOU := {
-	"id": "ding_xin_zhou", "name": "定心咒",
-	"rarity": "黄", "ling_li": 1, "dao_hui": 2,
-	"card_type": "skill", "keywords": [],
-	"base_shield": 6, "base_shield_up": 10,
-	"desc": "获得 6 点护体。", "desc_up": "获得 10 点护体。",
-}
-
-## ── 扩展池（可在奖励阶段抽取）────────────────────────────────────
-
-const LING_JIAN_DIAN_XING := {
-	"id": "ling_jian_dian_xing", "name": "灵剑·点星",
-	"rarity": "黄", "ling_li": 2, "dao_hui": 2,
-	"card_type": "attack", "keywords": [],
-	"base_damage": 10, "base_damage_up": 14, "extra_draw": 1,
-	"desc": "造成 10 点伤害，抽取 1 张牌。",
-	"desc_up": "造成 14 点伤害，抽取 1 张牌。",
-}
-
-const DING_QI_CENG := {
-	"id": "ding_qi_ceng", "name": "凝气层",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 3,
-	"card_type": "skill", "keywords": [],
-	"base_shield": 8, "base_shield_up": 12, "bonus_ling_li": 3,
-	"desc": "获得 8 点护体，3 点灵力。",
-	"desc_up": "获得 12 点护体，4 点灵力。",
-}
-
-const ZHONG_JIAN_BENG_JIA := {
-	"id": "zhong_jian_beng_jia", "name": "重剑·崩甲",
-	"rarity": "黄", "ling_li": 0, "dao_hui": 4,
-	"card_type": "attack", "keywords": [],
-	"base_damage": 15, "base_damage_up": 20, "bonus_vs_shield": 8,
-	"desc": "造成 15 点伤害。若目标有护体，额外造成 8 点伤害。",
-	"desc_up": "造成 20 点伤害。若目标有护体，额外造成 12 点伤害。",
-}
-
-## ── 索引 ──────────────────────────────────────────────────────────
 
 var _all: Dictionary = {}
 
 func _ready() -> void:
-	for card in [
-		QUICK_SWORD_PI_SHAN, DING_XIN_ZHOU,
-		LING_JIAN_DIAN_XING, DING_QI_CENG, ZHONG_JIAN_BENG_JIA,
-	]:
-		_all[card["id"]] = card
+	_load_cards_from_json()
+
+func _load_cards_from_json() -> void:
+	# 绝对路径在 editor / headless / 导出包 均可靠，优先使用；res:// 作备用
+	var abs_path: String = ProjectSettings.globalize_path("res://") + "scripts/data/all_card.json"
+	var res_path: String = "res://scripts/data/all_card.json"
+
+	var content: String = ""
+	if FileAccess.file_exists(abs_path):
+		content = FileAccess.get_file_as_string(abs_path)
+	elif FileAccess.file_exists(res_path):
+		content = FileAccess.get_file_as_string(res_path)
+
+	if content.is_empty():
+		push_error("CardDatabase: 无法读取 all_card.json（尝试路径：%s）" % abs_path)
+		return
+
+	var json := JSON.new()
+	if json.parse(content) != OK:
+		push_error("CardDatabase: 解析 JSON 失败：" + json.get_error_message())
+		return
+
+	var data = json.get_data()
+	if typeof(data) != TYPE_DICTIONARY or not data.has("cards"):
+		push_error("CardDatabase: JSON 格式错误，缺少 cards 字段")
+		return
+
+	_all.clear()
+	for c in data["cards"]:
+		# int() 归一化：防止 JSON 解析将整数返回为 float，导致 str(1.0)="1.0" 而非 "1"
+		var card_id: String = str(int(c.get("id", 0)))
+		var card := {
+			"id":        card_id,
+			"name":      c.get("name", ""),
+			"rarity":    c.get("rarity", ""),
+			"ling_li":   int(c.get("cost_ling", 0)),
+			"dao_hui":   int(c.get("cost_dao",  0)),
+			"card_type": "attack" if c.get("type") == "术法" else ("skill" if c.get("type") == "秘法" else "power"),
+			"keywords":  c.get("keywords", []),
+			"desc":      c.get("effect", ""),
+			"desc_up":   c.get("effect", ""),
+			"is_upgraded": false,
+		}
+		_all[card_id] = card
+	Log.info("CardDatabase", "加载完毕，共 %d 张卡牌" % _all.size())
 
 
-func get_card(id: String) -> Dictionary:
-	if _all.has(id):
-		return _all[id].duplicate()
-	push_error("CardDatabase: 未知卡牌 id = " + id)
+func get_card(id) -> Dictionary:
+	if _all.is_empty():
+		_load_cards_from_json()
+	# 归一化 id → 整数字符串（兼容传入 int / float / String 三种情况）
+	var id_str: String
+	match typeof(id):
+		TYPE_INT, TYPE_FLOAT:
+			id_str = str(int(id))
+		_:
+			id_str = str(id)
+	if _all.has(id_str):
+		return _all[id_str].duplicate()
+	push_error("CardDatabase: 未知卡牌 id = " + id_str)
 	return {}
 
-
 func get_starting_deck_ids() -> Array[String]:
-	## 程天锋初始牌组：快剑·劈山×10 + 定心咒×10
+	## 初始牌组：点星剑法(id=1)×4 + 剑气护体(id=20)×4（对应设计文档初始起手牌）
 	var deck: Array[String] = []
-	for _i in range(10):
-		deck.append("quick_sword_pi_shan")
-	for _i in range(10):
-		deck.append("ding_xin_zhou")
+	for _i in range(4):
+		deck.append("1")
+	for _i in range(4):
+		deck.append("20")
 	return deck
+

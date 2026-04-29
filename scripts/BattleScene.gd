@@ -6,11 +6,7 @@ const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
 const _BattleEngineScript = preload("res://scripts/BattleEngine.gd")
 const CardViewScene       = preload("res://scenes/CardView.tscn")
 
-# card_id → 已生成的卡牌图片路径（目前仅映射初始两张）
-const _ART_MAP := {
-	"quick_sword_pi_shan": "res://assets/card/generated/05_剑气斩.png",
-	"ding_xin_zhou":       "res://assets/card/generated/24_剑气护体.png",
-}
+const _CARD_ART_DIR := "res://assets/card/generated/"
 
 # 预览尺寸（与卡牌保持相同宽高比 1536:2752 ≈ 0.558）
 const PREVIEW_W := 280
@@ -268,14 +264,20 @@ func _make_card_view(card: Dictionary) -> Control:
 # ── 卡牌图片加载 ─────────────────────────────────────────────────
 
 func _load_card_texture(card: Dictionary) -> Texture2D:
-	var path: String = _ART_MAP.get(str(card.get("id", "")), "")
-	if path == "":
+	var id_str: String = card.get("id", "")
+	var name_str: String = card.get("name", "")
+	if id_str.is_empty() or name_str.is_empty():
 		return null
+	# 文件名规则："%02d_卡名.png"，例如 "01_点星剑法.png"
+	var filename := "%02d_%s.png" % [int(id_str), name_str]
+	var path := _CARD_ART_DIR + filename
 
-	# 优先走 Godot 已导入资源
+	# 优先走 Godot 已导入资源（import 有效时最快）
 	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
-	# 降级：直接从文件系统读取（PNG 尚未被 Editor 导入时）
+		var tex := load(path) as Texture2D
+		if tex:
+			return tex
+	# 降级：绝对路径直接读文件（兼容中文目录 / import 未生效时）
 	var abs_path := ProjectSettings.globalize_path(path)
 	var img := Image.load_from_file(abs_path)
 	if img:
