@@ -2,6 +2,8 @@
 ## 验证 CharacterDatabase 的门派/角色查询接口。
 extends RefCounted
 
+const CHARACTER_SELECT_SCENE := "res://scenes/CharacterSelect.tscn"
+
 var _pass_count: int = 0
 var _fail_count: int = 0
 var _lines: Array[String] = []
@@ -16,6 +18,10 @@ func run_all() -> Dictionary:
 	_t("test_get_sect_characters_wanjianmen")
 	_t("test_chen_tian_feng_has_portrait_path")
 	_t("test_chen_tian_feng_sect_is_wanjianmen")
+	_t("test_character_select_scene_loads")
+	_t("test_character_select_required_nodes_exist")
+	_t("test_portrait_uses_fit_layout")
+	_t("test_chen_tian_feng_has_ui_required_fields")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 
@@ -55,11 +61,83 @@ func test_chen_tian_feng_sect_is_wanjianmen() -> void:
 	_assert_eq(c.get("sect", ""), "万剑门", "程天锋 sect = 万剑门")
 
 
+func test_character_select_scene_loads() -> void:
+	var packed := load(CHARACTER_SELECT_SCENE) as PackedScene
+	_assert_true(packed != null, "CharacterSelect.tscn 可加载为 PackedScene")
+	if packed:
+		var inst := packed.instantiate()
+		_objects_to_free.append(inst)
+		_assert_true(inst != null, "CharacterSelect.tscn 可实例化")
+
+
+func test_character_select_required_nodes_exist() -> void:
+	var inst := _load_scene_instance()
+	if inst == null:
+		_fail("CharacterSelect.tscn 实例为空")
+		return
+	for node_name in [
+		"SectBar", "CharListBox", "CharName", "CharTitle", "PortraitStage", "Portrait", "Lore",
+		"HPValue", "HPRegenValue", "LingLiValue", "DaoHuiValue", "DmgValue",
+		"TalentDesc", "SkillDesc", "StartBtn"
+	]:
+		_assert_true(inst.find_child(node_name, true, false) != null, "关键节点存在: %s" % node_name)
+
+
+func test_portrait_uses_fit_layout() -> void:
+	var inst := _load_scene_instance()
+	if inst == null:
+		_fail("CharacterSelect.tscn instance is null")
+		return
+	var portrait := inst.find_child("Portrait", true, false) as TextureRect
+	var stage := inst.find_child("PortraitStage", true, false) as Control
+	var frame := inst.find_child("PortraitFrame", true, false) as PanelContainer
+	_assert_true(portrait != null, "Portrait node exists")
+	_assert_true(stage != null, "PortraitStage node exists")
+	if portrait == null:
+		return
+	_assert_true(stage != null and portrait.get_parent() == stage, "Portrait is anchored inside PortraitStage")
+	_assert_eq(portrait.anchor_left, 0.0, "Portrait left anchor is full-rect")
+	_assert_eq(portrait.anchor_top, 0.0, "Portrait top anchor is full-rect")
+	_assert_eq(portrait.anchor_right, 1.0, "Portrait right anchor is full-rect")
+	_assert_eq(portrait.anchor_bottom, 1.0, "Portrait bottom anchor is full-rect")
+	_assert_eq(portrait.offset_left, 0.0, "Portrait left offset is zero")
+	_assert_eq(portrait.offset_top, 0.0, "Portrait top offset is zero")
+	_assert_eq(portrait.offset_right, 0.0, "Portrait right offset is zero")
+	_assert_eq(portrait.offset_bottom, 0.0, "Portrait bottom offset is zero")
+	_assert_eq(portrait.custom_minimum_size, Vector2.ZERO, "Portrait has no fixed minimum size")
+	_assert_eq(portrait.expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "Portrait ignores texture size for layout")
+	_assert_eq(portrait.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "Portrait keeps full aspect-centered image")
+	_assert_true(frame == null or frame.clip_contents, "PortraitFrame clips overflow")
+	_assert_true(frame == null or frame.custom_minimum_size.y > 0.0, "PortraitFrame has an explicit visible height")
+	_assert_true(frame == null or frame.size_flags_vertical == Control.SIZE_FILL, "PortraitFrame does not expand beyond visible height")
+
+
+func test_chen_tian_feng_has_ui_required_fields() -> void:
+	var db := _load_char_db()
+	var c: Dictionary = db.get_character("chen_tian_feng")
+	for key in [
+		"name", "sect", "title", "lore", "portrait_path",
+		"hp_max", "hp_regen", "ling_li_max", "ling_li_regen",
+		"dao_hui_max", "damage_mult", "talent_name", "talent_desc",
+		"skill_name", "skill_desc"
+	]:
+		_assert_true(c.has(key), "程天锋 UI 字段存在: %s" % key)
+
+
 func _load_char_db() -> Object:
 	var db: Object = load("res://scripts/data/CharacterDatabase.gd").new()
 	db.call("_ready")
 	_objects_to_free.append(db)
 	return db
+
+
+func _load_scene_instance() -> Node:
+	var packed := load(CHARACTER_SELECT_SCENE) as PackedScene
+	if packed == null:
+		return null
+	var inst := packed.instantiate()
+	_objects_to_free.append(inst)
+	return inst
 
 
 func _t(method: String) -> void:
@@ -82,3 +160,8 @@ func _assert_true(cond: bool, label: String) -> void:
 	else:
 		_fail_count += 1
 		_lines.append("  ✗ %s  ← 条件为假" % label)
+
+
+func _fail(label: String) -> void:
+	_fail_count += 1
+	_lines.append("  ✗ %s" % label)

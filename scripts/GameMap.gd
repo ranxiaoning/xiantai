@@ -7,12 +7,12 @@ const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
 
 # ── 布局常量 ───────────────────────────────────────────────────────
 const FLOOR_COUNT    := 16
-const FLOOR_SPACING  := 90      # 层间y距离（像素），增大给图片留出空间
-const MAP_H_PADDING  := 40      # 顶部/底部 padding
+const FLOOR_SPACING  := 140     # 层间y距离（像素）
+const MAP_H_PADDING  := 60      # 顶部/底部 padding
 const MAP_W          := 1280    # 地图容器宽度
 const NODE_W         := 72      # 节点图片宽（正方形适合圆形徽章）
 const NODE_H         := 72
-const COL_SPACING    := 240.0
+const COL_SPACING    := 280.0
 
 # 总地图高度（多一层容纳起始节点）
 const MAP_TOTAL_H := FLOOR_COUNT * FLOOR_SPACING + MAP_H_PADDING * 2
@@ -43,6 +43,7 @@ const NODE_TEXTURES := {
 
 # ── 节点引用 ──────────────────────────────────────────────────────
 @onready var hp_label:       Label          = %HPLabel
+@onready var _stone_label:   Label          = %SpiritStoneLabel
 @onready var map_scroll:     ScrollContainer = $MapScroll
 @onready var map_container:  Control        = $MapScroll/MapContainer
 @onready var node_popup:     PanelContainer = $NodePopup
@@ -63,6 +64,7 @@ var _start_btn: TextureButton = null   # 起始节点按钮
 var _pending_node_id: String = ""      # 当前弹窗对应的节点id
 var _circle_mat: ShaderMaterial = null # 所有节点共享的圆形裁切 shader
 var _pulse_tween: Tween = null         # 当前节点脉冲动画
+var _pulse_target: BaseButton = null   # 当前被脉冲动画控制的节点
 var _tex_cache: Dictionary = {}        # res://路径 → Texture2D 缓存（避免重复读文件）
 
 
@@ -70,6 +72,10 @@ func _ready() -> void:
 	MusicManager.play("map")
 	node_popup.hide()
 	victory_panel.hide()
+	node_popup.z_index = 100
+	node_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	victory_panel.z_index = 100
+	victory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -77,6 +83,7 @@ func _ready() -> void:
 
 	_build_map()
 	_update_hp_label()
+	_update_stone_label()
 
 	# 等一帧后滚动到当前层
 	await get_tree().process_frame
@@ -92,6 +99,7 @@ func _ready() -> void:
 # ── 构建地图 ──────────────────────────────────────────────────────
 
 func _build_map() -> void:
+	Log.info("GameMap", "开始构建地图...")
 	# 清除旧内容
 	for child in map_container.get_children():
 		child.queue_free()
@@ -99,15 +107,16 @@ func _build_map() -> void:
 
 	# 设置容器高度
 	map_container.custom_minimum_size = Vector2(MAP_W, MAP_TOTAL_H)
+	map_container.size = Vector2(MAP_W, MAP_TOTAL_H)
 
 	# 创建绘制层
 	_draw_layer = load("res://scripts/MapDrawLayer.gd").new()
-	_draw_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_configure_map_layer(_draw_layer, 0)
 	map_container.add_child(_draw_layer)
 
 	var nodes: Dictionary = GameState.map_nodes
 	var floors: Array     = GameState.map_floors
+	Log.info("GameMap", "节点数量: %d, 层数: %d" % [nodes.size(), floors.size()])
 
 	# 先绘制连线（在按钮下方）
 	for node_id in nodes:
@@ -117,24 +126,36 @@ func _build_map() -> void:
 			if nodes.has(next_id):
 				var nnd: Dictionary = nodes[next_id]
 				var dst := _node_center(int(nnd["floor"]), int(nnd["col"]), int(nnd["total_cols"]))
-				_draw_layer.add_line(src, dst, bool(nd["visited"]))
+				# 初始时均为 FUTURE (2)
+				_draw_layer.add_line(src, dst, 2)
 	_draw_layer.refresh()
 
 	# 创建节点按钮
 	for node_id in nodes:
 		var nd: Dictionary = nodes[node_id]
 		_create_node_button(node_id, nd)
+	Log.info("GameMap", "节点按钮创建完成: %d" % _node_buttons.size())
 
 	# 创建起始节点（位于第1层正下方）
 	_create_start_node()
 
 	# 光环层：加在所有按钮之后，确保渲染在节点上方
 	_ring_layer = load("res://scripts/MapDrawLayer.gd").new()
-	_ring_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_ring_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_configure_map_layer(_ring_layer, 20)
 	map_container.add_child(_ring_layer)
 
 	_update_node_visuals()
+
+
+func _configure_map_layer(layer: Control, z: int) -> void:
+	layer.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	layer.custom_minimum_size = Vector2(MAP_W, MAP_TOTAL_H)
+	layer.offset_left = 0.0
+	layer.offset_top = 0.0
+	layer.offset_right = MAP_W
+	layer.offset_bottom = MAP_TOTAL_H
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.z_index = z
 
 
 ## 圆形裁切 ShaderMaterial（懒加载，所有节点共享同一实例）
@@ -216,6 +237,7 @@ func _create_node_button(node_id: String, nd: Dictionary) -> void:
 	btn.custom_minimum_size = Vector2(NODE_W, NODE_H)
 	btn.size = Vector2(NODE_W, NODE_H)
 	btn.material = _get_circle_mat()  # 圆形裁切，去掉背景
+	btn.z_index = 10
 
 	var center := _node_center(int(nd["floor"]), int(nd["col"]), int(nd["total_cols"]))
 	btn.position = center - Vector2(NODE_W * 0.5, NODE_H * 0.5)
@@ -234,8 +256,10 @@ func _create_start_node() -> void:
 	_start_btn.custom_minimum_size = Vector2(NODE_W, NODE_H)
 	_start_btn.size = Vector2(NODE_W, NODE_H)
 	_start_btn.material = _get_circle_mat()
+	_start_btn.z_index = 10
 	var center := _start_node_center()
 	_start_btn.position = center - Vector2(NODE_W * 0.5, NODE_H * 0.5)
+	_start_btn.pivot_offset = Vector2(NODE_W * 0.5, NODE_H * 0.5)
 	_start_btn.pressed.connect(_on_start_node_pressed)
 	map_container.add_child(_start_btn)
 
@@ -250,7 +274,14 @@ func _start_node_center() -> Vector2:
 func _node_center(floor: int, col: int, total_cols: int) -> Vector2:
 	var y := (FLOOR_COUNT - floor) * FLOOR_SPACING + MAP_H_PADDING
 	var x := MAP_W / 2.0 + (col - (total_cols - 1) / 2.0) * COL_SPACING
-	return Vector2(x, y)
+	
+	# Add consistent random offset based on floor and col
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(str(floor) + "_" + str(col) + "_seed") # Fixed seed for consistency
+	var offset_x = rng.randf_range(-30.0, 30.0)
+	var offset_y = rng.randf_range(-15.0, 15.0)
+	
+	return Vector2(x + offset_x, y + offset_y)
 
 
 # ── 节点视觉状态更新 ─────────────────────────────────────────────
@@ -313,22 +344,13 @@ func _update_node_visuals() -> void:
 
 		_ring_layer.set_ring_center(ring_center)
 
-		# 脉冲动画：只在目标存在且尚未运行时启动
-		if pulse_target and (_pulse_tween == null or not _pulse_tween.is_running()):
-			if _pulse_tween:
-				_pulse_tween.kill()
-			_pulse_tween = create_tween().set_loops()
-			_pulse_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-			_pulse_tween.tween_property(pulse_target, "scale", Vector2(1.25, 1.25), 0.65)
-			_pulse_tween.tween_property(pulse_target, "scale", Vector2(1.05, 1.05), 0.65)
-		elif not pulse_target and _pulse_tween:
-			_pulse_tween.kill()
-			_pulse_tween = null
+		_set_pulse_target(pulse_target)
 
 	# 更新起始节点状态
 	if _start_btn:
 		if GameState.map_started:
 			_start_btn.modulate = COLOR_VISITED
+			_start_btn.scale = SCALE_NORMAL
 			_start_btn.disabled = true
 		else:
 			_start_btn.modulate = COLOR_ACCESSIBLE
@@ -344,7 +366,8 @@ func _update_node_visuals() -> void:
 			if nodes.has(nid):
 				var fn: Dictionary = nodes[nid]
 				var dst := _node_center(int(fn["floor"]), int(fn["col"]), int(fn["total_cols"]))
-				_draw_layer.add_line(start_center, dst, GameState.map_started)
+				var state = 0 if GameState.map_started else 1
+				_draw_layer.add_line(start_center, dst, state)
 		# 常规层间连线
 		for node_id in nodes:
 			var nd: Dictionary = nodes[node_id]
@@ -353,13 +376,48 @@ func _update_node_visuals() -> void:
 				if nodes.has(next_id):
 					var nnd: Dictionary = nodes[next_id]
 					var dst := _node_center(int(nnd["floor"]), int(nnd["col"]), int(nnd["total_cols"]))
-					_draw_layer.add_line(src, dst, bool(nd["visited"]))
+					
+					var state = 2 # FUTURE by default
+					if bool(nd["visited"]) and bool(nnd["visited"]):
+						state = 0 # VISITED
+					elif bool(nd["visited"]) and accessible.has(next_id):
+						state = 1 # ACCESSIBLE
+					elif node_id == START_NODE_ID and GameState.map_started == false:
+						state = 1 # ACCESSIBLE
+					_draw_layer.add_line(src, dst, state)
 		_draw_layer.refresh()
+
+
+func _set_pulse_target(target: BaseButton) -> void:
+	if _pulse_target == target and _pulse_tween and _pulse_tween.is_running():
+		return
+
+	if _pulse_tween:
+		_pulse_tween.kill()
+		_pulse_tween = null
+
+	if _pulse_target and is_instance_valid(_pulse_target):
+		_pulse_target.scale = SCALE_NORMAL
+
+	_pulse_target = target
+	if not _pulse_target:
+		return
+
+	_pulse_target.pivot_offset = _pulse_target.size * 0.5
+	_pulse_target.scale = Vector2(1.08, 1.08)
+	_pulse_tween = create_tween().set_loops()
+	_pulse_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_pulse_tween.tween_property(_pulse_target, "scale", Vector2(1.25, 1.25), 0.65)
+	_pulse_tween.tween_property(_pulse_target, "scale", Vector2(1.06, 1.06), 0.65)
 
 
 func _update_hp_label() -> void:
 	var hp_max: int = GameState.character.get("hp_max", 60)
 	hp_label.text = "HP %d / %d" % [GameState.current_hp, hp_max]
+
+
+func _update_stone_label() -> void:
+	_stone_label.text = "灵石 %d" % GameState.spirit_stones
 
 
 # ── 滚动到当前层 ─────────────────────────────────────────────────

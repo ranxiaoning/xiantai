@@ -17,6 +17,9 @@ var deck: Array[String] = []
 var ling_li_regen_bonus: int = 0   # 引灵归元叠加
 var dao_xing_battle_start: int = 0 # 威名远播等跨战斗道行加成
 
+# ── 灵石（局内货币）─────────────────────────────────────────────
+var spirit_stones: int = 0
+
 # ── 地图进度（旧版，兼容保留）──────────────────────────────────────
 var spawn_node_visited: bool = false
 var pending_battle_node: String = ""  # 即将进入的战斗节点 id
@@ -37,6 +40,7 @@ func start_run(char_id: String) -> void:
 	current_hp = character["hp_max"]
 	deck = CardDatabase.get_starting_deck_ids()
 	ling_li_regen_bonus = 0
+	spirit_stones = 100
 	dao_xing_battle_start = character.get("talent_dao_xing", 0)
 	spawn_node_visited = false
 	pending_battle_node = ""
@@ -102,3 +106,8 @@ func get_map_node(node_id: String) -> Dictionary:
 	if map_nodes.has(node_id):
 		return map_nodes[node_id].duplicate(false)
 	return {}
+
+
+func add_spirit_stones(amount: int) -> void:
+	spirit_stones += amount
+	Log.info("GameState", "获得 %d 灵石，现有 %d" % [amount, spirit_stones])

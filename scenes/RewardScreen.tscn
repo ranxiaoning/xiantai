@@ -1,0 +1,209 @@
+[gd_scene load_steps=6 format=3 uid="uid://reward_screen_v1"]
+
+[ext_resource type="Script" path="res://scripts/RewardScreen.gd" id="1_rs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_popup"]
+bg_color = Color(0.08, 0.07, 0.13, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.65, 0.55, 0.28, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.55)
+shadow_size = 18
+shadow_offset = Vector2(0, 6)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reward_btn"]
+bg_color = Color(0.12, 0.11, 0.09, 0.92)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.55, 0.48, 0.25, 0.8)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 14.0
+content_margin_right = 14.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reward_btn_hover"]
+bg_color = Color(0.18, 0.16, 0.10, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.80, 0.68, 0.32, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+content_margin_left = 14.0
+content_margin_right = 14.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_panel"]
+bg_color = Color(0.04, 0.03, 0.08, 0.96)
+border_width_top = 0
+border_width_bottom = 0
+
+[node name="RewardScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rs")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.02, 0.06, 0.88)
+
+[node name="RewardPopup" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32
+anchor_top = 0.22
+anchor_right = 0.68
+anchor_bottom = 0.78
+theme_override_styles/panel = SubResource("StyleBoxFlat_popup")
+
+[node name="PopupPad" type="MarginContainer" parent="RewardPopup"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="PopupVBox" type="VBoxContainer" parent="RewardPopup/PopupPad"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="PopupTitle" type="Label" parent="RewardPopup/PopupPad/PopupVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.75, 0.35, 1)
+theme_override_font_sizes/font_size = 22
+text = "战斗奖励"
+horizontal_alignment = 1
+
+[node name="Divider" type="HSeparator" parent="RewardPopup/PopupPad/PopupVBox"]
+layout_mode = 2
+modulate = Color(0.5, 0.45, 0.25, 0.6)
+
+[node name="StonesBtn" type="Button" parent="RewardPopup/PopupPad/PopupVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_reward_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_reward_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_reward_btn")
+theme_override_colors/font_color = Color(1.0, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "灵石  +0"
+
+[node name="CardRewardBtn" type="Button" parent="RewardPopup/PopupPad/PopupVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_reward_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_reward_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_reward_btn")
+theme_override_colors/font_color = Color(0.75, 0.88, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "卡牌奖励"
+
+[node name="Divider2" type="HSeparator" parent="RewardPopup/PopupPad/PopupVBox"]
+layout_mode = 2
+modulate = Color(0.5, 0.45, 0.25, 0.4)
+
+[node name="Spacer" type="Control" parent="RewardPopup/PopupPad/PopupVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PopupContinue" type="Button" parent="RewardPopup/PopupPad/PopupVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.72, 0.72, 0.72, 1)
+theme_override_font_sizes/font_size = 16
+text = "继续"
+
+[node name="CardPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 10
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_panel")
+
+[node name="CardPanelPad" type="MarginContainer" parent="CardPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 24
+
+[node name="CardPanelVBox" type="VBoxContainer" parent="CardPanel/CardPanelPad"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="CardPanelTitle" type="Label" parent="CardPanel/CardPanelPad/CardPanelVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.72, 0.34, 1)
+theme_override_font_sizes/font_size = 22
+text = "择取功法"
+horizontal_alignment = 1
+
+[node name="CardsRow" type="HBoxContainer" parent="CardPanel/CardPanelPad/CardPanelVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 4
+alignment = 1
+theme_override_constants/separation = 40
+
+[node name="ActionRow" type="HBoxContainer" parent="CardPanel/CardPanelPad/CardPanelVBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="ConfirmBtn" type="Button" parent="CardPanel/CardPanelPad/CardPanelVBox/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "确定"
+
+[node name="SkipBtn" type="Button" parent="CardPanel/CardPanelPad/CardPanelVBox/ActionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 46)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "跳过"
+
+[connection signal="pressed" from="RewardPopup/PopupPad/PopupVBox/StonesBtn" to="." method="_on_stones_btn_pressed"]
+[connection signal="pressed" from="RewardPopup/PopupPad/PopupVBox/CardRewardBtn" to="." method="_on_card_reward_btn_pressed"]
+[connection signal="pressed" from="RewardPopup/PopupPad/PopupVBox/PopupContinue" to="." method="_on_popup_continue_pressed"]
+[connection signal="pressed" from="CardPanel/CardPanelPad/CardPanelVBox/ActionRow/ConfirmBtn" to="." method="_on_confirm_btn_pressed"]
+[connection signal="pressed" from="CardPanel/CardPanelPad/CardPanelVBox/ActionRow/SkipBtn" to="." method="_on_skip_btn_pressed"]

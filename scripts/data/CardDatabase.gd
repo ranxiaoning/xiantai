@@ -68,11 +68,20 @@ func get_card(id) -> Dictionary:
 	return {}
 
 func get_starting_deck_ids() -> Array[String]:
-	## 初始牌组：点星剑法(id=1)×4 + 剑气护体(id=20)×4（对应设计文档初始起手牌）
+	## 初始牌组：剑气斩(id=5)×10 + 剑气护体(id=20)×10（卡牌.md 第八节）
 	var deck: Array[String] = []
-	for _i in range(4):
-		deck.append("1")
-	for _i in range(4):
+	for _i in range(10):
+		deck.append("5")
+	for _i in range(10):
 		deck.append("20")
 	return deck
+
+
+func get_all_cards() -> Array[Dictionary]:
+	if _all.is_empty():
+		_load_cards_from_json()
+	var result: Array[Dictionary] = []
+	for card in _all.values():
+		result.append(card.duplicate())
+	return result
 

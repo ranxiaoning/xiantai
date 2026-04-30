@@ -22,6 +22,7 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/BattleScene.gd",
 	"res://scripts/MapGenerator.gd",
 	"res://scripts/MapDrawLayer.gd",
+	"res://scripts/RewardScreen.gd",
 ]
 
 # 必须在 project.godot [autoload] 中注册的脚本 → [autoload名, 脚本路径]
@@ -114,6 +115,7 @@ func _check_scene_script_refs() -> void:
 		"res://scenes/CharacterSelect.tscn",
 		"res://scenes/GameMap.tscn",
 		"res://scenes/Battle.tscn",
+		"res://scenes/RewardScreen.tscn",
 	]
 	for scene_path in scenes:
 		if not FileAccess.file_exists(scene_path):

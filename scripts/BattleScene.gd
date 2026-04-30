@@ -1,8 +1,9 @@
 ## BattleScene.gd
 extends Control
 
-const GAME_MAP_SCENE := "res://scenes/GameMap.tscn"
-const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
+const GAME_MAP_SCENE     := "res://scenes/GameMap.tscn"
+const REWARD_SCREEN_SCENE := "res://scenes/RewardScreen.tscn"
+const MAIN_MENU_SCENE    := "res://scenes/MainMenu.tscn"
 const _BattleEngineScript = preload("res://scripts/BattleEngine.gd")
 const CardViewScene       = preload("res://scenes/CardView.tscn")
 const ResourceOrbScene    = preload("res://scripts/ResourceOrb.gd")
@@ -165,15 +166,15 @@ func _build_resource_dock() -> void:
 	_resource_dock.add_child(row)
 
 	_ling_li_orb = ResourceOrbScene.new()
-	_ling_li_orb.fill_color = Color(0.0, 0.72, 0.78)
+	_ling_li_orb.fill_color = Color(0.0, 0.72, 0.92)
 	_ling_li_orb.ring_color = Color(0.12, 0.96, 1.0)
-	_ling_li_orb.back_color = Color(0.0, 0.08, 0.10, 0.92)
+	_ling_li_orb.back_color = Color(0.0, 0.04, 0.06, 0.95)
 	row.add_child(_ling_li_orb)
 
 	_dao_hui_orb = ResourceOrbScene.new()
-	_dao_hui_orb.fill_color = Color(0.55, 0.24, 0.72)
+	_dao_hui_orb.fill_color = Color(0.62, 0.18, 0.88)
 	_dao_hui_orb.ring_color = Color(0.86, 0.55, 1.0)
-	_dao_hui_orb.back_color = Color(0.11, 0.04, 0.16, 0.92)
+	_dao_hui_orb.back_color = Color(0.06, 0.02, 0.10, 0.95)
 	row.add_child(_dao_hui_orb)
 
 	var right_box := VBoxContainer.new()
@@ -351,12 +352,11 @@ func _on_battle_ended(player_won: bool) -> void:
 	end_turn_btn.disabled = true
 	skill_btn.disabled    = true
 	if player_won:
-		result_label.text = "战斗胜利！\n\nHP 剩余：%d" % _engine.s["player_hp"]
-		result_btn.text   = "返回地图"
+		get_tree().change_scene_to_file(REWARD_SCREEN_SCENE)
 	else:
 		result_label.text = "你已倒下……\n\n但记忆留存，下次会更强。"
 		result_btn.text   = "返回主菜单"
-	result_panel.show()
+		result_panel.show()
 
 
 func _on_deck_reshuffled(cards: Array) -> void:
@@ -552,10 +552,14 @@ func _update_hand_display() -> void:
 
 func _draw_pile_anchor_local() -> Vector2:
 	if _draw_pile_btn and is_instance_valid(_draw_pile_btn):
-		return hand_container.to_local(_draw_pile_btn.get_global_rect().get_center())
+		return _global_to_hand_local(_draw_pile_btn.get_global_rect().get_center())
 	var vp := get_viewport_rect()
 	var global_pos := Vector2(74.0, vp.size.y - 154.0)
-	return hand_container.to_local(global_pos)
+	return _global_to_hand_local(global_pos)
+
+
+func _global_to_hand_local(global_pos: Vector2) -> Vector2:
+	return hand_container.get_global_transform_with_canvas().affine_inverse() * global_pos
 
 
 func _make_card_view(card: Dictionary) -> Control:
@@ -688,6 +692,6 @@ func _on_skill_btn_pressed() -> void:
 
 func _on_result_btn_pressed() -> void:
 	if _engine.s["battle_won"]:
-		get_tree().change_scene_to_file(GAME_MAP_SCENE)
+		get_tree().change_scene_to_file(REWARD_SCREEN_SCENE)
 	else:
 		get_tree().change_scene_to_file(MAIN_MENU_SCENE)

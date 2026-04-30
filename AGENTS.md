@@ -2,6 +2,10 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Godot skill usage
+
+This is a Godot game project. When working on `.gd`, `.tscn`, `.tres`, UI scenes, resources, scene loading, headless validation, exports, or Godot runtime errors, actively use the available Godot-related skills as needed, especially `godot`, `godot-ui`, `game-dev`, and `game-test`.
+
 ## 项目概述
 
 **《无尽仙台》** 是一款类杀戮尖塔的回合制构筑卡牌游戏，修仙题材。游戏讲述玩家在"登仙台"中反复轮回、记忆积累、寻找破局之法的故事。
@@ -59,7 +63,7 @@ theme/        # 主题/样式资源（待创建）
 ### 卡牌体系（剑修职业，Ver 3.1）
 - 三类卡：**术法牌**（攻击/01-44）、**秘法牌**（防御运转/45-85）、**道法牌**（全局被动/86-99）
 - 四个稀有度：黄品(55%) / 玄品(30%) / 地品(10%) / 天品(5%)
-- 初始牌组：拙剑·劈山×4 + 定心咒×4
+- 初始牌组：剑气斩×10 + 剑气护体×10
 
 ### 地图系统
 - 三重天（每重15节点 + Boss）+ 隐藏终局

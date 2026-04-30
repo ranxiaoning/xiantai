@@ -140,7 +140,7 @@ Master（默认）
 
 ---
 
-## 七、角色选择界面（CharacterSelect）✅ 已实现
+## 七、角色选择界面（CharacterSelect）✅ 已优化
 
 **场景文件**：`scenes/CharacterSelect.tscn`  
 **脚本**：`scripts/CharacterSelect.gd`
@@ -149,39 +149,36 @@ Master（默认）
 
 | 区域 | 位置 | 内容 |
 |------|------|------|
-| 页面标题 | 顶部 2%–10% | "角色选择"（32px，居中） |
-| 门派选择栏 SectBar | 顶部 10%–19%，水平 10%–90%，居中 | 每个门派一个 ToggleButton，ButtonGroup 互斥 |
-| 主内容区 MainContent | 垂直 20%–88%，水平 2%–98% | 三栏横排 |
-| ├ 弟子列表 CharListPanel | 固定宽 155px | 当前门派所有角色按钮（ButtonGroup 互斥） |
-| ├ 角色详情 CharDetailPanel | 弹性 ratio 1.8 | 角色名、副标题、立绘、背景故事 |
-| └ 属性面板 StatsPanel | 弹性 ratio 2.2 | 初始属性 / 天赋 / 英雄技能 |
-| 开始游戏按钮 | 水平 30%–70%，垂直 90%–98% | 确认选择，跳转地图 |
+| 背景层 | 全屏 | `wanjianmen.png` + 深色遮罩 + 顶部暗化层 |
+| 页面标题 | 左上 4.5%–48%，垂直 3.5%–12% | “择一人，入登仙台”与副标题 |
+| 门派选择栏 SectBar | 右上 58%–95.5%，垂直 5.5%–13% | 每个门派一个 ToggleButton，ButtonGroup 互斥 |
+| MainContent | 水平 4.5%–95.5%，垂直 17%–86% | 左侧选择 / 中央立绘 / 右侧档案三块 |
+| ├ SidebarPanel | 固定宽 210px | 当前门派弟子列表与提示 |
+| ├ HeroPanel | 弹性 ratio 1.35 | 角色称号、大立绘、角色名、背景故事 |
+| └ StatsCard | 固定最小宽 340px，弹性 ratio 1.0 | 初始资质 / 天赋 / 英雄技能 |
+| StartBtn | 右下 72.5%–95.5%，垂直 89%–96.5% | “开始轮回”，确认选择并跳转地图 |
 
 ### 节点结构
 
 ```
 CharacterSelect (Control)
 ├── BG (TextureRect)              # 全屏背景图，随门派切换
-├── Overlay (ColorRect)           # 半透明暗化遮罩
-├── PageTitle (Label)             # "角色选择" 32px
-├── SectBar (HBoxContainer) *    # 门派按钮行，动态创建
+├── Overlay / TopShade            # 半透明暗化与顶部压暗
+├── PageTitle / PageSubTitle      # 左上标题组
+├── SectBar (HBoxContainer) *     # 门派按钮行，动态创建
 ├── MainContent (HBoxContainer)
-│   ├── CharListPanel (VBoxContainer, min 155px)
-│   │   ├── CharListTitle (Label) # "── 弟子 ──"
-│   │   └── CharListBox (VBoxContainer) *  # 角色按钮，动态创建
-│   ├── VSep1 (VSeparator)
-│   ├── CharDetailPanel (VBoxContainer, ratio 1.8)
-│   │   └── CharPanelContainer/PadMargin/InnerBox/
-│   │       ├── CharName (Label) *   # 36px
-│   │       ├── CharTitle (Label) *  # 15px 金色
-│   │       ├── Portrait (TextureRect) *  # 动态加载立绘
-│   │       └── Lore (Label) *       # 自动换行
-│   ├── VSep2 (VSeparator)
-│   └── StatsPanel (VBoxContainer, ratio 2.2)
-│       ├── StatsTitle / Stats（HPValue* / HPRegenValue* / LingLiValue* / DaoHuiValue* / DmgValue*）
+│   ├── SidebarPanel/SidebarPad/CharListPanel
+│   │   └── CharListBox (VBoxContainer) *      # 角色按钮，动态创建
+│   ├── HeroPanel/HeroPad/CharDetailPanel
+│   │   ├── CharTitle (Label) *
+│   │   ├── PortraitFrame/PortraitMargin/PortraitStage/Portrait (TextureRect) *
+│   │   ├── CharName (Label) *
+│   │   └── Lore (Label) *
+│   └── StatsCard/StatsPad/StatsPanel
+│       ├── Stats Grid（HPValue* / HPRegenValue* / LingLiValue* / DaoHuiValue* / DmgValue*）
 │       ├── TalentPanel/TalentPad/TalentDesc *
 │       └── SkillPanel/SkillPad/SkillDesc *
-└── StartBtn (Button)             # 开始游戏
+└── StartBtn (Button) *           # 开始轮回
 ```
 
 > `*` = `unique_name_in_owner = true`，脚本通过 `%NodeName` 访问
@@ -210,8 +207,15 @@ CharacterSelect (Control)
 | 操作 | 结果 |
 |------|------|
 | 点击门派按钮 | 切换 `_selected_sect`，刷新弟子列表，更新背景图 |
-| 点击弟子按钮 | 切换 `_selected_char_id`，刷新右侧属性面板 |
-| 点击"开始游戏" | `GameState.start_run(_selected_char_id)` → 跳转 `GameMap.tscn` |
+| 点击弟子按钮 | 切换 `_selected_char_id`，刷新中央立绘与右侧档案，并播放轻量淡入 |
+| 点击"开始轮回" | 按钮轻微缩放反馈，`GameState.start_run(_selected_char_id)` → 跳转 `GameMap.tscn` |
+
+### 视觉状态
+
+- 背景采用冷青灰暗化，前景使用半透明深色面板和克制金色细边。
+- 门派/弟子按钮使用普通、悬停、按下三态；选中态沿用 pressed 样式，颜色更亮。
+- 角色切换时只使用 `modulate` 与 `scale` 轻动效，不移动布局尺寸，避免 UI 抖动。
+- 立绘使用 `PortraitStage` 作为全尺寸画布，`Portrait` 在其中 full-rect 锚定，并使用零固定最小尺寸、`EXPAND_IGNORE_SIZE` 与 `STRETCH_KEEP_ASPECT_CENTERED`。`PortraitFrame` 不参与纵向扩展，720p 下显式约束为约 320px 高，避免被图片原始尺寸撑到屏幕外。
 
 ### 手动验证要点
 
@@ -219,8 +223,10 @@ CharacterSelect (Control)
 
 - [ ] 默认进入时选中"万剑门"按钮，弟子列表显示"程天锋"，右侧属性/天赋正确
 - [ ] 切换门派按钮时，弟子列表和背景图同步更新
-- [ ] 点击弟子按钮，右侧面板立即刷新
-- [ ] 点击"开始游戏"正常跳转至 GameMap.tscn
+- [ ] 点击弟子按钮，中央立绘与右侧面板立即刷新，淡入不遮挡文本
+- [ ] 立绘不变形，文本不溢出，开始按钮位于右下且状态清晰
+- [ ] 1280×720 下立绘完整显示，不下沉到立绘框底部，也不裁掉上半身
+- [ ] 点击"开始轮回"正常跳转至 GameMap.tscn
 
 ---
 
@@ -235,10 +241,12 @@ CharacterSelect (Control)
 
 | 区域 | 锚点 | 内容 |
 |------|------|------|
-| Header | 垂直 0–8% | 标题 + HP 显示 |
+| Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，金色）|
 | MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
-| NodePopup | 水平 15–85%，垂直 15–85% | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏 |
-| VictoryPanel | 水平 20–80%，垂直 20–80% | Boss 击败后胜利面板，初始隐藏 |
+| NodePopup | 水平 15–85%，垂直 15–85%，`z_index=100` | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏，显示时覆盖地图节点与连线 |
+| VictoryPanel | 水平 20–80%，垂直 20–80%，`z_index=100` | Boss 击败后胜利面板，初始隐藏 |
+| MapDrawLayer | MapContainer 全尺寸 | 节点连线绘制层，固定 `1280 × 1520`，位于节点按钮下方 |
+| RingDrawLayer | MapContainer 全尺寸 | 当前节点外环绘制层，位于节点按钮上方 |
 
 ### MapContainer 布局常量
 
@@ -270,7 +278,7 @@ y = (FLOOR_COUNT - floor) × FLOOR_SPACING + MAP_H_PADDING
 | `event` | `assets/nodes/adventure.png` | 奇遇事件（暂未实装） |
 | `boss` | `assets/nodes/boss.png` | Boss 节点（第16层唯一） |
 
-所有节点图片通过 canvas_item shader 裁切为圆形（smoothstep 抗锯齿）。
+所有节点图片通过 canvas_item shader 裁切为圆形（smoothstep 抗锯齿）。节点按钮统一设置 `pivot_offset = size / 2`，当前起始节点/当前节点的放大缩小动画必须围绕节点自身中心执行。
 
 ### 完整交互流程
 
@@ -308,7 +316,7 @@ CharacterSelect → start_run() → GameMap 加载
 | 未来层 | `Color(0.6,0.6,0.65,0.55)` 半透明 | true |
 | 本层不可达 | `Color(0.3,0.3,0.3,0.4)` 暗 | true |
 
-连线颜色：已访问路径金色 `Color(0.75,0.7,0.3,0.8)`，未访问灰色 `Color(0.45,0.45,0.55,0.5)`。
+连线颜色：已访问路径金色实线 `Color(0.86,0.66,0.28,0.95)`，当前可选路径亮金实线 `Color(1.0,0.88,0.45,0.95)`，未来路径蓝灰实线 `Color(0.52,0.57,0.68,0.58)`。所有连线保持曲线实线效果，不使用虚线；连线从节点圆形边缘开始/结束，不穿过节点中心，底部绘制半透明阴影增强可读性。
 
 ### GameState 地图相关字段
 
@@ -328,7 +336,9 @@ CharacterSelect → start_run() → GameMap 加载
 （headless 不可测，需 Godot Editor 运行）
 
 - [ ] 进入地图时只有起始节点亮起，第1层全部灰暗
+- [ ] 地图节点之间存在清晰连线，起始节点到第1层也有连线
 - [ ] 点击起始节点弹出叙事文本，内容正确
+- [ ] 起始节点放大缩小动画以自身中心为轴，不向左上或其他方向偏移
 - [ ] 点击"踏入轮回"后第1层节点全部解锁，地图滚动至第1层
 - [ ] 点击战斗节点正确跳转战斗场景，返回后下一层解锁
 - [ ] 起始节点在访问后变灰，不可再次点击
@@ -397,11 +407,66 @@ Battle (Control, Theme: main_theme.tres)
 - **提示信息**：资源不足时通过 Toast 弹出提示。
 ---
 
-## 十、待办 / 后续界面
+## 十、战斗奖励界面（RewardScreen）
+
+**场景文件**：`scenes/RewardScreen.tscn`  
+**脚本**：`scripts/RewardScreen.gd`  
+**触发时机**：战斗胜利 → 结果面板点"返回地图" → 本界面 → "继续前行" → GameMap
+
+### 节点结构
+
+```
+RewardScreen (Control)
+├── BG (ColorRect) — 深色全屏背景
+├── BigBag (PanelContainer, 大包容器 8%~92% 宽, 5%~95% 高)
+│   └── BigBagMargin → MainVBox
+│       ├── TitleLabel "战斗奖励"
+│       ├── ContentHBox (stretch 3:1)
+│       │   ├── CardBag (PanelContainer, 卡牌小包)
+│       │   │   └── CardBagMargin → CardBagVBox
+│       │   │       ├── CardBagTitle "择取功法（3选1）"
+│       │   │       ├── %CardsRow (HBoxContainer) — 动态填入3个卡槽
+│       │   │       ├── CardHint  — 操作提示文字
+│       │   │       └── CardActionRow
+│       │   │           ├── %ConfirmBtn "纳入牌组"（初始禁用）
+│       │   │           └── %SkipBtn "跳过"
+│       │   └── CoinBag (PanelContainer, 灵石小包)
+│       │       └── CoinBagMargin → CoinBagVBox
+│       │           ├── CoinBagTitle "灵石所得"
+│       │           ├── %StoneAmountLabel "+30 灵石" / "+60 灵石"
+│       │           └── %StoneHintLabel "已收入囊中（现有 N 灵石）"
+│       └── %ContinueBtn "继续前行"（卡牌已决定后启用）
+└── %CardDetailPopup (PanelContainer, hidden, z=100) — 卡牌详情弹窗
+    └── DetailMargin → DetailVBox
+        ├── %DetailImage (TextureRect)
+        ├── %DetailName
+        ├── %DetailDesc
+        └── CloseDetailBtn "关闭"
+```
+
+### 交互逻辑
+
+| 操作 | 响应 |
+|------|------|
+| 进入界面 | 自动领取灵石（普通+30，精英+60），读取 `GameState.pending_battle_node_type` |
+| 点击卡牌 | 选中该卡（高亮），启用"纳入牌组" |
+| 点击"查看详情" | 打开 CardDetailPopup 显示大图+描述 |
+| 点击"纳入牌组" | 将卡ID追加到 `GameState.deck`，禁用选卡按钮，启用"继续前行" |
+| 点击"跳过" | 不选卡，启用"继续前行" |
+| 点击"继续前行" | `change_scene_to_file(GameMap.tscn)` |
+
+### 稀有度权重
+
+黄品 55%（累积≤0.55）/ 玄品 30%（≤0.85）/ 地品 10%（≤0.95）/ 天品 5%（≤1.0）
+
+三张卡去重抽取（同id不重复），最多重试300次。
+
+---
+
+## 十一、待办 / 后续界面
 
 | 界面 | 优先级 | 说明 |
 |------|--------|------|
-| 战斗胜利奖励 | 高 | 三选一抽卡，按稀有度概率 |
 | 完整地图 | 高 | 三重天15节点，单向不可逆分叉路径 |
 | 角色立绘 | 中 | 替换 Portrait 占位 ColorRect |
 | 存档 / 继续界面 | 中 | Roguelike 单存档，显示当前重天与层数 |
