@@ -3,7 +3,7 @@
 extends Control
 
 const GAME_MAP_SCENE := "res://scenes/GameMap.tscn"
-const _CARD_ART_DIR  := "res://assets/card/generated/"
+const CardViewScene := preload("res://scenes/CardView.tscn")
 
 const _RARITY_ORDER      := ["黄品", "玄品", "地品", "天品"]
 const _RARITY_CUMULATIVE := [0.55, 0.85, 0.95, 1.0]
@@ -127,13 +127,12 @@ func _populate_card_slots() -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(CARD_W, CARD_H)
 
-		var img := TextureRect.new()
-		img.set_anchors_preset(Control.PRESET_FULL_RECT)
-		img.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		img.texture      = _load_card_texture(card)
-		img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		btn.add_child(img)
+		var card_view = CardViewScene.instantiate()
+		card_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+		card_view.custom_minimum_size = Vector2(CARD_W, CARD_H)
+		card_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_view.setup(card, null, false)
+		btn.add_child(card_view)
 
 		var name_lbl := Label.new()
 		name_lbl.text = card["name"]
@@ -234,24 +233,3 @@ func _on_confirm_btn_pressed() -> void:
 
 func _on_skip_btn_pressed() -> void:
 	_card_panel.hide()
-
-
-# ── 卡图加载 ─────────────────────────────────────────────────────────
-
-func _load_card_texture(card: Dictionary) -> Texture2D:
-	var id_str:   String = card.get("id", "")
-	var name_str: String = card.get("name", "")
-	if id_str.is_empty() or name_str.is_empty():
-		return null
-	var filename := "%02d_%s.png" % [int(id_str), name_str]
-	var path     := _CARD_ART_DIR + filename
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex
-	var abs_path := ProjectSettings.globalize_path(path)
-	var img      := Image.load_from_file(abs_path)
-	if img:
-		return ImageTexture.create_from_image(img)
-	push_warning("RewardScreen: 找不到卡图 %s" % abs_path)
-	return null

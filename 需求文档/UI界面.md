@@ -245,8 +245,11 @@ CharacterSelect (Control)
 | MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
 | NodePopup | 水平 15–85%，垂直 15–85%，`z_index=100` | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏，显示时覆盖地图节点与连线 |
 | VictoryPanel | 水平 20–80%，垂直 20–80%，`z_index=100` | Boss 击败后胜利面板，初始隐藏 |
+| CardZoomOverlay | 全屏运行时控件，`z_index=250` | 卡组查看时点击小卡显示居中大卡，再次点击遮罩/大卡关闭 |
 | MapDrawLayer | MapContainer 全尺寸 | 节点连线绘制层，固定 `1280 × 1520`，位于节点按钮下方 |
 | RingDrawLayer | MapContainer 全尺寸 | 当前节点外环绘制层，位于节点按钮上方 |
+
+地图卡组弹窗每次打开时 `DeckScroll` 重置到顶部；卡牌缩略图按 5 列铺满弹窗宽度并通过纵向滚动浏览。卡组/牌堆查看中的小卡使用 `CardView.set_hover_motion_enabled(false)` 禁用手牌悬浮位移动画，只保留点击放大交互。`CardZoomOverlay` 打开时从被点击卡牌的当前位置缓动放大到屏幕中央，同时遮罩淡入弱化其他卡牌；点击遮罩或大卡后反向缩回原卡位置并关闭。
 
 ### MapContainer 布局常量
 
@@ -401,9 +404,10 @@ Battle (Control, Theme: main_theme.tres)
 - **手牌布局**：动态计算间距，卡牌在 5 张以上时自动压缩重叠。
 - **资源展示**：`scripts/ResourceOrb.gd` 绘制灵力、道慧圆盘，左下道行以金色徽章展示；旧 Resources 面板在运行时隐藏。
 - **牌堆查看**：点击抽牌堆或弃牌堆按钮打开 `PileOverlay`，按一行 5 张卡展示当前牌堆内容，空堆显示占位提示。
+- **卡牌放大查看**：地图卡组、战斗抽牌堆、战斗弃牌堆的小卡点击后调用 `scripts/CardZoomOverlay.gd` 显示居中大卡；再次点击遮罩或大卡关闭放大层，原查看弹窗保持打开。
 - **抽牌动画**：普通抽牌、战斗开始抽 3 张、牌库耗尽后的洗牌重抽都从抽牌堆锚点飞入手牌；洗牌时旧手牌先飞回抽牌堆，再延迟飞出重抽卡。
 - **悬停反馈**：卡牌悬停时 `z_index` 提升，平滑向上弹出并放大。
-- **预览功能**：悬停卡牌时在上方显示高清预览。
+- **卡牌渲染**：所有卡牌显示统一通过 `scripts/CardRenderer.gd` 运行时合成，不依赖 `assets/card/generated/` 整卡图；渲染器以 `assets/card/template.png` 为底板，按 `assets/card/gen_all_cards.py` 的坐标规则叠加原画、费用、名称、类型和深棕描述文字；战斗悬停预览向渲染器传入实时计算后的描述，不创建黑底、纸面或边框背景。
 - **提示信息**：资源不足时通过 Toast 弹出提示。
 ---
 

@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://game_map_v1"]
+[gd_scene load_steps=6 format=3 uid="uid://game_map_v1"]
 
 [ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gm"]
 [ext_resource type="Texture2D" path="res://assets/bg/map.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/spirit_stone.png" id="3_stone"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ccdfn"]
 bg_color = Color(0.1, 0.09, 0.08, 0.96)
@@ -66,7 +67,7 @@ color = Color(0, 0, 0, 0.6)
 [node name="TitleLabel" type="Label" parent="Header"]
 layout_mode = 1
 anchors_preset = -1
-anchor_right = 0.6
+anchor_right = 0.48
 anchor_bottom = 1.0
 offset_left = 20.0
 theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
@@ -78,8 +79,8 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.6
-anchor_right = 0.8
+anchor_left = 0.48
+anchor_right = 0.64
 anchor_bottom = 1.0
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
 theme_override_font_sizes/font_size = 16
@@ -87,19 +88,42 @@ text = "HP -- / --"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="SpiritStoneLabel" type="Label" parent="Header"]
+[node name="SpiritStoneContainer" type="HBoxContainer" parent="Header"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.64
+anchor_right = 0.78
+anchor_bottom = 1.0
+theme_override_constants/separation = 4
+alignment = 2
+
+[node name="SpiritStoneIcon" type="TextureRect" parent="Header/SpiritStoneContainer"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("3_stone")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="SpiritStoneLabel" type="Label" parent="Header/SpiritStoneContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1.0, 0.85, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "--"
+vertical_alignment = 1
+
+[node name="DeckBtn" type="Button" parent="Header"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.8
-anchor_right = 1.0
+anchor_left = 0.80
+anchor_right = 0.98
 anchor_bottom = 1.0
-offset_right = -20.0
-theme_override_colors/font_color = Color(1.0, 0.85, 0.2, 1)
-theme_override_font_sizes/font_size = 16
-text = "灵石: --"
-horizontal_alignment = 2
-vertical_alignment = 1
+offset_top = 4.0
+offset_bottom = -4.0
+theme_override_font_sizes/font_size = 14
+text = "查看卡组"
 
 [node name="MapScroll" type="ScrollContainer" parent="."]
 layout_mode = 1
@@ -218,7 +242,90 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 20
 text = "返回主菜单"
 
+[node name="DeckOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 200
+mouse_filter = 0
+
+[node name="DimBG" type="ColorRect" parent="DeckOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.72)
+
+[node name="DeckPanel" type="PanelContainer" parent="DeckOverlay"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ccdfn")
+
+[node name="DeckPad" type="MarginContainer" parent="DeckOverlay/DeckPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="DeckVBox" type="VBoxContainer" parent="DeckOverlay/DeckPanel/DeckPad"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="DeckTitleRow" type="HBoxContainer" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="DeckTitleLabel" type="Label" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckTitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.82, 0.72, 0.40, 1)
+theme_override_font_sizes/font_size = 20
+text = "当前卡组"
+
+[node name="DeckCount" type="Label" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckTitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 16
+text = "0 张"
+vertical_alignment = 1
+
+[node name="DeckCloseBtn" type="Button" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckTitleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "×"
+
+[node name="DeckScroll" type="ScrollContainer" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckGrid" type="GridContainer" parent="DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn1" to="." method="_on_popup_btn1_pressed"]
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn2" to="." method="_on_popup_btn2_pressed"]
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupCloseBtn" to="." method="_on_popup_close_btn_pressed"]
 [connection signal="pressed" from="VictoryPanel/VictoryVBox/VictoryBtn" to="." method="_on_victory_btn_pressed"]
+[connection signal="pressed" from="Header/DeckBtn" to="." method="_on_deck_btn_pressed"]
+[connection signal="gui_input" from="DeckOverlay/DimBG" to="." method="_on_dim_bg_input"]
+[connection signal="pressed" from="DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckTitleRow/DeckCloseBtn" to="." method="_on_deck_close_btn_pressed"]

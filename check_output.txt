@@ -1,0 +1,8 @@
+Starting check...
+SUCCESS: Scene loaded and instantiated.
+Children of Header:
+ - HeaderBG
+ - TitleLabel
+ - HPLabel
+ - SpiritStoneLabel
+ - DeckBtn

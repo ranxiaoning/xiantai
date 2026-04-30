@@ -4,6 +4,8 @@ extends Control
 
 const BATTLE_SCENE    := "res://scenes/Battle.tscn"
 const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
+const CardViewScene   = preload("res://scenes/CardView.tscn")
+const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
 
 # ── 布局常量 ───────────────────────────────────────────────────────
 const FLOOR_COUNT    := 16
@@ -42,9 +44,14 @@ const NODE_TEXTURES := {
 }
 
 # ── 节点引用 ──────────────────────────────────────────────────────
-@onready var hp_label:       Label          = %HPLabel
-@onready var _stone_label:   Label          = %SpiritStoneLabel
-@onready var map_scroll:     ScrollContainer = $MapScroll
+@onready var hp_label:        Label           = %HPLabel
+@onready var _stone_label:    Label           = %SpiritStoneLabel
+@onready var _deck_btn:       Button          = %DeckBtn
+@onready var _deck_overlay:   Control         = %DeckOverlay
+@onready var _deck_count:     Label           = %DeckCount
+@onready var _deck_grid:      GridContainer   = %DeckGrid
+@onready var _deck_scroll:    ScrollContainer = $DeckOverlay/DeckPanel/DeckPad/DeckVBox/DeckScroll
+@onready var map_scroll:      ScrollContainer = $MapScroll
 @onready var map_container:  Control        = $MapScroll/MapContainer
 @onready var node_popup:     PanelContainer = $NodePopup
 @onready var popup_title:    Label          = %PopupTitle
@@ -66,16 +73,19 @@ var _circle_mat: ShaderMaterial = null # 所有节点共享的圆形裁切 shade
 var _pulse_tween: Tween = null         # 当前节点脉冲动画
 var _pulse_target: BaseButton = null   # 当前被脉冲动画控制的节点
 var _tex_cache: Dictionary = {}        # res://路径 → Texture2D 缓存（避免重复读文件）
+var _card_zoom_overlay = null
 
 
 func _ready() -> void:
 	MusicManager.play("map")
 	node_popup.hide()
 	victory_panel.hide()
+	_deck_overlay.hide()
 	node_popup.z_index = 100
 	node_popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	victory_panel.z_index = 100
 	victory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_build_card_zoom_overlay()
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -417,7 +427,7 @@ func _update_hp_label() -> void:
 
 
 func _update_stone_label() -> void:
-	_stone_label.text = "灵石 %d" % GameState.spirit_stones
+	_stone_label.text = "%d" % GameState.spirit_stones
 
 
 # ── 滚动到当前层 ─────────────────────────────────────────────────
@@ -560,3 +570,76 @@ func _show_victory() -> void:
 
 func _on_victory_btn_pressed() -> void:
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+
+
+# ── 卡组查看 ──────────────────────────────────────────────────────────
+
+func _on_deck_btn_pressed() -> void:
+	_open_deck()
+
+
+func _on_deck_close_btn_pressed() -> void:
+	if _card_zoom_overlay:
+		_card_zoom_overlay.hide_card()
+	_deck_overlay.hide()
+
+
+func _on_dim_bg_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if _card_zoom_overlay and _card_zoom_overlay.visible:
+			_card_zoom_overlay.hide_card()
+			return
+		_deck_overlay.hide()
+
+
+func _open_deck() -> void:
+	# 缩略卡按 5 列铺满弹窗宽度；高度自然形成纵向滚动。
+	const COLS    := 5
+	const H_SEP   := 10
+	const PAD_X   := 96
+	const CARD_ASPECT := 2752.0 / 1536.0
+	var vp        := get_viewport_rect().size
+	var card_w    := int((vp.x - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
+	var card_h    := int(card_w * CARD_ASPECT)
+	_deck_grid.add_theme_constant_override("h_separation", H_SEP)
+	_deck_grid.add_theme_constant_override("v_separation", H_SEP)
+	_populate_deck_grid(card_w, card_h)
+	_deck_scroll.scroll_horizontal = 0
+	_deck_scroll.scroll_vertical = 0
+	_deck_overlay.show()
+	call_deferred("_reset_deck_scroll")
+
+
+func _populate_deck_grid(card_w: int, card_h: int) -> void:
+	for child in _deck_grid.get_children():
+		child.queue_free()
+
+	var deck: Array[String] = GameState.deck
+	_deck_count.text = "%d 张" % deck.size()
+
+	for card_id in deck:
+		var card_data := CardDatabase.get_card(card_id)
+		if card_data.is_empty():
+			continue
+
+		var view: Control = CardViewScene.instantiate()
+		view.custom_minimum_size = Vector2(card_w, card_h)
+		view.mouse_filter        = Control.MOUSE_FILTER_STOP
+		view.setup(card_data, null, true)
+		view.set_hover_motion_enabled(false)
+		view.play_blocked.connect(_show_deck_card_zoom.bind(card_data, view))
+		_deck_grid.add_child(view)
+
+
+func _build_card_zoom_overlay() -> void:
+	_card_zoom_overlay = CardZoomOverlayScript.new()
+	add_child(_card_zoom_overlay)
+
+
+func _show_deck_card_zoom(_blocked_card: Dictionary, card_data: Dictionary, source_view: Control) -> void:
+	_card_zoom_overlay.show_card(card_data, "", source_view.get_global_rect())
+
+
+func _reset_deck_scroll() -> void:
+	_deck_scroll.scroll_horizontal = 0
+	_deck_scroll.scroll_vertical = 0

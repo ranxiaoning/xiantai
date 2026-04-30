@@ -45,15 +45,15 @@ func _t(method: String) -> void:
 func _assert_eq(a, b, msg: String) -> void:
 	if a == b:
 		_pass_count += 1
-		_lines.append("  ✅ " + msg)
+		_lines.append("  ✓ %s" % msg)
 	else:
 		_fail_count += 1
-		_lines.append("  ❌ " + msg + " （期望 %s，实际 %s）" % [str(b), str(a)])
+		_lines.append("  ✗ %s  ← 期望 %s，实际 %s" % [msg, str(b), str(a)])
 
 func _assert_true(cond: bool, msg: String) -> void:
 	if cond:
 		_pass_count += 1
-		_lines.append("  ✅ " + msg)
+		_lines.append("  ✓ %s" % msg)
 	else:
 		_fail_count += 1
-		_lines.append("  ❌ " + msg)
+		_lines.append("  ✗ %s  ← 条件为假" % msg)

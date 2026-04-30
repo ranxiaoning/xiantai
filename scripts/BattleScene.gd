@@ -6,19 +6,18 @@ const REWARD_SCREEN_SCENE := "res://scenes/RewardScreen.tscn"
 const MAIN_MENU_SCENE    := "res://scenes/MainMenu.tscn"
 const _BattleEngineScript = preload("res://scripts/BattleEngine.gd")
 const CardViewScene       = preload("res://scenes/CardView.tscn")
+const CardRendererScript  = preload("res://scripts/CardRenderer.gd")
 const ResourceOrbScene    = preload("res://scripts/ResourceOrb.gd")
+const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
 
-const _CARD_ART_DIR := "res://assets/card/generated/"
-
-# 预览尺寸（与卡牌保持相同宽高比 1536:2752 ≈ 0.558）
+# Preview size matches the card art ratio.
 const PREVIEW_W := 280
 const PREVIEW_H := 502
 
 var _engine: RefCounted
-
-# 预览覆盖层节点（直接挂在 Battle 根节点，不受 ScrollContainer 裁剪）
-var _preview_root:  Control
-var _preview_image: TextureRect
+# Preview overlay is attached to the battle root so it is not clipped by scroll containers.
+var _preview_root: Control
+var _preview_renderer
 
 # 资源不足提示 toast
 var _toast_tween:  Tween
@@ -39,6 +38,7 @@ var _discard_pile_btn: Button
 var _pile_overlay: Control
 var _pile_title_label: Label
 var _pile_grid: GridContainer
+var _card_zoom_overlay
 
 # ── UI 节点引用 ────────────────────────────────────────────────────
 @onready var enemy_name_label:     Label         = %EnemyName
@@ -72,6 +72,7 @@ func _ready() -> void:
 	_build_pile_overlay()
 	_build_preview_overlay()
 	_build_toast_layer()
+	_build_card_zoom_overlay()
 	_init_battle()
 
 
@@ -85,12 +86,10 @@ func _build_preview_overlay() -> void:
 	_preview_root.hide()
 	add_child(_preview_root)
 
-	_preview_image = TextureRect.new()
-	_preview_image.mouse_filter   = Control.MOUSE_FILTER_IGNORE
-	_preview_image.expand_mode    = TextureRect.EXPAND_IGNORE_SIZE
-	_preview_image.stretch_mode   = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_preview_image.size           = Vector2(PREVIEW_W, PREVIEW_H)
-	_preview_root.add_child(_preview_image)
+	_preview_renderer = CardRendererScript.new()
+	_preview_renderer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_renderer.size = Vector2(PREVIEW_W, PREVIEW_H)
+	_preview_root.add_child(_preview_renderer)
 
 
 # ── Toast 提示层 ─────────────────────────────────────────────────────
@@ -119,6 +118,11 @@ func _build_toast_layer() -> void:
 	_toast_label.offset_bottom = 40
 	_toast_label.grow_vertical = Control.GROW_DIRECTION_END
 	_toast_root.add_child(_toast_label)
+
+
+func _build_card_zoom_overlay() -> void:
+	_card_zoom_overlay = CardZoomOverlayScript.new()
+	add_child(_card_zoom_overlay)
 
 
 func _show_toast(text: String) -> void:
@@ -306,7 +310,7 @@ func _build_pile_overlay() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "关闭"
 	close_btn.focus_mode = Control.FOCUS_NONE
-	close_btn.pressed.connect(_pile_overlay.hide)
+	close_btn.pressed.connect(_hide_pile_overlay)
 	top.add_child(close_btn)
 
 	var scroll := ScrollContainer.new()
@@ -565,8 +569,7 @@ func _global_to_hand_local(global_pos: Vector2) -> Vector2:
 func _make_card_view(card: Dictionary) -> Control:
 	var view: Control = CardViewScene.instantiate()
 	var can_play: bool = _engine.can_play_card(card)
-	var tex: Texture2D = _load_card_texture(card)
-	view.setup(card, tex, not can_play)
+	view.setup(card, null, not can_play)
 	view.hovered.connect(_on_card_hovered)
 	view.unhovered.connect(_on_card_unhovered)
 	view.activated.connect(_on_card_activated)
@@ -574,47 +577,18 @@ func _make_card_view(card: Dictionary) -> Control:
 	return view
 
 
-# ── 卡牌图片加载 ─────────────────────────────────────────────────
-
-func _load_card_texture(card: Dictionary) -> Texture2D:
-	var id_str: String = card.get("id", "")
-	var name_str: String = card.get("name", "")
-	if id_str.is_empty() or name_str.is_empty():
-		return null
-	# 文件名规则："%02d_卡名.png"，例如 "01_点星剑法.png"
-	var filename := "%02d_%s.png" % [int(id_str), name_str]
-	var path := _CARD_ART_DIR + filename
-
-	# 优先走 Godot 已导入资源（import 有效时最快）
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex
-	# 降级：绝对路径直接读文件（兼容中文目录 / import 未生效时）
-	var abs_path := ProjectSettings.globalize_path(path)
-	var img := Image.load_from_file(abs_path)
-	if img:
-		return ImageTexture.create_from_image(img)
-	push_warning("CardArt: 找不到图片 %s" % abs_path)
-	return null
-
-
 # ── 卡牌悬停预览 ─────────────────────────────────────────────────
 
 func _on_card_hovered(card: Dictionary, card_rect: Rect2) -> void:
-	var tex := _load_card_texture(card)
-	if tex == null:
-		return
-
-	_preview_image.texture = tex
-
 	# 将预览定位在悬停卡牌正上方，超出屏幕边界时修正
-	var vp     := get_viewport_rect()
-	var px     := card_rect.get_center().x - PREVIEW_W * 0.5
-	var py     := card_rect.position.y - PREVIEW_H - 16.0
+	var vp := get_viewport_rect()
+	var px := card_rect.get_center().x - PREVIEW_W * 0.5
+	var py := card_rect.position.y - PREVIEW_H - 16.0
 	px = clamp(px, 4.0, vp.size.x - PREVIEW_W - 4.0)
 	py = max(py, 4.0)
-	_preview_image.position = Vector2(px, py)
+	_preview_renderer.position = Vector2(px, py)
+	_preview_renderer.size = Vector2(PREVIEW_W, PREVIEW_H)
+	_preview_renderer.setup(card, _compute_desc(card))
 
 	_preview_root.show()
 
@@ -645,6 +619,8 @@ func _show_discard_pile() -> void:
 
 
 func _show_pile(title: String, cards: Array) -> void:
+	if _card_zoom_overlay:
+		_card_zoom_overlay.hide_card()
 	for child in _pile_grid.get_children():
 		child.queue_free()
 	_pile_title_label.text = "%s  %d张" % [title, cards.size()]
@@ -661,14 +637,25 @@ func _show_pile(title: String, cards: Array) -> void:
 		for card in cards:
 			var view: Control = CardViewScene.instantiate()
 			view.custom_minimum_size = Vector2(100, 179)
-			view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var tex := _load_card_texture(card)
-			view.setup(card, tex, true)
+			view.mouse_filter = Control.MOUSE_FILTER_STOP
+			view.setup(card, null, true)
+			view.set_hover_motion_enabled(false)
+			view.play_blocked.connect(_show_pile_card_zoom.bind(card, view))
 			_pile_grid.add_child(view)
 	_pile_overlay.modulate.a = 0.0
 	_pile_overlay.show()
 	var t := create_tween()
 	t.tween_property(_pile_overlay, "modulate:a", 1.0, 0.14)
+
+
+func _show_pile_card_zoom(_blocked_card: Dictionary, card: Dictionary, source_view: Control) -> void:
+	_card_zoom_overlay.show_card(card, _compute_desc(card), source_view.get_global_rect())
+
+
+func _hide_pile_overlay() -> void:
+	if _card_zoom_overlay:
+		_card_zoom_overlay.hide_card()
+	_pile_overlay.hide()
 
 
 func _format_statuses(statuses: Dictionary) -> String:
@@ -695,3 +682,40 @@ func _on_result_btn_pressed() -> void:
 		get_tree().change_scene_to_file(REWARD_SCREEN_SCENE)
 	else:
 		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+
+
+func _compute_desc(card: Dictionary) -> String:
+	var upgraded: bool = card.get("is_upgraded", false)
+	var text: String   = card.get("desc", "")
+
+	# 1. 解析 X(Y) 升级括号：未升级取 X，已升级取 Y
+	var rx_bracket := RegEx.new()
+	rx_bracket.compile("(\\d+%?)\\((\\d+%?)\\)")
+	for m in rx_bracket.search_all(text):
+		var pick: String = m.get_string(2) if upgraded else m.get_string(1)
+		text = text.replace(m.get_string(0), pick)
+
+	# 特殊：等量(+N) → 等量+N（已升级）/ 等量（未升级）
+	var rx_equal := RegEx.new()
+	rx_equal.compile("等量\\(\\+(\\d+)\\)")
+	for m in rx_equal.search_all(text):
+		var pick: String = "等量+%s" % m.get_string(1) if upgraded else "等量"
+		text = text.replace(m.get_string(0), pick)
+
+	# 2. 将所有"N 点伤害"替换为计算后的数值
+	#    公式：floor((base + dao_xing) × damage_mult × 状态乘区)
+	var dao_xing: int  = _engine.s.get("player_dao_xing", 0)
+	var mult: float    = float(_engine.s.get("player_damage_mult", 1.0))
+	var st: Dictionary = _engine.s.get("player_statuses", {})
+	if st.get("xin_liu", 0) > 0: mult *= 1.25  # 心流
+	if st.get("ku_jie",  0) > 0: mult *= 0.75  # 枯竭
+	if st.get("xu_ruo",  0) > 0: mult *= 0.75  # 虚弱
+
+	var rx_dmg := RegEx.new()
+	rx_dmg.compile("(\\d+) 点伤害")
+	for m in rx_dmg.search_all(text):
+		var base     := int(m.get_string(1))
+		var computed := int((base + dao_xing) * mult)
+		text = text.replace(m.get_string(0), "%d 点伤害" % computed)
+
+	return text

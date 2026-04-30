@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Godot skill usage
 
-This is a Godot game project. When working on `.gd`, `.tscn`, `.tres`, UI scenes, resources, scene loading, headless validation, exports, or Godot runtime errors, actively use the available Godot-related skills as needed, especially `godot`, `godot-ui`, `game-dev`, and `game-test`.
+This is a Godot game project. When working on `.gd`, `.tscn`, `.tres`, UI scenes, resources, scene loading, headless validation, exports, or Godot runtime errors, actively use the available Godot-related skills as needed, especially `godot`, `godot-ui`, `godot-architect`, `game-dev`, and `game-test`.
 
 ## 项目概述
 
@@ -104,18 +104,44 @@ theme/        # 主题/样式资源（待创建）
 1. **开发前**：先读取 `需求文档/` 中相关文档，确认规格
 2. **开发完成** → 代码自查
 3. **更新需求文档**：将实现细节（节点结构、属性、交互逻辑、场景文件路径）补充到 `需求文档/UI界面.md` 或对应文档中，保持文档与代码同步
-4. 在 `tests/suites/` 下创建或更新对应的测试套件（继承 `TestSuite`）
-5. 在 `tests/TestMain.gd` 的注册区追加 `_run_suite(...)`
-6. 执行测试：`run_tests.bat`（Godot headless 模式，结果写入 `tests/results/latest.txt`）
-7. 读取 `tests/results/latest.txt` 查看结果
-8. 若存在失败，修复后重新执行，直至全部通过
-9. 涉及 DisplayServer/场景跳转的 UI 测试无法 headless 自动化，记录在对应的 `.md` 文件中留人工验证
+4. 在 `tests/suites/` 下创建或更新对应的测试套件
+5. 在 `tests/TestMain.gd` 的 `_initialize()` 注册区追加 `_maybe_run("TestXxx", func(): return load(...).new())`
+6. **精准运行受影响的 suite**（见下方映射表），结果写入 `tests/results/latest.txt`
+7. 若存在失败，修复后重新执行，直至全部通过
+8. 涉及 DisplayServer/场景跳转的 UI 测试无法 headless 自动化，记录在对应的 `.md` 文件中留人工验证
+
+**测试运行命令**：
+
+```batch
+# 精准测试（日常开发，只跑受影响的 suite）
+run_suite.bat TestBattleEngineLogic
+run_suite.bat TestBattleEngineLogic TestCardEffects TestEnemyBehavior
+
+# 全量回归（仅限 git commit 前）
+run_regression.bat
+```
+
+> **严禁在日常开发中随意运行 `run_regression.bat`**，应按改动范围只跑对应 suite。
+
+**改动文件 → 需运行的 Suite 映射**：
+
+| 改动文件 | 运行的 Suite |
+|---|---|
+| `BattleEngine.gd` | TestBattleEngineLogic + TestCardEffects + TestEnemyBehavior |
+| `MapGenerator.gd` | TestMapGenerator |
+| `data/CardDatabase.gd` | TestCardEffects + TestSpiritStones |
+| `data/EnemyDatabase.gd` | TestEnemyBehavior |
+| `data/CharacterDatabase.gd` | TestCharacterSelect |
+| `GameState.gd` | TestSpiritStones |
+| `GlobalSettings.gd` | TestGlobalSettings |
+| `Logger.gd` / `Log.gd` | TestLogger |
+| `BattleScene.gd` / `CardRenderer.gd` | TestHandLayout |
+| 任意 `.gd` 新增或删除 | TestScriptIntegrity（**总是先跑**） |
 
 **测试框架说明**：
-- 测试入口：`tests/TestMain.gd`（extends SceneTree，headless 运行）
-- 基类：`tests/framework/TestSuite.gd`
-- 运行命令：项目根目录执行 `run_tests.bat`
+- 入口：`tests/TestMain.gd`（extends SceneTree，headless 运行）
 - 结果文件：`tests/results/latest.txt`（退出码 0=通过，1=失败）
+- 诊断工具：`tests/suites/TestEnemyDebug.gd`（不纳入自动化，手动调试时直接 `-s` 运行）
 
 ## 开发注意事项
 
