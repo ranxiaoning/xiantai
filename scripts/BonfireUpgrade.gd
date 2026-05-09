@@ -112,7 +112,7 @@ func _build_ui() -> void:
 
 
 # hovered 信号：(card_data, rect)；bind 追加 upgraded_data → 回调收到 (card_data, rect, upgraded_data)
-func _on_card_hovered(original_cd: Dictionary, rect: Rect2, upgraded_data: Dictionary) -> void:
+func _on_card_hovered(_original_cd: Dictionary, rect: Rect2, upgraded_data: Dictionary) -> void:
 	_card_zoom_overlay.show_card(upgraded_data, "", rect)
 
 
