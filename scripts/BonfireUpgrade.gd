@@ -12,6 +12,9 @@ const CARD_ASPECT := 2752.0 / 1536.0
 const PAD_X       := 96.0
 
 var _card_zoom_overlay
+var _selected_index: int = -1
+var _selected_view: Control = null
+var _confirm_btn: Button = null
 
 
 func _ready() -> void:
@@ -94,22 +97,36 @@ func _build_ui() -> void:
 			view.modulate.a = 0.4
 			view.play_blocked.connect(_show_card_zoom.bind(display_data, view))
 		else:
-			view.setup(display_data, null, false)  # enabled，点击即升级
-			view.activated.connect(_on_card_selected.bind(i))
+			view.setup(display_data, null, false)  # enabled，点击选中
+			view.activated.connect(_on_card_clicked.bind(i, view))
 
 		grid.add_child(view)
+
+	# 底部按钮行
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 24)
+	btn_row.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	btn_row.offset_top    = -62
+	btn_row.offset_bottom = -10
+	add_child(btn_row)
+
+	_confirm_btn = Button.new()
+	_confirm_btn.text       = "确认升级"
+	_confirm_btn.disabled   = true
+	_confirm_btn.focus_mode = Control.FOCUS_NONE
+	_confirm_btn.custom_minimum_size = Vector2(160, 48)
+	_confirm_btn.add_theme_font_size_override("font_size", 20)
+	_confirm_btn.pressed.connect(_on_confirm_upgrade)
+	btn_row.add_child(_confirm_btn)
 
 	var skip_btn := Button.new()
 	skip_btn.text       = "跳过"
 	skip_btn.focus_mode = Control.FOCUS_NONE
+	skip_btn.custom_minimum_size = Vector2(120, 48)
 	skip_btn.add_theme_font_size_override("font_size", 20)
-	skip_btn.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	skip_btn.offset_left   = vp.x * 0.35
-	skip_btn.offset_right  = -vp.x * 0.35
-	skip_btn.offset_top    = -58
-	skip_btn.offset_bottom = -8
 	skip_btn.pressed.connect(_on_skip)
-	add_child(skip_btn)
+	btn_row.add_child(skip_btn)
 
 
 # play_blocked 信号：(card_data)；bind 追加 display_data, source_view → 回调收到 (cd, display_data, source_view)
@@ -117,11 +134,24 @@ func _show_card_zoom(_cd: Dictionary, display_data: Dictionary, source_view: Con
 	_card_zoom_overlay.show_card(display_data, "", source_view.get_global_rect())
 
 
-# activated 信号：(card_data)；bind 追加 deck_index → 回调收到 (card_data, deck_index)
-func _on_card_selected(_card_data: Dictionary, deck_index: int) -> void:
-	var base_id := GameState.deck[deck_index].trim_suffix("+")
-	GameState.deck[deck_index] = base_id + "+"
-	Log.info("BonfireUpgrade", "升级卡牌：%s+ (index=%d)" % [base_id, deck_index])
+# activated 信号：(card_data)；bind 追加 deck_index, source_view
+func _on_card_clicked(_card_data: Dictionary, deck_index: int, source_view: Control) -> void:
+	# 取消上一张选中的高亮
+	if _selected_view != null and is_instance_valid(_selected_view):
+		_selected_view.modulate = Color.WHITE
+
+	_selected_index = deck_index
+	_selected_view  = source_view
+	source_view.modulate = Color(1.0, 0.88, 0.4, 1.0)  # 金色高亮
+	_confirm_btn.disabled = false
+
+
+func _on_confirm_upgrade() -> void:
+	if _selected_index < 0:
+		return
+	var base_id := GameState.deck[_selected_index].trim_suffix("+")
+	GameState.deck[_selected_index] = base_id + "+"
+	Log.info("BonfireUpgrade", "升级卡牌：%s+ (index=%d)" % [base_id, _selected_index])
 	get_tree().change_scene_to_file(GAME_MAP_SCENE)
 
 
