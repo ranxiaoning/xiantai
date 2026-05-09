@@ -92,6 +92,7 @@ var _tex_cache: Dictionary = {}        # res://路径 → Texture2D 缓存（避
 var _card_zoom_overlay = null
 var _deck_upgrade_check: CheckBox = null
 var _deck_preview_upgraded := false
+var _test_mode := false
 
 
 func _ready() -> void:
@@ -105,6 +106,7 @@ func _ready() -> void:
 	victory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_card_zoom_overlay()
 	_build_deck_upgrade_check()
+	_build_test_mode_toggle()
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -336,7 +338,7 @@ func _update_node_visuals() -> void:
 		var btn: BaseButton     = _node_buttons[node_id]
 		var nd: Dictionary      = nodes[node_id]
 		var visited: bool       = bool(nd["visited"])
-		var is_accessible: bool = accessible.has(node_id)
+		var is_accessible: bool = accessible.has(node_id) or (_test_mode and GameState.map_started)
 		var is_current: bool    = (node_id == current_id and visited)
 		var floor: int          = int(nd["floor"])
 
@@ -873,6 +875,30 @@ func _on_art_prev() -> void:
 func _on_art_next() -> void:
 	_art_page += 1
 	_refresh_artifacts()
+
+
+# ── 测试模式开关 ──────────────────────────────────────────────────
+
+func _build_test_mode_toggle() -> void:
+	var toggle := CheckBox.new()
+	toggle.text = "[DEV] 自由移动"
+	toggle.focus_mode = Control.FOCUS_NONE
+	toggle.button_pressed = false
+	toggle.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	toggle.offset_left   = -170.0
+	toggle.offset_top    = 6.0
+	toggle.offset_right  = -6.0
+	toggle.offset_bottom = 34.0
+	toggle.z_index = 50
+	toggle.add_theme_font_size_override("font_size", 13)
+	toggle.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
+	toggle.toggled.connect(_on_test_mode_toggled)
+	add_child(toggle)
+
+
+func _on_test_mode_toggled(pressed: bool) -> void:
+	_test_mode = pressed
+	_update_node_visuals()
 
 
 # ── 入场演出 ──────────────────────────────────────────────────────
