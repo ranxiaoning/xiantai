@@ -42,7 +42,7 @@ func _build_ui() -> void:
 	add_child(title)
 
 	var hint := Label.new()
-	hint.text = "卡牌已显示升级后效果。点击选择升级；已升级卡牌（置灰）点击可查看详情。"
+	hint.text = "点击一张卡牌预览升级效果，再点确认升级。已升级卡牌（置灰）点击可查看。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 16)
 	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
@@ -82,22 +82,19 @@ func _build_ui() -> void:
 		if card_data.is_empty():
 			continue
 
-		# 直接在格子里显示升级后效果，方便玩家对比选择
-		var display_data := card_data.duplicate(true)
-		if not already_upgraded:
-			display_data["is_upgraded"] = true
-
 		var view: Control = CardViewScene.instantiate()
 		view.custom_minimum_size = Vector2(card_w, card_h)
 		view.mouse_filter        = Control.MOUSE_FILTER_STOP
 		view.set_hover_motion_enabled(false)
 
 		if already_upgraded:
-			view.setup(display_data, null, true)   # disabled，已升级
+			# 已升级：显示当前（升级后）状态，置灰不可选，点击可查看
+			view.setup(card_data, null, true)
 			view.modulate.a = 0.4
-			view.play_blocked.connect(_show_card_zoom.bind(display_data, view))
+			view.play_blocked.connect(_show_card_zoom.bind(card_data, view))
 		else:
-			view.setup(display_data, null, false)  # enabled，点击选中
+			# 未升级：显示当前（基础）状态，点击选中并弹出升级预览
+			view.setup(card_data, null, false)
 			view.activated.connect(_on_card_clicked.bind(i, view))
 
 		grid.add_child(view)
@@ -135,7 +132,7 @@ func _show_card_zoom(_cd: Dictionary, display_data: Dictionary, source_view: Con
 
 
 # activated 信号：(card_data)；bind 追加 deck_index, source_view
-func _on_card_clicked(_card_data: Dictionary, deck_index: int, source_view: Control) -> void:
+func _on_card_clicked(card_data: Dictionary, deck_index: int, source_view: Control) -> void:
 	# 取消上一张选中的高亮
 	if _selected_view != null and is_instance_valid(_selected_view):
 		_selected_view.modulate = Color.WHITE
@@ -144,6 +141,11 @@ func _on_card_clicked(_card_data: Dictionary, deck_index: int, source_view: Cont
 	_selected_view  = source_view
 	source_view.modulate = Color(1.0, 0.88, 0.4, 1.0)  # 金色高亮
 	_confirm_btn.disabled = false
+
+	# 弹出升级预览（升级后效果），点击 overlay 关闭即可，确认按钮仍有效
+	var upgraded_data := card_data.duplicate(true)
+	upgraded_data["is_upgraded"] = true
+	_card_zoom_overlay.show_card(upgraded_data, "", source_view.get_global_rect())
 
 
 func _on_confirm_upgrade() -> void:
