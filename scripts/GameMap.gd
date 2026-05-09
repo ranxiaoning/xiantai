@@ -107,6 +107,10 @@ func _ready() -> void:
 	_build_card_zoom_overlay()
 	_build_deck_upgrade_check()
 	_build_test_mode_toggle()
+	var in_game_menu := InGameMenu.new()
+	add_child(in_game_menu)
+	in_game_menu.abandon_confirmed.connect(_on_menu_abandon_confirmed)
+	in_game_menu.return_to_menu_confirmed.connect(_on_menu_return_confirmed)
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -884,11 +888,11 @@ func _build_test_mode_toggle() -> void:
 	toggle.text = "[DEV] 自由移动"
 	toggle.focus_mode = Control.FOCUS_NONE
 	toggle.button_pressed = false
-	toggle.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	toggle.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	toggle.offset_left   = -170.0
-	toggle.offset_top    = 6.0
+	toggle.offset_top    = -34.0
 	toggle.offset_right  = -6.0
-	toggle.offset_bottom = 34.0
+	toggle.offset_bottom = -6.0
 	toggle.z_index = 50
 	toggle.add_theme_font_size_override("font_size", 13)
 	toggle.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
@@ -899,6 +903,15 @@ func _build_test_mode_toggle() -> void:
 func _on_test_mode_toggled(pressed: bool) -> void:
 	_test_mode = pressed
 	_update_node_visuals()
+
+
+func _on_menu_abandon_confirmed() -> void:
+	GameState.reset_run()
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+
+
+func _on_menu_return_confirmed() -> void:
+	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 
 # ── 入场演出 ──────────────────────────────────────────────────────

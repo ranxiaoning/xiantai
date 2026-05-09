@@ -44,6 +44,7 @@ func _initialize() -> void:
 	_maybe_run("TestHandLayout",       func(): return load("res://tests/suites/TestHandLayout.gd").new())
 	_maybe_run("TestRewardScreen",     func(): return load("res://tests/suites/TestRewardScreen.gd").new())
 	_maybe_run("TestGameMapFlow",      func(): return load("res://tests/suites/TestGameMapFlow.gd").new())
+	_maybe_run("TestInGameMenu",       func(): return load("res://tests/suites/TestInGameMenu.gd").new())
 	_maybe_run("TestCharacterSelect",  func(): return load("res://tests/suites/TestCharacterSelect.gd").new())
 	_maybe_run("TestBattleEngineLogic",func(): return load("res://tests/suites/TestBattleEngineLogic.gd").new())
 	_maybe_run("TestMapGenerator",     func(): return load("res://tests/suites/TestMapGenerator.gd").new())

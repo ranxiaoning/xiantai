@@ -50,6 +50,11 @@ func _ready() -> void:
 	start_btn.button_down.connect(_on_start_button_down)
 	start_btn.button_up.connect(_on_start_button_up)
 	call_deferred("_animate_scene_in")
+	# 局内菜单
+	var in_game_menu := InGameMenu.new()
+	add_child(in_game_menu)
+	in_game_menu.abandon_confirmed.connect(_on_menu_abandon_confirmed)
+	in_game_menu.return_to_menu_confirmed.connect(_on_menu_return_confirmed)
 
 
 func _configure_portrait_layout() -> void:
@@ -280,3 +285,12 @@ func _on_start_button_up() -> void:
 func _on_btn_start_pressed() -> void:
 	GameState.start_run(_selected_char_id)
 	get_tree().change_scene_to_file(GAME_MAP_SCENE)
+
+
+func _on_menu_abandon_confirmed() -> void:
+	GameState.reset_run()
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+func _on_menu_return_confirmed() -> void:
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

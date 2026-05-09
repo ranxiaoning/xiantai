@@ -69,6 +69,29 @@ func start_run(char_id: String) -> void:
 	Log.info("GameState", "新局开始：%s  HP=%d  地图层数=%d" % [character["name"], current_hp, map_floors.size()])
 
 
+func reset_run() -> void:
+	character = {}
+	current_hp = 0
+	deck.clear()
+	ling_li_regen_bonus = 0
+	dao_xing_battle_start = 0
+	spirit_stones = 0
+	consumables.clear()
+	artifacts.clear()
+	spawn_node_visited = false
+	pending_battle_node = ""
+	map_nodes = {}
+	map_floors = []
+	map_current_floor = 0
+	map_accessible_ids.clear()
+	map_last_node_id = ""
+	map_started = false
+	map_intro_played = false
+	pending_battle_node_type = ""
+	pending_battle_node_floor = 0
+	Log.info("GameState", "已放弃本局，数据已清除")
+
+
 func get_ling_li_regen() -> int:
 	return character.get("ling_li_regen", 3) + ling_li_regen_bonus
 
