@@ -47,6 +47,14 @@ const NODE_TEXTURES := {
 @onready var hp_label:        Label           = %HPLabel
 @onready var _stone_label:    Label           = %SpiritStoneLabel
 @onready var _deck_btn:       Button          = %DeckBtn
+@onready var _bag_prev:       Button          = $Header/BagBar/BagPrevBtn
+@onready var _bag_next:       Button          = $Header/BagBar/BagNextBtn
+@onready var _bag_slots:      HBoxContainer   = $Header/BagBar/BagSlotContainer
+@onready var _intro_overlay:  Control         = $IntroOverlay
+@onready var _intro_label:    Label           = $IntroOverlay/IntroLabel
+@onready var _art_prev:       Button          = $TreasureBar/TreasurePrevBtn
+@onready var _art_next:       Button          = $TreasureBar/TreasureNextBtn
+@onready var _art_slots:      HBoxContainer   = $TreasureBar/TreasureSlotContainer
 @onready var _deck_overlay:   Control         = %DeckOverlay
 @onready var _deck_count:     Label           = %DeckCount
 @onready var _deck_grid:      GridContainer   = %DeckGrid
@@ -63,6 +71,14 @@ const NODE_TEXTURES := {
 @onready var victory_label:  Label          = %VictoryLabel
 @onready var victory_btn:    Button         = %VictoryBtn
 
+# ── 背包栏 ────────────────────────────────────────────────────────
+const SLOTS_PER_PAGE := 5
+var _bag_page := 0
+
+# ── 宝物栏 ────────────────────────────────────────────────────────
+const ART_PER_PAGE := 10
+var _art_page := 0
+
 # ── 内部状态 ──────────────────────────────────────────────────────
 var _draw_layer: Control = null        # 连线层（最底层）
 var _ring_layer: Control = null        # 光环层（最顶层，盖在节点之上）
@@ -74,6 +90,8 @@ var _pulse_tween: Tween = null         # 当前节点脉冲动画
 var _pulse_target: BaseButton = null   # 当前被脉冲动画控制的节点
 var _tex_cache: Dictionary = {}        # res://路径 → Texture2D 缓存（避免重复读文件）
 var _card_zoom_overlay = null
+var _deck_upgrade_check: CheckBox = null
+var _deck_preview_upgraded := false
 
 
 func _ready() -> void:
@@ -86,6 +104,7 @@ func _ready() -> void:
 	victory_panel.z_index = 100
 	victory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_card_zoom_overlay()
+	_build_deck_upgrade_check()
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -94,6 +113,17 @@ func _ready() -> void:
 	_build_map()
 	_update_hp_label()
 	_update_stone_label()
+	_bag_prev.pressed.connect(_on_bag_prev)
+	_bag_next.pressed.connect(_on_bag_next)
+	_refresh_bag()
+	_art_prev.pressed.connect(_on_art_prev)
+	_art_next.pressed.connect(_on_art_next)
+	_refresh_artifacts()
+	if not GameState.map_intro_played:
+		GameState.map_intro_played = true
+		_play_intro_animation()
+	else:
+		_intro_overlay.hide()
 
 	# 等一帧后滚动到当前层
 	await get_tree().process_frame
@@ -458,6 +488,7 @@ func _on_node_btn_pressed(node_id: String) -> void:
 	# 访问节点（标记状态、更新accessible）
 	GameState.visit_map_node(node_id)
 	_pending_node_id = node_id
+	_update_hp_label()
 
 	match ntype:
 		"normal", "elite", "boss":
@@ -501,7 +532,7 @@ func _show_bonfire_popup(node_id: String) -> void:
 
 	popup_title.text   = "🔥 篝火"
 	popup_desc.text    = "你在篝火旁调息，伤势稍有恢复。\n\n[已回复 %d 点生命值]" % heal
-	popup_btn1.text    = "升级卡牌（未实装）"
+	popup_btn1.text    = "升级卡牌"
 	popup_btn1.visible = true
 	popup_btn2.visible = false
 	popup_close_btn.text = "继续前行"
@@ -529,8 +560,8 @@ func _show_event_popup(_node_id: String) -> void:
 # ── 弹窗信号 ─────────────────────────────────────────────────────
 
 func _on_popup_btn1_pressed() -> void:
-	# 预留：篝火升级 / 商店购买
-	pass
+	node_popup.hide()
+	get_tree().change_scene_to_file("res://scenes/BonfireUpgrade.tscn")
 
 
 func _on_popup_btn2_pressed() -> void:
@@ -592,6 +623,17 @@ func _on_dim_bg_input(event: InputEvent) -> void:
 		_deck_overlay.hide()
 
 
+func _get_deck_card_size() -> Vector2i:
+	const COLS := 5
+	const H_SEP := 10
+	const PAD_X := 96
+	const CARD_ASPECT := 2752.0 / 1536.0
+	var vp := get_viewport_rect().size
+	var card_w := int((vp.x - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
+	var card_h := int(card_w * CARD_ASPECT)
+	return Vector2i(card_w, card_h)
+
+
 func _open_deck() -> void:
 	# 缩略卡按 5 列铺满弹窗宽度；高度自然形成纵向滚动。
 	const COLS    := 5
@@ -621,19 +663,54 @@ func _populate_deck_grid(card_w: int, card_h: int) -> void:
 		var card_data := CardDatabase.get_card(card_id)
 		if card_data.is_empty():
 			continue
+		var display_card := _make_deck_display_card(card_data)
 
 		var view: Control = CardViewScene.instantiate()
 		view.custom_minimum_size = Vector2(card_w, card_h)
 		view.mouse_filter        = Control.MOUSE_FILTER_STOP
-		view.setup(card_data, null, true)
+		view.setup(display_card, null, true)
 		view.set_hover_motion_enabled(false)
-		view.play_blocked.connect(_show_deck_card_zoom.bind(card_data, view))
+		view.play_blocked.connect(_show_deck_card_zoom.bind(display_card, view))
 		_deck_grid.add_child(view)
 
 
 func _build_card_zoom_overlay() -> void:
 	_card_zoom_overlay = CardZoomOverlayScript.new()
 	add_child(_card_zoom_overlay)
+
+
+func _build_deck_upgrade_check() -> void:
+	_deck_upgrade_check = CheckBox.new()
+	_deck_upgrade_check.text = "查看升级"
+	_deck_upgrade_check.button_pressed = _deck_preview_upgraded
+	_deck_upgrade_check.focus_mode = Control.FOCUS_NONE
+	_deck_upgrade_check.anchor_left = 0.0
+	_deck_upgrade_check.anchor_top = 1.0
+	_deck_upgrade_check.anchor_right = 0.0
+	_deck_upgrade_check.anchor_bottom = 1.0
+	_deck_upgrade_check.offset_left = 24.0
+	_deck_upgrade_check.offset_top = -58.0
+	_deck_upgrade_check.offset_right = 170.0
+	_deck_upgrade_check.offset_bottom = -22.0
+	_deck_upgrade_check.z_index = 20
+	_deck_upgrade_check.add_theme_font_size_override("font_size", 18)
+	_deck_upgrade_check.add_theme_color_override("font_color", Color(0.95, 0.84, 0.44))
+	_deck_upgrade_check.toggled.connect(_on_deck_preview_upgrade_toggled)
+	_deck_overlay.add_child(_deck_upgrade_check)
+
+
+func _make_deck_display_card(card_data: Dictionary) -> Dictionary:
+	if not _deck_preview_upgraded:
+		return card_data
+	var display_card := card_data.duplicate(true)
+	display_card["is_upgraded"] = true
+	return display_card
+
+
+func _on_deck_preview_upgrade_toggled(pressed: bool) -> void:
+	_deck_preview_upgraded = pressed
+	var card_size := _get_deck_card_size()
+	_populate_deck_grid(card_size.x, card_size.y)
 
 
 func _show_deck_card_zoom(_blocked_card: Dictionary, card_data: Dictionary, source_view: Control) -> void:
@@ -643,3 +720,167 @@ func _show_deck_card_zoom(_blocked_card: Dictionary, card_data: Dictionary, sour
 func _reset_deck_scroll() -> void:
 	_deck_scroll.scroll_horizontal = 0
 	_deck_scroll.scroll_vertical = 0
+
+
+# ── 背包道具栏 ────────────────────────────────────────────────────
+
+func _refresh_bag() -> void:
+	for c in _bag_slots.get_children():
+		c.queue_free()
+
+	var items: Array = GameState.consumables
+	var start := _bag_page * SLOTS_PER_PAGE
+
+	for i in range(SLOTS_PER_PAGE):
+		var idx := start + i
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(44, 44)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.focus_mode = Control.FOCUS_NONE
+
+		if idx < items.size():
+			var item: Dictionary = items[idx]
+			btn.add_theme_stylebox_override("normal",   _bag_slot_style(true))
+			btn.add_theme_stylebox_override("hover",    _bag_slot_style(true, true))
+			btn.add_theme_stylebox_override("pressed",  _bag_slot_style(true))
+			btn.add_theme_stylebox_override("disabled", _bag_slot_style(true))
+			btn.add_theme_stylebox_override("focus",    _bag_slot_style(true))
+			btn.text = (item.get("name", "?") as String).left(2)
+			btn.tooltip_text = "%s\n%s" % [item.get("name", ""), item.get("effect_desc", "")]
+			btn.pressed.connect(_on_use_item.bind(idx))
+		else:
+			var empty_style := _bag_slot_style(false)
+			btn.add_theme_stylebox_override("normal",   empty_style)
+			btn.add_theme_stylebox_override("hover",    empty_style)
+			btn.add_theme_stylebox_override("pressed",  empty_style)
+			btn.add_theme_stylebox_override("disabled", empty_style)
+			btn.add_theme_stylebox_override("focus",    empty_style)
+			btn.text = ""
+			btn.disabled = true
+			btn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		_bag_slots.add_child(btn)
+
+	# 第一页不显示左箭头；当前页能容下所有物品时不显示右箭头
+	_bag_prev.visible = (_bag_page > 0)
+	_bag_next.visible = ((_bag_page + 1) * SLOTS_PER_PAGE < items.size())
+
+
+func _bag_slot_style(filled: bool, hovered: bool = false) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.corner_radius_top_left    = 22
+	s.corner_radius_top_right   = 22
+	s.corner_radius_bottom_left = 22
+	s.corner_radius_bottom_right = 22
+	s.border_width_left   = 2
+	s.border_width_right  = 2
+	s.border_width_top    = 2
+	s.border_width_bottom = 2
+	if filled:
+		s.bg_color     = Color(0.28, 0.22, 0.10, 0.9) if not hovered else Color(0.38, 0.30, 0.14, 0.95)
+		s.border_color = Color(0.82, 0.70, 0.28, 0.95)
+	else:
+		s.bg_color     = Color(0.08, 0.08, 0.08, 0.45)
+		s.border_color = Color(0.45, 0.40, 0.28, 0.35)
+	return s
+
+
+func _on_bag_prev() -> void:
+	_bag_page = maxi(0, _bag_page - 1)
+	_refresh_bag()
+
+
+func _on_bag_next() -> void:
+	_bag_page += 1
+	_refresh_bag()
+
+
+func _on_use_item(idx: int) -> void:
+	GameState.remove_consumable(idx)
+	var max_page := maxi(0, ceili(float(GameState.consumables.size()) / SLOTS_PER_PAGE) - 1)
+	_bag_page = mini(_bag_page, max_page)
+	_refresh_bag()
+
+
+# ── 宝物栏 ───────────────────────────────────────────────────────
+
+func _refresh_artifacts() -> void:
+	for c in _art_slots.get_children():
+		c.queue_free()
+
+	var arts: Array = GameState.artifacts
+	var start := _art_page * ART_PER_PAGE
+	var count := mini(ART_PER_PAGE, arts.size() - start)
+
+	for i in range(count):
+		var art: Dictionary = arts[start + i]
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(36, 36)
+		btn.add_theme_font_size_override("font_size", 10)
+		btn.focus_mode = Control.FOCUS_NONE
+		var rarity: String = art.get("rarity", "yellow")
+		btn.add_theme_stylebox_override("normal",  _art_slot_style(rarity))
+		btn.add_theme_stylebox_override("hover",   _art_slot_style(rarity, true))
+		btn.add_theme_stylebox_override("pressed", _art_slot_style(rarity))
+		btn.add_theme_stylebox_override("focus",   _art_slot_style(rarity))
+		btn.text = (art.get("name", "?") as String).left(2)
+		btn.tooltip_text = "[%s] %s\n%s" % [
+			art.get("type", "passive"), art.get("name", ""), art.get("effect_desc", "")
+		]
+		_art_slots.add_child(btn)
+
+	_art_prev.visible = (_art_page > 0)
+	_art_next.visible = ((_art_page + 1) * ART_PER_PAGE < arts.size())
+
+
+func _art_slot_style(rarity: String, hovered: bool = false) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.corner_radius_top_left    = 5
+	s.corner_radius_top_right   = 5
+	s.corner_radius_bottom_left = 5
+	s.corner_radius_bottom_right = 5
+	s.border_width_left   = 2
+	s.border_width_right  = 2
+	s.border_width_top    = 2
+	s.border_width_bottom = 2
+	var bg: Color
+	var border: Color
+	match rarity:
+		"mystique":
+			bg     = Color(0.15, 0.12, 0.30, 0.9)
+			border = Color(0.60, 0.50, 0.90, 0.9)
+		"earth":
+			bg     = Color(0.10, 0.22, 0.10, 0.9)
+			border = Color(0.30, 0.75, 0.30, 0.9)
+		"heaven":
+			bg     = Color(0.25, 0.08, 0.08, 0.9)
+			border = Color(0.90, 0.30, 0.20, 0.9)
+		_:  # yellow
+			bg     = Color(0.25, 0.20, 0.08, 0.9)
+			border = Color(0.80, 0.68, 0.22, 0.9)
+	if hovered:
+		bg = Color(bg.r + 0.08, bg.g + 0.08, bg.b + 0.05, bg.a)
+	s.bg_color     = bg
+	s.border_color = border
+	return s
+
+
+func _on_art_prev() -> void:
+	_art_page = maxi(0, _art_page - 1)
+	_refresh_artifacts()
+
+
+func _on_art_next() -> void:
+	_art_page += 1
+	_refresh_artifacts()
+
+
+# ── 入场演出 ──────────────────────────────────────────────────────
+
+func _play_intro_animation() -> void:
+	_intro_label.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(_intro_label, "modulate:a", 1.0, 0.9).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(1.6)
+	tw.tween_property(_intro_label, "modulate:a", 0.0, 0.9).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_intro_overlay.hide)
