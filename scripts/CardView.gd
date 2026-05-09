@@ -41,6 +41,11 @@ func set_usable(usable: bool) -> void:
 	_dimmer.visible = false
 
 
+func set_description_segments_override(segments: Array) -> void:
+	_ensure_renderer()
+	_renderer.set_description_segments_override(segments)
+
+
 func set_hover_motion_enabled(enabled: bool) -> void:
 	_hover_motion_enabled = enabled
 

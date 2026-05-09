@@ -175,7 +175,7 @@ CharacterSelect (Control)
 │   │   ├── CharName (Label) *
 │   │   └── Lore (Label) *
 │   └── StatsCard/StatsPad/StatsPanel
-│       ├── Stats Grid（HPValue* / HPRegenValue* / LingLiValue* / DaoHuiValue* / DmgValue*）
+│       ├── Stats Grid（HPValue* / HPRegenValue* / LingLiValue* / LingLiRegenValue* / DaoHuiValue* / DmgValue*）
 │       ├── TalentPanel/TalentPad/TalentDesc *
 │       └── SkillPanel/SkillPad/SkillDesc *
 └── StartBtn (Button) *           # 开始轮回
@@ -189,6 +189,7 @@ CharacterSelect (Control)
 - `CharacterDatabase.get_sect_data(sect)` → 门派元数据（`bg_path` 等）
 - `CharacterDatabase.get_sect_characters(sect)` → 该门派所有角色列表
 - `CharacterDatabase.get_character(id)` → 单个角色完整数据（含 `portrait_path`）
+- 初始资质中【灵力上限】与【灵力回复】分别独立成行展示，不把回复值写在括号里。
 
 ### 扩展指南
 
@@ -241,15 +242,15 @@ CharacterSelect (Control)
 
 | 区域 | 锚点 | 内容 |
 |------|------|------|
-| Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，金色）|
+| Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，含 24x24 图标 + 数值，金色）|
 | MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
 | NodePopup | 水平 15–85%，垂直 15–85%，`z_index=100` | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏，显示时覆盖地图节点与连线 |
 | VictoryPanel | 水平 20–80%，垂直 20–80%，`z_index=100` | Boss 击败后胜利面板，初始隐藏 |
-| CardZoomOverlay | 全屏运行时控件，`z_index=250` | 卡组查看时点击小卡显示居中大卡，再次点击遮罩/大卡关闭 |
+| CardZoomOverlay | 全屏运行时控件，`z_index=250` | 卡组查看时点击小卡显示居中大卡，采用高质量 Shader 实时背景虚化（Blur）效果 |
 | MapDrawLayer | MapContainer 全尺寸 | 节点连线绘制层，固定 `1280 × 1520`，位于节点按钮下方 |
 | RingDrawLayer | MapContainer 全尺寸 | 当前节点外环绘制层，位于节点按钮上方 |
 
-地图卡组弹窗每次打开时 `DeckScroll` 重置到顶部；卡牌缩略图按 5 列铺满弹窗宽度并通过纵向滚动浏览。卡组/牌堆查看中的小卡使用 `CardView.set_hover_motion_enabled(false)` 禁用手牌悬浮位移动画，只保留点击放大交互。`CardZoomOverlay` 打开时从被点击卡牌的当前位置缓动放大到屏幕中央，同时遮罩淡入弱化其他卡牌；点击遮罩或大卡后反向缩回原卡位置并关闭。
+地图卡组弹窗每次打开时 `DeckScroll` 重置到顶部；卡牌缩略图按 5 列铺满弹窗宽度并通过纵向滚动浏览。卡组/牌堆查看中的小卡使用 `CardView.set_hover_motion_enabled(false)` 禁用手牌悬浮位移动画，只保留点击放大交互。`CardZoomOverlay` 打开时从被点击卡牌的当前位置缓动放大到屏幕中央，同时背景通过 `textureLod` 实现平滑的毛玻璃虚化（Blur）效果，弱化背景干扰；点击遮罩或大卡后反向缩回原卡位置并关闭。
 
 ### MapContainer 布局常量
 
@@ -330,6 +331,8 @@ CharacterSelect → start_run() → GameMap 加载
 | `map_current_floor` | int | 最近访问的层号（0=未开始） |
 | `map_accessible_ids` | Array[String] | 当前可点击的节点 ID 列表 |
 | `map_started` | bool | 是否已通过起始节点进入地图 |
+| `map_intro_played` | bool | 当前 run 是否已播放过"登仙台 / 第一重天"入场标题；战斗后回地图不重复播放 |
+| `current_hp` | int | 地图与战斗共享的当前生命值；战斗扣血实时同步，战斗胜利或经过非战斗节点后回复【生命回复】点并在地图 HP 显示中保留 |
 | `pending_battle_node` | String | 待进入的战斗节点 ID |
 | `pending_battle_node_type` | String | 节点类型（normal/elite/boss） |
 | `pending_battle_node_floor` | int | 节点层号，供 EnemyDatabase 选敌 |
@@ -344,6 +347,8 @@ CharacterSelect → start_run() → GameMap 加载
 - [ ] 起始节点放大缩小动画以自身中心为轴，不向左上或其他方向偏移
 - [ ] 点击"踏入轮回"后第1层节点全部解锁，地图滚动至第1层
 - [ ] 点击战斗节点正确跳转战斗场景，返回后下一层解锁
+- [ ] 战斗结束回地图后 HP 保留战斗剩余生命，并额外回复角色【生命回复】点（不超过生命上限）
+- [ ] 经过商店/执念/篝火等非战斗节点后 HP 也按【生命回复】点更新，地图左上 HP 显示准确
 - [ ] 起始节点在访问后变灰，不可再次点击
 - [ ] 起始节点→第1层连线在访问后变为金色
 - [ ] 篝火节点回复30%HP，HP 显示正确更新
@@ -407,7 +412,8 @@ Battle (Control, Theme: main_theme.tres)
 - **卡牌放大查看**：地图卡组、战斗抽牌堆、战斗弃牌堆的小卡点击后调用 `scripts/CardZoomOverlay.gd` 显示居中大卡；再次点击遮罩或大卡关闭放大层，原查看弹窗保持打开。
 - **抽牌动画**：普通抽牌、战斗开始抽 3 张、牌库耗尽后的洗牌重抽都从抽牌堆锚点飞入手牌；洗牌时旧手牌先飞回抽牌堆，再延迟飞出重抽卡。
 - **悬停反馈**：卡牌悬停时 `z_index` 提升，平滑向上弹出并放大。
-- **卡牌渲染**：所有卡牌显示统一通过 `scripts/CardRenderer.gd` 运行时合成，不依赖 `assets/card/generated/` 整卡图；渲染器以 `assets/card/template.png` 为底板，按 `assets/card/gen_all_cards.py` 的坐标规则叠加原画、费用、名称、类型和深棕描述文字；战斗悬停预览向渲染器传入实时计算后的描述，不创建黑底、纸面或边框背景。
+- **卡牌渲染**：所有卡牌显示统一通过 `scripts/CardRenderer.gd` 运行时合成，不依赖 `assets/card/generated/` 整卡图；渲染器以 `assets/card/template.png` 为底板，按 `assets/card/gen_all_cards.py` 的坐标规则叠加原画、费用、名称、类型和深棕描述文字；普通卡牌描述继续使用 `Label` 保持居中排版，战斗手牌、牌堆放大与悬停预览在需要数字变色时由 `scripts/BattleScene.gd` 传入同一份实时计算后的富文本片段，富文本层必须透明且与普通描述框居中对齐，避免小卡与大卡数值不一致。
+- **战斗卡牌数值颜色**：战斗中描述里的伤害数值以当前战斗状态重算，并与该卡当前升级状态下的原始数值比较；高于原始值时仅数字显示绿色，低于原始值时仅数字显示红色，相等时数字保持深棕/黑色，单位和其余文字不变。
 - **提示信息**：资源不足时通过 Toast 弹出提示。
 ---
 
@@ -422,42 +428,42 @@ Battle (Control, Theme: main_theme.tres)
 ```
 RewardScreen (Control)
 ├── BG (ColorRect) — 深色全屏背景
-├── BigBag (PanelContainer, 大包容器 8%~92% 宽, 5%~95% 高)
-│   └── BigBagMargin → MainVBox
-│       ├── TitleLabel "战斗奖励"
-│       ├── ContentHBox (stretch 3:1)
-│       │   ├── CardBag (PanelContainer, 卡牌小包)
-│       │   │   └── CardBagMargin → CardBagVBox
-│       │   │       ├── CardBagTitle "择取功法（3选1）"
-│       │   │       ├── %CardsRow (HBoxContainer) — 动态填入3个卡槽
-│       │   │       ├── CardHint  — 操作提示文字
-│       │   │       └── CardActionRow
-│       │   │           ├── %ConfirmBtn "纳入牌组"（初始禁用）
-│       │   │           └── %SkipBtn "跳过"
-│       │   └── CoinBag (PanelContainer, 灵石小包)
-│       │       └── CoinBagMargin → CoinBagVBox
-│       │           ├── CoinBagTitle "灵石所得"
-│       │           ├── %StoneAmountLabel "+30 灵石" / "+60 灵石"
-│       │           └── %StoneHintLabel "已收入囊中（现有 N 灵石）"
-│       └── %ContinueBtn "继续前行"（卡牌已决定后启用）
-└── %CardDetailPopup (PanelContainer, hidden, z=100) — 卡牌详情弹窗
-    └── DetailMargin → DetailVBox
-        ├── %DetailImage (TextureRect)
-        ├── %DetailName
-        ├── %DetailDesc
-        └── CloseDetailBtn "关闭"
+├── RewardPopup (PanelContainer) — 初始奖励弹窗
+│   └── PopupPad → PopupVBox
+│       ├── PopupTitle "战斗奖励"
+│       ├── %StonesBtn "灵石 +30/+60"
+│       ├── %CardRewardBtn "卡牌奖励"
+│       └── %PopupContinue "继续"
+├── %CardPanel (PanelContainer, hidden, z=10) — 全屏三选一卡牌页
+│   └── CardPanelPad → CardPanelVBox
+│       ├── CardPanelTitle "择取功法"
+│       ├── %CardsRow (HBoxContainer) — 动态填入3个固定卡槽
+├── ActionRow (HBoxContainer, runtime reparent, z=40) — 底部居中按钮栏
+│   ├── %ConfirmBtn "确定"（初始禁用）
+│   └── %SkipBtn "跳过"
+└── _upgrade_check (CheckBox, runtime, z=30) — 左下角"查看升级"
 ```
 
 ### 交互逻辑
 
 | 操作 | 响应 |
 |------|------|
-| 进入界面 | 自动领取灵石（普通+30，精英+60），读取 `GameState.pending_battle_node_type` |
-| 点击卡牌 | 选中该卡（高亮），启用"纳入牌组" |
-| 点击"查看详情" | 打开 CardDetailPopup 显示大图+描述 |
-| 点击"纳入牌组" | 将卡ID追加到 `GameState.deck`，禁用选卡按钮，启用"继续前行" |
-| 点击"跳过" | 不选卡，启用"继续前行" |
-| 点击"继续前行" | `change_scene_to_file(GameMap.tscn)` |
+| 进入界面 | 根据 `GameState.pending_battle_node_type` 计算灵石奖励（普通+30，精英+60），并抽取3张不重复卡牌 |
+| 点击"灵石" | 将灵石加入 `GameState.spirit_stones`，按钮置为已领取 |
+| 点击"卡牌奖励" | 打开全屏 `CardPanel`，显示3个固定尺寸卡槽，并显示左下角"查看升级" |
+| 点击卡牌 | 选中该卡（高亮），启用"确定" |
+| 点击"查看升级" | 仅切换三张奖励卡的升级预览，清除当前选择，且复选框不参与卡牌布局 |
+| 点击"确定" | 将卡ID追加到 `GameState.deck`，关闭选卡页，卡牌奖励按钮置为已选取 |
+| 点击"跳过" | 关闭选卡页，不修改牌组 |
+| 点击"继续" | `change_scene_to_file(GameMap.tscn)` |
+
+### 奖励卡牌布局约束
+
+- 三张奖励卡统一使用固定卡槽：卡牌 `186×333`，不在卡牌外额外显示名称，避免外部名称误叠到描述区；卡名只由卡牌顶部自身渲染。
+- `%CardsRow` 运行时设置卡槽间距 `170`，卡槽与卡牌行 `size_flags` 使用 `SIZE_SHRINK_CENTER`，让三张牌左右展开，避免被 HBox/VBox 容器拉伸成大图、互相挤压或整体沉到底部。
+- `%ConfirmBtn` / `%SkipBtn` 运行时随 `ActionRow` 挂到 `RewardScreen` 根节点底部居中（z=40），不参与卡牌行布局，不覆盖卡牌描述区。
+- 每个卡槽用 `Button` 承接点击，内部 `CardView.mouse_filter = IGNORE`，确保点击卡面时触发选卡，而不是被 CardView 或左下角复选框误拦截。
+- "查看升级"复选框运行时挂在 `RewardScreen` 根节点左下角，不放入 `%CardPanel` 和 `%CardsRow`，使用白色边框图标并只拦截自身矩形区域点击。
 
 ### 稀有度权重
 

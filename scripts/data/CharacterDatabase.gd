@@ -42,14 +42,22 @@ const CHEN_TIAN_FENG := {
 var _all: Dictionary = {}
 
 func _ready() -> void:
+	_ensure_loaded()
+
+
+func _ensure_loaded() -> void:
+	if not _all.is_empty():
+		return
 	_all[CHEN_TIAN_FENG["id"]] = CHEN_TIAN_FENG
 
 
 func get_character(id: String) -> Dictionary:
+	_ensure_loaded()
 	return _all.get(id, {}).duplicate()
 
 
 func get_sect_characters(sect: String) -> Array:
+	_ensure_loaded()
 	var result := []
 	for c in _all.values():
 		if c["sect"] == sect:

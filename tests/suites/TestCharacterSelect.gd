@@ -77,10 +77,15 @@ func test_character_select_required_nodes_exist() -> void:
 		return
 	for node_name in [
 		"SectBar", "CharListBox", "CharName", "CharTitle", "PortraitStage", "Portrait", "Lore",
-		"HPValue", "HPRegenValue", "LingLiValue", "DaoHuiValue", "DmgValue",
+		"HPValue", "HPRegenValue", "LingLiValue", "LingLiRegenValue", "DaoHuiValue", "DmgValue",
 		"TalentDesc", "SkillDesc", "StartBtn"
 	]:
 		_assert_true(inst.find_child(node_name, true, false) != null, "关键节点存在: %s" % node_name)
+
+	var ling_li_label := inst.find_child("LingLiValue", true, false) as Label
+	var ling_li_regen_label := inst.find_child("LingLiRegenValue", true, false) as Label
+	_assert_eq(ling_li_label.text, "20", "灵力上限独立显示，不带括号回复")
+	_assert_eq(ling_li_regen_label.text, "3/回合", "灵力回复独立显示")
 
 
 func test_portrait_uses_fit_layout() -> void:

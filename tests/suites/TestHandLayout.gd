@@ -3,6 +3,8 @@
 extends RefCounted
 
 const BattleEngineScript = preload("res://scripts/BattleEngine.gd")
+const BattleSceneScript = preload("res://scripts/BattleScene.gd")
+const CardRendererScript = preload("res://scripts/CardRenderer.gd")
 
 const _CARD_W   := 100.0
 const _SEP_NORM := 12.0
@@ -53,6 +55,12 @@ func run_all() -> Dictionary:
 	_t("test_card25_large_hand_cap_respected")
 	_t("test_card29_large_hand_always_2")
 	_t("test_card12_draw_near_cap")
+	_t("test_dynamic_desc_damage_up_green")
+	_t("test_dynamic_desc_damage_down_red")
+	_t("test_dynamic_desc_damage_same_black")
+	_t("test_dynamic_desc_upgrade_baseline")
+	_t("test_renderer_plain_description_uses_label_layout")
+	_t("test_renderer_dynamic_description_is_transparent_and_centered")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
@@ -411,6 +419,103 @@ func test_card12_draw_near_cap() -> void:
 # ──────────────────────────────────────────────────
 # 工具
 # ──────────────────────────────────────────────────
+
+func test_dynamic_desc_damage_up_green() -> void:
+	var card := {"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": false}
+	var segments := BattleSceneScript.build_dynamic_description_segments(card, {
+		"player_dao_xing": 5,
+		"player_damage_mult": 1.1,
+		"player_statuses": {},
+	})
+	_assert_eq(_segments_text(segments), "造成 12 点伤害。", "dynamic desc: hand/preview text uses computed damage")
+	_assert_eq(segments[1]["color"], BattleSceneScript.CARD_NUM_COLOR_UP, "dynamic desc: higher damage number is green")
+
+
+func test_dynamic_desc_damage_down_red() -> void:
+	var card := {"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": false}
+	var segments := BattleSceneScript.build_dynamic_description_segments(card, {
+		"player_dao_xing": 0,
+		"player_damage_mult": 1.0,
+		"player_statuses": {"ku_jie": 1},
+	})
+	_assert_eq(_segments_text(segments), "造成 4 点伤害。", "dynamic desc: lower damage text is recomputed")
+	_assert_eq(segments[1]["color"], BattleSceneScript.CARD_NUM_COLOR_DOWN, "dynamic desc: lower damage number is red")
+
+
+func test_dynamic_desc_damage_same_black() -> void:
+	var card := {"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": false}
+	var segments := BattleSceneScript.build_dynamic_description_segments(card, {
+		"player_dao_xing": 0,
+		"player_damage_mult": 1.0,
+		"player_statuses": {},
+	})
+	_assert_eq(_segments_text(segments), "造成 6 点伤害。", "dynamic desc: unchanged damage remains base value")
+	_assert_eq(segments[1]["color"], BattleSceneScript.CARD_NUM_COLOR_NORMAL, "dynamic desc: unchanged damage number is black")
+
+
+func test_dynamic_desc_upgrade_baseline() -> void:
+	var card := {"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": true}
+	var segments := BattleSceneScript.build_dynamic_description_segments(card, {
+		"player_dao_xing": 0,
+		"player_damage_mult": 1.0,
+		"player_statuses": {},
+	})
+	_assert_eq(_segments_text(segments), "造成 9 点伤害。", "dynamic desc: upgraded cards compare against upgraded base value")
+	_assert_eq(segments[1]["color"], BattleSceneScript.CARD_NUM_COLOR_NORMAL, "dynamic desc: upgraded base value is black when unchanged")
+
+
+func test_renderer_plain_description_uses_label_layout() -> void:
+	var renderer = CardRendererScript.new()
+	renderer.size = Vector2(160, 286)
+	renderer.setup({"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": false})
+	renderer.refresh()
+
+	var desc_label_found := false
+	var rich_visible := false
+	for child in renderer.get_children():
+		if child is Label and str(child.text).contains("造成"):
+			desc_label_found = true
+		if child is RichTextLabel and child.visible:
+			rich_visible = true
+	_assert_true(desc_label_found, "plain card description stays on Label for centered card layout")
+	_assert_true(not rich_visible, "plain card description does not use RichTextLabel")
+
+
+func test_renderer_dynamic_description_is_transparent_and_centered() -> void:
+	var renderer = CardRendererScript.new()
+	renderer.size = Vector2(280, 502)
+	renderer.setup(
+		{"id": "05", "desc": "造成 6(9) 点伤害。", "is_upgraded": false},
+		"造成 7 点伤害。",
+		[
+			{"text": "造成 ", "color": BattleSceneScript.CARD_NUM_COLOR_NORMAL},
+			{"text": "7", "color": BattleSceneScript.CARD_NUM_COLOR_UP},
+			{"text": " 点伤害。", "color": BattleSceneScript.CARD_NUM_COLOR_NORMAL},
+		]
+	)
+	renderer.refresh()
+
+	var desc_label: Label = null
+	var rich_label: RichTextLabel = null
+	for child in renderer.get_children():
+		if child is Label and child.visible == false:
+			desc_label = child
+		if child is RichTextLabel and child.visible:
+			rich_label = child
+
+	_assert_true(rich_label != null, "dynamic card description uses visible RichTextLabel")
+	if rich_label != null:
+		_assert_true(rich_label.get_theme_stylebox("normal") is StyleBoxEmpty, "dynamic card description background is transparent")
+	if rich_label != null and desc_label != null:
+		_assert_true(rich_label.position.y > desc_label.position.y, "dynamic card description is vertically centered in the description box")
+
+
+func _segments_text(segments: Array) -> String:
+	var text := ""
+	for segment in segments:
+		text += str(segment.get("text", ""))
+	return text
+
 
 func _t(method: String) -> void:
 	call(method)

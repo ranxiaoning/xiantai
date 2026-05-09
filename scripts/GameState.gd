@@ -20,6 +20,13 @@ var dao_xing_battle_start: int = 0 # 威名远播等跨战斗道行加成
 # ── 灵石（局内货币）─────────────────────────────────────────────
 var spirit_stones: int = 0
 
+# ── 背包（丹药/符箓/阵法，共享上限）──────────────────────────────
+const BAG_CAPACITY: int = 10
+var consumables: Array = []  # 每项：{id, name, type, effect_desc}
+
+# ── 宝物（Artifact，无上限，独立于背包）──────────────────────────
+var artifacts: Array = []  # 每项：{id, name, rarity, type, effect_desc, flavor, active_used}
+
 # ── 地图进度（旧版，兼容保留）──────────────────────────────────────
 var spawn_node_visited: bool = false
 var pending_battle_node: String = ""  # 即将进入的战斗节点 id
@@ -31,6 +38,7 @@ var map_current_floor: int = 0          # 当前所在层（0表示未开始）
 var map_accessible_ids: Array[String] = []  # 当前可点击的节点id
 var map_last_node_id: String = ""       # 上一个访问的节点id
 var map_started: bool = false           # 是否已经过起始节点进入地图
+var map_intro_played: bool = false       # 当前 run 是否已播放过重天标题入场动画
 var pending_battle_node_type: String = ""   # 即将进入的战斗节点类型
 var pending_battle_node_floor: int = 0      # 即将进入的战斗节点层数
 
@@ -41,6 +49,8 @@ func start_run(char_id: String) -> void:
 	deck = CardDatabase.get_starting_deck_ids()
 	ling_li_regen_bonus = 0
 	spirit_stones = 100
+	consumables.clear()
+	artifacts.clear()
 	dao_xing_battle_start = character.get("talent_dao_xing", 0)
 	spawn_node_visited = false
 	pending_battle_node = ""
@@ -51,6 +61,7 @@ func start_run(char_id: String) -> void:
 	map_current_floor = 0
 	map_last_node_id = ""
 	map_started = false
+	map_intro_played = false
 	pending_battle_node_type = ""
 	pending_battle_node_floor = 0
 	# 初始不解锁任何节点——等玩家点击起始节点后再开放第1层
@@ -62,8 +73,27 @@ func get_ling_li_regen() -> int:
 	return character.get("ling_li_regen", 3) + ling_li_regen_bonus
 
 
+func get_hp_regen() -> int:
+	return int(character.get("hp_regen", 0))
+
+
 func on_battle_won() -> void:
-	Log.info("GameState", "战斗胜利，HP剩余 %d" % current_hp)
+	var healed := apply_map_node_hp_regen("战斗胜利")
+	Log.info("GameState", "战斗胜利，HP剩余 %d，节点回复 +%d" % [current_hp, healed])
+
+
+func apply_map_node_hp_regen(reason: String = "经过节点") -> int:
+	var before := current_hp
+	apply_hp_change(get_hp_regen())
+	var healed := current_hp - before
+	if healed > 0:
+		Log.info("GameState", "%s：生命回复 +%d → %d/%d" % [
+			reason,
+			healed,
+			current_hp,
+			character.get("hp_max", 60),
+		])
+	return healed
 
 
 func apply_hp_change(delta: int) -> void:
@@ -82,6 +112,9 @@ func visit_map_node(node_id: String) -> void:
 	pending_battle_node = node_id
 	pending_battle_node_type = nd["type"]
 	pending_battle_node_floor = int(nd["floor"])
+
+	if not ["normal", "elite", "boss"].has(str(nd["type"])):
+		apply_map_node_hp_regen("经过%s节点" % str(nd["type"]))
 
 	# 更新下一层可访问节点
 	map_accessible_ids.clear()
@@ -106,6 +139,27 @@ func get_map_node(node_id: String) -> Dictionary:
 	if map_nodes.has(node_id):
 		return map_nodes[node_id].duplicate(false)
 	return {}
+
+
+func add_artifact(item: Dictionary) -> void:
+	artifacts.append(item)
+
+
+func remove_artifact(index: int) -> void:
+	if index >= 0 and index < artifacts.size():
+		artifacts.remove_at(index)
+
+
+func add_consumable(item: Dictionary) -> bool:
+	if consumables.size() >= BAG_CAPACITY:
+		return false
+	consumables.append(item)
+	return true
+
+
+func remove_consumable(index: int) -> void:
+	if index >= 0 and index < consumables.size():
+		consumables.remove_at(index)
 
 
 func add_spirit_stones(amount: int) -> void:

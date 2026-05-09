@@ -1,0 +1,40 @@
+Godot Engine v4.6.2.stable.official.71f334935 - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2570)
+18:46:40 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:40 [INF] [GameState] 起始节点已确认，第1层已解锁
+[INF][GameState] 起始节点已确认，第1层已解锁
+18:46:40 [INF] [GameState] 访问节点 n1_0（类型=normal 层=1）
+[INF][GameState] 访问节点 n1_0（类型=normal 层=1）
+18:46:40 [INF] [GameState] 战斗胜利，HP剩余 60，节点回复 +0
+[INF][GameState] 战斗胜利，HP剩余 60，节点回复 +0
+18:46:40 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:40 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:40 [INF] [GameState] 战斗胜利：生命回复 +5 → 47/60
+[INF][GameState] 战斗胜利：生命回复 +5 → 47/60
+18:46:40 [INF] [GameState] 战斗胜利，HP剩余 47，节点回复 +5
+[INF][GameState] 战斗胜利，HP剩余 47，节点回复 +5
+18:46:40 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:40 [INF] [GameState] 经过bonfire节点：生命回复 +5 → 45/60
+[INF][GameState] 经过bonfire节点：生命回复 +5 → 45/60
+18:46:40 [INF] [GameState] 访问节点 n2_2（类型=bonfire 层=2）
+[INF][GameState] 访问节点 n2_2（类型=bonfire 层=2）
+18:46:40 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:40 [INF] [CardDatabase] 加载完毕，共 38 张卡牌
+[INF][CardDatabase] 加载完毕，共 38 张卡牌
+18:46:41 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:41 [INF] [GameState] 新局开始：程天锋  HP=60  地图层数=16
+[INF][GameState] 新局开始：程天锋  HP=60  地图层数=16
+18:46:41 [INF] [GameState] 获得 30 灵石，现有 130
+[INF][GameState] 获得 30 灵石，现有 130
+18:46:41 [INF] [GameState] 获得 60 灵石，现有 190
+[INF][GameState] 获得 60 灵石，现有 190
+18:46:41 [INF] [CardDatabase] 加载完毕，共 38 张卡牌
+[INF][CardDatabase] 加载完毕，共 38 张卡牌

@@ -25,10 +25,15 @@ var _next_instance_id: int = 1
 
 ## 初始化战斗
 func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> void:
+	var player_hp_max: int = char_data.get("hp_max", 60)
+	var player_start_hp := player_hp_max
+	if not GameState.character.is_empty() \
+			and str(char_data.get("id", "")) == str(GameState.character.get("id", "")):
+		player_start_hp = clampi(GameState.current_hp, 1, player_hp_max)
 	s = {
 		# 玩家
-		"player_hp":          char_data.get("hp_max", 60),
-		"player_hp_max":      char_data.get("hp_max", 60),
+		"player_hp":          player_start_hp,
+		"player_hp_max":      player_hp_max,
 		"player_hu_ti":       0,
 		"player_ling_li":     0,
 		"player_ling_li_max": char_data.get("ling_li_max", 20),

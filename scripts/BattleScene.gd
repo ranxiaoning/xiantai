@@ -13,6 +13,9 @@ const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
 # Preview size matches the card art ratio.
 const PREVIEW_W := 280
 const PREVIEW_H := 502
+const CARD_NUM_COLOR_NORMAL := Color(40.0 / 255.0, 20.0 / 255.0, 0.0, 1.0)
+const CARD_NUM_COLOR_UP := Color(0.06, 0.48, 0.18, 1.0)
+const CARD_NUM_COLOR_DOWN := Color(0.72, 0.08, 0.05, 1.0)
 
 var _engine: RefCounted
 # Preview overlay is attached to the battle root so it is not clipped by scroll containers.
@@ -468,6 +471,8 @@ func _update_hand_display() -> void:
 			is_new_card.append(false)
 
 		view.set_usable(_engine.can_play_card(c_data))
+		if view.has_method("set_description_segments_override"):
+			view.set_description_segments_override(_compute_desc_segments(c_data))
 		new_children.append(view)
 
 	for child in available_children:
@@ -588,7 +593,7 @@ func _on_card_hovered(card: Dictionary, card_rect: Rect2) -> void:
 	py = max(py, 4.0)
 	_preview_renderer.position = Vector2(px, py)
 	_preview_renderer.size = Vector2(PREVIEW_W, PREVIEW_H)
-	_preview_renderer.setup(card, _compute_desc(card))
+	_preview_renderer.setup(card, _compute_desc(card), _compute_desc_segments(card))
 
 	_preview_root.show()
 
@@ -649,7 +654,7 @@ func _show_pile(title: String, cards: Array) -> void:
 
 
 func _show_pile_card_zoom(_blocked_card: Dictionary, card: Dictionary, source_view: Control) -> void:
-	_card_zoom_overlay.show_card(card, _compute_desc(card), source_view.get_global_rect())
+	_card_zoom_overlay.show_card(card, _compute_desc(card), source_view.get_global_rect(), _compute_desc_segments(card))
 
 
 func _hide_pile_overlay() -> void:
@@ -684,7 +689,70 @@ func _on_result_btn_pressed() -> void:
 		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 
 
+func _compute_desc_segments(card: Dictionary) -> Array:
+	return build_dynamic_description_segments(card, _engine.s)
+
+
+static func build_dynamic_description_segments(card: Dictionary, battle_state: Dictionary) -> Array:
+	var text: String = CardRendererScript.resolve_description(card)
+	var dao_xing: int = int(battle_state.get("player_dao_xing", 0))
+	var mult: float = float(battle_state.get("player_damage_mult", 1.0))
+	var st: Dictionary = battle_state.get("player_statuses", {})
+	if int(st.get("xin_liu", 0)) > 0:
+		mult *= 1.25
+	if int(st.get("ku_jie", 0)) > 0:
+		mult *= 0.75
+	if int(st.get("xu_ruo", 0)) > 0:
+		mult *= 0.75
+
+	var rx_dmg := RegEx.new()
+	rx_dmg.compile("(\\d+) 点伤害")
+	var matches := rx_dmg.search_all(text)
+	if matches.is_empty():
+		return [{"text": text, "color": CARD_NUM_COLOR_NORMAL}]
+
+	var segments: Array = []
+	var pos := 0
+	for m in matches:
+		if m.get_start() > pos:
+			segments.append({"text": text.substr(pos, m.get_start() - pos), "color": CARD_NUM_COLOR_NORMAL})
+
+		var base := int(m.get_string(1))
+		var computed := floori((base + dao_xing) * mult)
+		segments.append({
+			"text": str(computed),
+			"color": _damage_number_color(computed, base)
+		})
+
+		var suffix_start := m.get_start() + m.get_string(1).length()
+		segments.append({
+			"text": text.substr(suffix_start, m.get_end() - suffix_start),
+			"color": CARD_NUM_COLOR_NORMAL
+		})
+		pos = m.get_end()
+
+	if pos < text.length():
+		segments.append({"text": text.substr(pos), "color": CARD_NUM_COLOR_NORMAL})
+	return segments
+
+
+static func _damage_number_color(current: int, base: int) -> Color:
+	if current > base:
+		return CARD_NUM_COLOR_UP
+	if current < base:
+		return CARD_NUM_COLOR_DOWN
+	return CARD_NUM_COLOR_NORMAL
+
+
+static func _segments_to_text(segments: Array) -> String:
+	var text := ""
+	for segment in segments:
+		text += str(segment.get("text", ""))
+	return text
+
+
 func _compute_desc(card: Dictionary) -> String:
+	return _segments_to_text(_compute_desc_segments(card))
 	var upgraded: bool = card.get("is_upgraded", false)
 	var text: String   = card.get("desc", "")
 

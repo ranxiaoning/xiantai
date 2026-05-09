@@ -64,16 +64,39 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.6)
 
-[node name="TitleLabel" type="Label" parent="Header"]
+[node name="BagBar" type="HBoxContainer" parent="Header"]
 layout_mode = 1
 anchors_preset = -1
-anchor_right = 0.48
+anchor_left = 0.0
+anchor_right = 0.0
 anchor_bottom = 1.0
-offset_left = 20.0
-theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
-theme_override_font_sizes/font_size = 22
-text = "登仙台 · 第一重天"
-vertical_alignment = 1
+offset_left = 8.0
+offset_right = 296.0
+theme_override_constants/separation = 4
+alignment = 0
+
+[node name="BagPrevBtn" type="Button" parent="Header/BagBar"]
+visible = false
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+theme_override_font_sizes/font_size = 13
+text = "<"
+
+[node name="BagSlotContainer" type="HBoxContainer" parent="Header/BagBar"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 4
+
+[node name="BagNextBtn" type="Button" parent="Header/BagBar"]
+visible = false
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+theme_override_font_sizes/font_size = 14
+text = ">"
 
 [node name="HPLabel" type="Label" parent="Header"]
 unique_name_in_owner = true
@@ -124,6 +147,43 @@ offset_top = 4.0
 offset_bottom = -4.0
 theme_override_font_sizes/font_size = 14
 text = "查看卡组"
+
+[node name="TreasureBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_right = 0.0
+anchor_top = 0.08
+anchor_bottom = 0.08
+offset_left = 8.0
+offset_top = 4.0
+offset_right = 446.0
+offset_bottom = 44.0
+theme_override_constants/separation = 4
+alignment = 0
+
+[node name="TreasurePrevBtn" type="Button" parent="TreasureBar"]
+visible = false
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+theme_override_font_sizes/font_size = 13
+text = "<"
+
+[node name="TreasureSlotContainer" type="HBoxContainer" parent="TreasureBar"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 4
+
+[node name="TreasureNextBtn" type="Button" parent="TreasureBar"]
+visible = false
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+size_flags_vertical = 4
+flat = true
+theme_override_font_sizes/font_size = 13
+text = ">"
 
 [node name="MapScroll" type="ScrollContainer" parent="."]
 layout_mode = 1
@@ -321,6 +381,30 @@ size_flags_horizontal = 3
 columns = 5
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
+
+[node name="IntroOverlay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 200
+mouse_filter = 2
+
+[node name="IntroLabel" type="Label" parent="IntroOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.4, 1)
+theme_override_font_sizes/font_size = 52
+text = "登仙台\n第一重天"
+horizontal_alignment = 1
+vertical_alignment = 1
+modulate = Color(1, 1, 1, 0)
 
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn1" to="." method="_on_popup_btn1_pressed"]
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn2" to="." method="_on_popup_btn2_pressed"]

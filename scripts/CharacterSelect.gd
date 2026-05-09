@@ -26,6 +26,7 @@ var _display_tween: Tween = null
 @onready var hp_label: Label = %HPValue
 @onready var hp_regen_label: Label = %HPRegenValue
 @onready var ling_li_label: Label = %LingLiValue
+@onready var ling_li_regen_label: Label = %LingLiRegenValue
 @onready var dao_hui_label: Label = %DaoHuiValue
 @onready var damage_mult_label: Label = %DmgValue
 @onready var talent_label: Label = %TalentDesc
@@ -234,7 +235,8 @@ func _refresh_display() -> void:
 		portrait.texture = null
 	hp_label.text = str(c["hp_max"])
 	hp_regen_label.text = str(c["hp_regen"])
-	ling_li_label.text = "%d（回复 %d/回合）" % [c["ling_li_max"], c["ling_li_regen"]]
+	ling_li_label.text = str(c["ling_li_max"])
+	ling_li_regen_label.text = "%d/回合" % int(c["ling_li_regen"])
 	dao_hui_label.text = str(c["dao_hui_max"])
 	damage_mult_label.text = "×%.1f" % c["damage_mult"]
 	talent_label.text = "【%s】%s" % [c["talent_name"], c["talent_desc"]]

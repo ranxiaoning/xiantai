@@ -139,7 +139,27 @@ func _ensure_layers() -> void:
 	if _template != null:
 		return
 
-	clip_contents = true
+	# 将所有子节点合成到中间纹理，再经 shader 裁切为圆角
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+uniform float corner_radius : hint_range(0.0, 128.0) = 16.0;
+void fragment() {
+	vec2 px = 1.0 / TEXTURE_PIXEL_SIZE;
+	vec2 pos = UV * px;
+	float r = corner_radius;
+	vec2 d = abs(pos - px * 0.5) - (px * 0.5 - r);
+	float dist = length(max(d, 0.0)) - r;
+	float alpha = 1.0 - smoothstep(-0.8, 0.8, dist);
+	COLOR = texture(TEXTURE, UV);
+	COLOR.a *= alpha;
+}
+"""
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	material = mat
+	clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+
 	_template = TextureRect.new()
 	_template.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_template.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
