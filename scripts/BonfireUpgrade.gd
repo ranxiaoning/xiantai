@@ -39,7 +39,7 @@ func _build_ui() -> void:
 	add_child(title)
 
 	var hint := Label.new()
-	hint.text = "悬停查看升级后效果，已升级的卡牌无法再次升级"
+	hint.text = "卡牌已显示升级后效果。点击选择升级；已升级卡牌（置灰）点击可查看详情。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 16)
 	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
@@ -79,21 +79,22 @@ func _build_ui() -> void:
 		if card_data.is_empty():
 			continue
 
+		# 直接在格子里显示升级后效果，方便玩家对比选择
+		var display_data := card_data.duplicate(true)
+		if not already_upgraded:
+			display_data["is_upgraded"] = true
+
 		var view: Control = CardViewScene.instantiate()
 		view.custom_minimum_size = Vector2(card_w, card_h)
 		view.mouse_filter        = Control.MOUSE_FILTER_STOP
-		view.setup(card_data, null, false)
+		view.set_hover_motion_enabled(false)
 
 		if already_upgraded:
+			view.setup(display_data, null, true)   # disabled，已升级
 			view.modulate.a = 0.4
-			view.set_usable(false)
-			# 鼠标移入已升级卡时关闭可能残留的 zoom
-			view.unhovered.connect(_card_zoom_overlay.hide_card)
+			view.play_blocked.connect(_show_card_zoom.bind(display_data, view))
 		else:
-			var upgraded_data := card_data.duplicate(true)
-			upgraded_data["is_upgraded"] = true
-			view.hovered.connect(_on_card_hovered.bind(upgraded_data))
-			view.unhovered.connect(_card_zoom_overlay.hide_card)
+			view.setup(display_data, null, false)  # enabled，点击即升级
 			view.activated.connect(_on_card_selected.bind(i))
 
 		grid.add_child(view)
@@ -111,9 +112,9 @@ func _build_ui() -> void:
 	add_child(skip_btn)
 
 
-# hovered 信号：(card_data, rect)；bind 追加 upgraded_data → 回调收到 (card_data, rect, upgraded_data)
-func _on_card_hovered(_original_cd: Dictionary, rect: Rect2, upgraded_data: Dictionary) -> void:
-	_card_zoom_overlay.show_card(upgraded_data, "", rect)
+# play_blocked 信号：(card_data)；bind 追加 display_data, source_view → 回调收到 (cd, display_data, source_view)
+func _show_card_zoom(_cd: Dictionary, display_data: Dictionary, source_view: Control) -> void:
+	_card_zoom_overlay.show_card(display_data, "", source_view.get_global_rect())
 
 
 # activated 信号：(card_data)；bind 追加 deck_index → 回调收到 (card_data, deck_index)
