@@ -24,6 +24,7 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/MapGenerator.gd",
 	"res://scripts/MapDrawLayer.gd",
 	"res://scripts/RewardScreen.gd",
+	"res://scripts/BonfireUpgrade.gd",
 ]
 
 const REQUIRED_AUTOLOADS: Array = [
@@ -42,8 +43,11 @@ const TEST_SCRIPTS: Array[String] = [
 	"res://tests/suites/TestGlobalSettings.gd",
 	"res://tests/suites/TestLogger.gd",
 	"res://tests/suites/TestScriptIntegrity.gd",
+	"res://tests/suites/TestRewardScreen.gd",
+	"res://tests/suites/TestGameMapFlow.gd",
 	"res://tests/suites/TestCharacterSelect.gd",
 	"res://tests/suites/TestBattleEngineLogic.gd",
+	"res://tests/suites/TestCardEffects.gd",
 	"res://tests/suites/TestMapGenerator.gd",
 ]
 
@@ -54,6 +58,7 @@ const SCENES: Array[String] = [
 	"res://scenes/GameMap.tscn",
 	"res://scenes/Battle.tscn",
 	"res://scenes/RewardScreen.tscn",
+	"res://scenes/BonfireUpgrade.tscn",
 ]
 
 var _pass_count: int = 0
