@@ -1,8 +1,9 @@
 ## TestCardEffects.gd
-## 38张卡牌效果单元测试。每张牌都有独立的测试函数。
+## 38张卡牌效果单元测试 + CardDatabase/CardRenderer 升级ID功能测试。
 extends RefCounted
 
 const BattleEngineScript = preload("res://scripts/BattleEngine.gd")
+const CardRendererScript = preload("res://scripts/CardRenderer.gd")
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -49,6 +50,13 @@ func run_all() -> Dictionary:
 	_t("test_card_36")
 	_t("test_card_37")
 	_t("test_card_38")
+	# CardDatabase "+" ID and CardRenderer display name tests
+	_t2("test_get_card_plus_returns_upgraded")
+	_t2("test_get_card_plus_base_data_matches")
+	_t2("test_get_card_base_not_upgraded")
+	_t2("test_is_upgraded_id")
+	_t2("test_display_name_upgraded")
+	_t2("test_display_name_not_upgraded")
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
 
@@ -542,3 +550,66 @@ func test_card_38() -> void:
 	_assert_true(s.has("powers_active"), "道法牌 powers_active 应被创建")
 	_assert_true(s["powers_active"].size() > 0, "道法牌 应被加入激活列表")
 	_assert_eq(s["powers_active"][0]["id"], "38", "激活的道法牌ID应为38")
+
+
+# ── CardDatabase "+" ID 和 CardRenderer display name 测试 ──────────────────
+
+## _t2: 适配返回 Dictionary 的新式测试函数
+func _t2(method: String) -> void:
+	var result: Dictionary = call(method)
+	if result.get("pass", false):
+		_pass_count += 1
+		_lines.append("  ✓ %s" % method)
+	else:
+		_fail_count += 1
+		_lines.append("  ✗ %s: %s" % [method, result.get("msg", "(no msg)")])
+
+
+func test_get_card_plus_returns_upgraded() -> Dictionary:
+	var card := CardDatabase.get_card("5+")
+	if card.is_empty():
+		return {"pass": false, "msg": "get_card('5+') returned empty dict"}
+	if not card.get("is_upgraded", false):
+		return {"pass": false, "msg": "expected is_upgraded=true, got false"}
+	return {"pass": true}
+
+
+func test_get_card_plus_base_data_matches() -> Dictionary:
+	var base := CardDatabase.get_card("5")
+	var up   := CardDatabase.get_card("5+")
+	if base.is_empty() or up.is_empty():
+		return {"pass": false, "msg": "one or both cards empty"}
+	if base.get("name") != up.get("name"):
+		return {"pass": false, "msg": "name mismatch: base=%s up=%s" % [base.get("name"), up.get("name")]}
+	if int(base.get("ling_li", -1)) != int(up.get("ling_li", -2)):
+		return {"pass": false, "msg": "ling_li mismatch: base=%d up=%d" % [int(base.get("ling_li")), int(up.get("ling_li"))]}
+	return {"pass": true}
+
+
+func test_get_card_base_not_upgraded() -> Dictionary:
+	var card := CardDatabase.get_card("5")
+	if card.get("is_upgraded", true):
+		return {"pass": false, "msg": "get_card('5') should have is_upgraded=false"}
+	return {"pass": true}
+
+
+func test_is_upgraded_id() -> Dictionary:
+	if not CardDatabase.is_upgraded_id("5+"):
+		return {"pass": false, "msg": "'5+' should be recognized as upgraded"}
+	if CardDatabase.is_upgraded_id("5"):
+		return {"pass": false, "msg": "'5' should not be recognized as upgraded"}
+	return {"pass": true}
+
+
+func test_display_name_upgraded() -> Dictionary:
+	var display_name := CardRendererScript.get_display_name({"name": "剑气斩", "is_upgraded": true})
+	if display_name != "剑气斩+":
+		return {"pass": false, "msg": "expected '剑气斩+' got '%s'" % display_name}
+	return {"pass": true}
+
+
+func test_display_name_not_upgraded() -> Dictionary:
+	var display_name := CardRendererScript.get_display_name({"name": "剑气斩", "is_upgraded": false})
+	if display_name != "剑气斩":
+		return {"pass": false, "msg": "expected '剑气斩' got '%s'" % display_name}
+	return {"pass": true}

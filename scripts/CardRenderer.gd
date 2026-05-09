@@ -16,6 +16,7 @@ const CARD_ART_SOURCE_DIR := "res://assets/card/art/"
 
 var _card_data: Dictionary = {}
 var _description_override: String = ""
+var _description_segments_override: Array = []
 var _art_cache: Dictionary = {}
 
 var _template: TextureRect
@@ -25,6 +26,7 @@ var _dao_label: Label
 var _name_label: Label
 var _type_label: Label
 var _desc_label: Label
+var _desc_rich_label: RichTextLabel
 
 
 func _ready() -> void:
@@ -33,9 +35,10 @@ func _ready() -> void:
 	call_deferred("refresh")
 
 
-func setup(card_data: Dictionary, description_override: String = "") -> void:
+func setup(card_data: Dictionary, description_override: String = "", description_segments_override: Array = []) -> void:
 	_card_data = card_data
 	_description_override = description_override
+	_description_segments_override = description_segments_override
 	_ensure_layers()
 	call_deferred("refresh")
 
@@ -47,7 +50,48 @@ func set_card_data(card_data: Dictionary) -> void:
 
 func set_description_override(text: String) -> void:
 	_description_override = text
+	_description_segments_override = []
 	refresh()
+
+
+func set_description_segments_override(segments: Array) -> void:
+	_description_segments_override = segments
+	_description_override = _segments_to_text(segments)
+	refresh()
+
+
+static func get_display_name(card_data: Dictionary) -> String:
+	var card_name := str(card_data.get("name", ""))
+	if card_data.get("is_upgraded", false):
+		return card_name + "+"
+	return card_name
+
+
+static func resolve_upgrade_text(text: String, upgraded: bool) -> String:
+	var resolved := text
+
+	var rx_bracket := RegEx.new()
+	rx_bracket.compile("(\\d+%?)\\((\\d+%?)\\)")
+	var bracket_matches := rx_bracket.search_all(resolved)
+	for i in range(bracket_matches.size() - 1, -1, -1):
+		var m := bracket_matches[i]
+		var pick := m.get_string(2) if upgraded else m.get_string(1)
+		resolved = resolved.substr(0, m.get_start()) + pick + resolved.substr(m.get_end())
+
+	var rx_equal := RegEx.new()
+	rx_equal.compile("等量\\(\\+(\\d+)\\)")
+	var equal_matches := rx_equal.search_all(resolved)
+	for i in range(equal_matches.size() - 1, -1, -1):
+		var m := equal_matches[i]
+		var pick := "等量+%s" % m.get_string(1) if upgraded else "等量"
+		resolved = resolved.substr(0, m.get_start()) + pick + resolved.substr(m.get_end())
+
+	return resolved
+
+
+static func resolve_description(card_data: Dictionary, description_override: String = "") -> String:
+	var text := description_override if not description_override.is_empty() else str(card_data.get("desc", ""))
+	return resolve_upgrade_text(text, bool(card_data.get("is_upgraded", false)))
 
 
 func refresh() -> void:
@@ -74,7 +118,7 @@ func refresh() -> void:
 	_place_text_center(_ling_label, str(int(_card_data.get("ling_li", 0))), render_size, 130.0, 215.0, 180.0, 150.0)
 	_place_text_center(_dao_label, str(int(_card_data.get("dao_hui", 0))), render_size, 1396.0, 215.0, 180.0, 150.0)
 	_name_label.add_theme_color_override("font_color", _get_name_color())
-	_place_text_center(_name_label, str(_card_data.get("name", "")), render_size, CARD_BASE_W * 0.5, 95.0, 720.0, 110.0)
+	_place_text_center(_name_label, get_display_name(_card_data), render_size, CARD_BASE_W * 0.5, 95.0, 720.0, 110.0)
 	_place_text_center(_type_label, _get_card_type_label(), render_size, CARD_BASE_W * 0.5, 1780.0, 420.0, 90.0)
 
 	var desc_top := render_size.y * 1850.0 / CARD_BASE_H
@@ -82,8 +126,9 @@ func refresh() -> void:
 	var desc_pad := render_size.x * 200.0 / CARD_BASE_W
 	_desc_label.position = Vector2(desc_pad, desc_top)
 	_desc_label.size = Vector2(render_size.x - desc_pad * 2.0, desc_height)
-	var desc := _description_override if not _description_override.is_empty() else str(_card_data.get("desc", ""))
-	_desc_label.text = _wrap_card_desc_text(desc, _desc_label.size.x)
+	_desc_rich_label.position = _desc_label.position
+	_desc_rich_label.size = _desc_label.size
+	_render_description()
 
 
 func _on_resized() -> void:
@@ -113,12 +158,15 @@ func _ensure_layers() -> void:
 	_type_label = _make_label(5, _card_text_dark(), 0, Color.TRANSPARENT)
 	_desc_label = _make_label(6, _card_text_dark(), 0, Color.TRANSPARENT)
 	_desc_label.add_theme_constant_override("line_spacing", 1)
+	_desc_rich_label = _make_description_rich_label()
+	_desc_rich_label.add_theme_constant_override("line_spacing", 1)
 
 	add_child(_ling_label)
 	add_child(_dao_label)
 	add_child(_name_label)
 	add_child(_type_label)
 	add_child(_desc_label)
+	add_child(_desc_rich_label)
 
 
 func _make_label(font_size: int, color: Color, outline_size: int, outline_color: Color) -> Label:
@@ -134,6 +182,22 @@ func _make_label(font_size: int, color: Color, outline_size: int, outline_color:
 	return label
 
 
+func _make_description_rich_label() -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.bbcode_enabled = false
+	label.fit_content = false
+	label.scroll_active = false
+	label.selection_enabled = false
+	label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	label.add_theme_font_size_override("normal_font_size", 6)
+	label.add_theme_color_override("default_color", _card_text_dark())
+	var transparent := StyleBoxEmpty.new()
+	label.add_theme_stylebox_override("normal", transparent)
+	label.add_theme_stylebox_override("focus", transparent)
+	return label
+
+
 func _update_label_sizes(render_size: Vector2) -> void:
 	var scale_x := render_size.x / CARD_BASE_W
 	_ling_label.add_theme_font_size_override("font_size", max(1, int(round(SIZE_COST * scale_x))))
@@ -141,6 +205,7 @@ func _update_label_sizes(render_size: Vector2) -> void:
 	_name_label.add_theme_font_size_override("font_size", max(1, int(round(SIZE_NAME * scale_x))))
 	_type_label.add_theme_font_size_override("font_size", max(1, int(round(SIZE_TYPE * scale_x))))
 	_desc_label.add_theme_font_size_override("font_size", max(1, int(round(SIZE_DESC * scale_x))))
+	_desc_rich_label.add_theme_font_size_override("normal_font_size", max(1, int(round(SIZE_DESC * scale_x))))
 
 
 func _set_rect(node: Control, render_size: Vector2, x: float, y: float, w: float, h: float) -> void:
@@ -164,18 +229,43 @@ func _load_art_texture() -> Texture2D:
 	var path := "%s%02d.png" % [CARD_ART_SOURCE_DIR, int(id_str)]
 	if _art_cache.has(path):
 		return _art_cache[path]
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex:
-			_art_cache[path] = tex
-			return tex
-	var img := Image.load_from_file(ProjectSettings.globalize_path(path))
-	if img:
-		var tex := ImageTexture.create_from_image(img)
-		_art_cache[path] = tex
-		return tex
-	_art_cache[path] = null
-	return null
+
+	# 绕过 ResourceLoader / Image.load_from_file（均依赖扩展名判断格式）。
+	# 直接读字节流并用 magic bytes 选择正确的解码器——兼容扩展名为 .png 但实为 JPEG 的美术资源。
+	var abs_path := ProjectSettings.globalize_path(path)
+	var open_path := abs_path if FileAccess.file_exists(abs_path) else path
+	var file := FileAccess.open(open_path, FileAccess.READ)
+	if not file:
+		_art_cache[path] = null
+		return null
+	var data := file.get_buffer(file.get_length())
+	file.close()
+
+	if data.size() < 4:
+		_art_cache[path] = null
+		return null
+
+	var img := Image.new()
+	var b0 := data[0]; var b1 := data[1]; var b2 := data[2]; var b3 := data[3]
+	var ok := false
+	if b0 == 0xFF and b1 == 0xD8 and b2 == 0xFF:
+		ok = img.load_jpg_from_buffer(data) == OK
+	elif b0 == 0x89 and b1 == 0x50 and b2 == 0x4E and b3 == 0x47:
+		ok = img.load_png_from_buffer(data) == OK
+	elif b0 == 0x52 and b1 == 0x49 and b2 == 0x46 and b3 == 0x46:
+		ok = img.load_webp_from_buffer(data) == OK
+	else:
+		ok = img.load_png_from_buffer(data) == OK \
+			or img.load_jpg_from_buffer(data) == OK \
+			or img.load_webp_from_buffer(data) == OK
+
+	if not ok:
+		_art_cache[path] = null
+		return null
+
+	var tex := ImageTexture.create_from_image(img)
+	_art_cache[path] = tex
+	return tex
 
 
 func _get_card_type_label() -> String:
@@ -206,6 +296,87 @@ func _get_name_color() -> Color:
 
 func _card_text_dark() -> Color:
 	return Color(40.0 / 255.0, 20.0 / 255.0, 0.0, 1.0)
+
+
+static func _segments_to_text(segments: Array) -> String:
+	var text := ""
+	for segment in segments:
+		text += str(segment.get("text", ""))
+	return text
+
+
+func _render_description() -> void:
+	_desc_rich_label.clear()
+	if not _description_segments_override.is_empty():
+		_desc_label.hide()
+		_desc_rich_label.show()
+		var text := _segments_to_text(_description_segments_override)
+		var wrapped_text := _wrap_card_desc_text(text, _desc_label.size.x)
+		var wrapped_segments := _apply_line_wrap_to_segments(_description_segments_override, wrapped_text)
+		_desc_rich_label.position.y = _desc_label.position.y + _get_centered_desc_offset(wrapped_text)
+		_desc_rich_label.size.y = maxf(1.0, _desc_label.size.y - _get_centered_desc_offset(wrapped_text))
+		_desc_rich_label.push_paragraph(HORIZONTAL_ALIGNMENT_CENTER)
+		for segment in wrapped_segments:
+			var color: Color = segment.get("color", _card_text_dark())
+			_desc_rich_label.push_color(color)
+			_desc_rich_label.add_text(str(segment.get("text", "")))
+			_desc_rich_label.pop()
+		_desc_rich_label.pop()
+		return
+
+	_desc_rich_label.hide()
+	_desc_label.show()
+	var desc := resolve_description(_card_data, _description_override)
+	_desc_label.text = _wrap_card_desc_text(desc, _desc_label.size.x)
+
+
+func _get_centered_desc_offset(text: String) -> float:
+	var font_size := _desc_label.get_theme_font_size("font_size")
+	var line_count := maxi(text.count("\n") + 1, 1)
+	var line_spacing := _desc_label.get_theme_constant("line_spacing")
+	var content_h := line_count * font_size + maxi(line_count - 1, 0) * line_spacing
+	return maxf(0.0, (_desc_label.size.y - content_h) * 0.5)
+
+
+func _apply_line_wrap_to_segments(segments: Array, wrapped_text: String) -> Array:
+	var source_text := _segments_to_text(segments)
+	if source_text == wrapped_text:
+		return segments
+
+	var wrapped_segments: Array = []
+	var source_i := 0
+	var seg_i := 0
+	var seg_offset := 0
+	while seg_i < segments.size() and source_i <= source_text.length():
+		var wrapped_i := _segments_to_text(wrapped_segments).length()
+		if wrapped_i >= wrapped_text.length():
+			break
+		var wrapped_ch := wrapped_text.substr(wrapped_i, 1)
+		if wrapped_ch == "\n":
+			wrapped_segments.append({"text": "\n", "color": _card_text_dark()})
+			continue
+		while seg_i < segments.size() and seg_offset >= str(segments[seg_i].get("text", "")).length():
+			seg_i += 1
+			seg_offset = 0
+		if seg_i >= segments.size():
+			break
+		var seg_text := str(segments[seg_i].get("text", ""))
+		var src_ch := seg_text.substr(seg_offset, 1)
+		wrapped_segments.append({"text": src_ch, "color": segments[seg_i].get("color", _card_text_dark())})
+		seg_offset += 1
+		source_i += 1
+	return _merge_adjacent_segments(wrapped_segments)
+
+
+func _merge_adjacent_segments(segments: Array) -> Array:
+	var merged: Array = []
+	for segment in segments:
+		var last_i := merged.size() - 1
+		if not merged.is_empty() and merged[last_i].get("color") == segment.get("color"):
+			merged[last_i]["text"] = str(merged[last_i].get("text", "")) + str(segment.get("text", ""))
+		else:
+			merged.append(segment.duplicate())
+	return merged
 
 
 func _wrap_card_desc_text(text: String, max_width: float) -> String:

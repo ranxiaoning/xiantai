@@ -55,16 +55,24 @@ func _load_cards_from_json() -> void:
 func get_card(id) -> Dictionary:
 	if _all.is_empty():
 		_load_cards_from_json()
-	# 归一化 id → 整数字符串（兼容传入 int / float / String 三种情况）
 	var id_str: String
+	var is_upgraded := false
 	match typeof(id):
 		TYPE_INT, TYPE_FLOAT:
 			id_str = str(int(id))
 		_:
 			id_str = str(id)
+
+	if id_str.ends_with("+"):
+		id_str = id_str.left(id_str.length() - 1)
+		is_upgraded = true
+
 	if _all.has(id_str):
-		return _all[id_str].duplicate()
-	push_error("CardDatabase: 未知卡牌 id = " + id_str)
+		var card: Dictionary = _all[id_str].duplicate()
+		if is_upgraded:
+			card["is_upgraded"] = true
+		return card
+	push_error("CardDatabase: 未知卡牌 id = " + id_str + ("+" if is_upgraded else ""))
 	return {}
 
 func get_starting_deck_ids() -> Array[String]:
@@ -84,4 +92,8 @@ func get_all_cards() -> Array[Dictionary]:
 	for card in _all.values():
 		result.append(card.duplicate())
 	return result
+
+
+static func is_upgraded_id(id: String) -> bool:
+	return id.ends_with("+")
 
