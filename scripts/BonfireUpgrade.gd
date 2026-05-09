@@ -2,19 +2,18 @@
 ## 篝火升级卡牌全屏场景。
 extends Control
 
-const GAME_MAP_SCENE       := "res://scenes/GameMap.tscn"
-const CardViewScene        = preload("res://scenes/CardView.tscn")
-const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
+const GAME_MAP_SCENE     := "res://scenes/GameMap.tscn"
+const CardViewScene      = preload("res://scenes/CardView.tscn")
+const CardRendererScript = preload("res://scripts/CardRenderer.gd")
 
 const COLS        := 5
 const H_SEP       := 10
 const CARD_ASPECT := 2752.0 / 1536.0
 const PAD_X       := 96.0
 
-var _card_zoom_overlay
 var _selected_index: int = -1
-var _selected_view: Control = null
-var _confirm_btn: Button = null
+var _upgrade_overlay: Control = null
+var _overlay_renderer          = null
 
 
 func _ready() -> void:
@@ -42,7 +41,7 @@ func _build_ui() -> void:
 	add_child(title)
 
 	var hint := Label.new()
-	hint.text = "点击一张卡牌预览升级效果，再点确认升级。已升级卡牌（置灰）点击可查看。"
+	hint.text = "点击卡牌预览升级效果并确认。已升级卡牌已置灰。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 16)
 	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
@@ -52,10 +51,6 @@ func _build_ui() -> void:
 	hint.offset_right  = 0
 	hint.offset_bottom = 98
 	add_child(hint)
-
-	# 先创建 zoom overlay，后续信号连接会引用它
-	_card_zoom_overlay = CardZoomOverlayScript.new()
-	add_child(_card_zoom_overlay)
 
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -88,64 +83,85 @@ func _build_ui() -> void:
 		view.set_hover_motion_enabled(false)
 
 		if already_upgraded:
-			# 已升级：显示当前（升级后）状态，置灰不可选，点击可查看
 			view.setup(card_data, null, true)
 			view.modulate.a = 0.4
-			view.play_blocked.connect(_show_card_zoom.bind(card_data, view))
 		else:
-			# 未升级：显示当前（基础）状态，点击选中并弹出升级预览
 			view.setup(card_data, null, false)
-			view.activated.connect(_on_card_clicked.bind(i, view))
+			view.activated.connect(_on_card_clicked.bind(i))
 
 		grid.add_child(view)
-
-	# 底部按钮行
-	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 24)
-	btn_row.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	btn_row.offset_top    = -62
-	btn_row.offset_bottom = -10
-	add_child(btn_row)
-
-	_confirm_btn = Button.new()
-	_confirm_btn.text       = "确认升级"
-	_confirm_btn.disabled   = true
-	_confirm_btn.focus_mode = Control.FOCUS_NONE
-	_confirm_btn.custom_minimum_size = Vector2(160, 48)
-	_confirm_btn.add_theme_font_size_override("font_size", 20)
-	_confirm_btn.pressed.connect(_on_confirm_upgrade)
-	btn_row.add_child(_confirm_btn)
 
 	var skip_btn := Button.new()
 	skip_btn.text       = "跳过"
 	skip_btn.focus_mode = Control.FOCUS_NONE
 	skip_btn.custom_minimum_size = Vector2(120, 48)
 	skip_btn.add_theme_font_size_override("font_size", 20)
+	skip_btn.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	skip_btn.offset_left   = (vp.x - 120.0) * 0.5
+	skip_btn.offset_right  = -(vp.x - 120.0) * 0.5
+	skip_btn.offset_top    = -58
+	skip_btn.offset_bottom = -10
 	skip_btn.pressed.connect(_on_skip)
-	btn_row.add_child(skip_btn)
+	add_child(skip_btn)
+
+	_build_upgrade_overlay()
 
 
-# play_blocked 信号：(card_data)；bind 追加 display_data, source_view → 回调收到 (cd, display_data, source_view)
-func _show_card_zoom(_cd: Dictionary, display_data: Dictionary, source_view: Control) -> void:
-	_card_zoom_overlay.show_card(display_data, "", source_view.get_global_rect())
+func _build_upgrade_overlay() -> void:
+	_upgrade_overlay = Control.new()
+	_upgrade_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_upgrade_overlay.z_index = 100
+	_upgrade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_upgrade_overlay.hide()
+	add_child(_upgrade_overlay)
+
+	# 遮罩：点击此区域（非卡牌）关闭 overlay
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.0, 0.0, 0.0, 0.72)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	shade.gui_input.connect(_on_shade_input)
+	_upgrade_overlay.add_child(shade)
+
+	# 居中卡牌渲染器
+	var vp     := get_viewport_rect().size
+	var card_h := minf(vp.y * 0.68, 580.0)
+	var card_w := card_h / CARD_ASPECT
+	var card_x := (vp.x - card_w) * 0.5
+	var card_y := (vp.y - card_h) * 0.5 - 36.0
+
+	_overlay_renderer = CardRendererScript.new()
+	_overlay_renderer.position     = Vector2(card_x, card_y)
+	_overlay_renderer.size         = Vector2(card_w, card_h)
+	_overlay_renderer.mouse_filter = Control.MOUSE_FILTER_STOP
+	_upgrade_overlay.add_child(_overlay_renderer)
+
+	# 确认升级按钮（卡牌正下方）
+	var confirm := Button.new()
+	confirm.text              = "确认升级"
+	confirm.focus_mode        = Control.FOCUS_NONE
+	confirm.custom_minimum_size = Vector2(160, 48)
+	confirm.add_theme_font_size_override("font_size", 20)
+	confirm.mouse_filter      = Control.MOUSE_FILTER_STOP
+	confirm.position          = Vector2((vp.x - 160.0) * 0.5, card_y + card_h + 20.0)
+	confirm.pressed.connect(_on_confirm_upgrade)
+	_upgrade_overlay.add_child(confirm)
 
 
-# activated 信号：(card_data)；bind 追加 deck_index, source_view
-func _on_card_clicked(card_data: Dictionary, deck_index: int, source_view: Control) -> void:
-	# 取消上一张选中的高亮
-	if _selected_view != null and is_instance_valid(_selected_view):
-		_selected_view.modulate = Color.WHITE
+# 点击遮罩（非卡牌区域）关闭升级预览
+func _on_shade_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_upgrade_overlay.hide()
+		_selected_index = -1
 
+
+# activated 信号：(card_data)；bind 追加 deck_index → 回调收到 (card_data, deck_index)
+func _on_card_clicked(card_data: Dictionary, deck_index: int) -> void:
 	_selected_index = deck_index
-	_selected_view  = source_view
-	source_view.modulate = Color(1.0, 0.88, 0.4, 1.0)  # 金色高亮
-	_confirm_btn.disabled = false
-
-	# 弹出升级预览（升级后效果），点击 overlay 关闭即可，确认按钮仍有效
 	var upgraded_data := card_data.duplicate(true)
 	upgraded_data["is_upgraded"] = true
-	_card_zoom_overlay.show_card(upgraded_data, "", source_view.get_global_rect())
+	_overlay_renderer.setup(upgraded_data)
+	_upgrade_overlay.show()
 
 
 func _on_confirm_upgrade() -> void:
