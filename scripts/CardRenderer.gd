@@ -139,31 +139,32 @@ func _ensure_layers() -> void:
 	if _template != null:
 		return
 
-	# 将所有子节点合成到中间纹理，再经 shader 裁切为圆角
+	clip_contents = true
+
+	# 圆角 shader 直接挂在模板 TextureRect 上，TEXTURE = 卡牌框架图，UV 坐标可靠
 	var shader := Shader.new()
 	shader.code = """
 shader_type canvas_item;
-uniform float corner_radius : hint_range(0.0, 128.0) = 16.0;
+uniform float corner_radius : hint_range(0.0, 256.0) = 28.0;
 void fragment() {
-	vec2 px = 1.0 / TEXTURE_PIXEL_SIZE;
+	vec2 px  = 1.0 / TEXTURE_PIXEL_SIZE;
 	vec2 pos = UV * px;
-	float r = corner_radius;
-	vec2 d = abs(pos - px * 0.5) - (px * 0.5 - r);
-	float dist = length(max(d, 0.0)) - r;
-	float alpha = 1.0 - smoothstep(-0.8, 0.8, dist);
-	COLOR = texture(TEXTURE, UV);
+	float r  = corner_radius;
+	vec2 d   = abs(pos - px * 0.5) - (px * 0.5 - r);
+	float dist  = length(max(d, 0.0)) - r;
+	float alpha = 1.0 - smoothstep(-1.0, 1.0, dist);
+	COLOR   = texture(TEXTURE, UV);
 	COLOR.a *= alpha;
 }
 """
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
-	material = mat
-	clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 
 	_template = TextureRect.new()
 	_template.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_template.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_template.stretch_mode = TextureRect.STRETCH_SCALE
+	_template.material = mat
 	add_child(_template)
 
 	_art = TextureRect.new()
