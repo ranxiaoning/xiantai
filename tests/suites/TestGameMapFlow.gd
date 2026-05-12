@@ -3,6 +3,7 @@
 extends RefCounted
 
 const BattleEngineScript = preload("res://scripts/BattleEngine.gd")
+const GameMapScene := preload("res://scenes/GameMap.tscn")
 
 var _pass_count: int = 0
 var _fail_count: int = 0
@@ -17,6 +18,7 @@ func run_all() -> Dictionary:
 	_t("test_battle_win_heals_current_hp_once")
 	_t("test_non_battle_node_heals_current_hp_once")
 	_t("test_battle_starts_from_persistent_current_hp")
+	_t("test_shop_node_requests_shop_scene_transition")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
@@ -63,6 +65,36 @@ func test_battle_starts_from_persistent_current_hp() -> void:
 	var engine: Object = BattleEngineScript.new()
 	engine.call("init", GameState.character, GameState.deck, {"name": "测试敌人", "hp": 30})
 	_assert_eq(engine.get("s")["player_hp"], 37, "战斗开始：使用地图维护的当前生命值")
+
+
+func test_shop_node_requests_shop_scene_transition() -> void:
+	GameState.start_run("chen_tian_feng")
+	GameState.map_intro_played = true
+	GameState.map_started = true
+	GameState.map_nodes = {
+		"shop_probe": {
+			"id": "shop_probe",
+			"type": "shop",
+			"floor": 1,
+			"col": 0,
+			"total_cols": 1,
+			"next_ids": [],
+			"visited": false,
+		},
+	}
+	GameState.map_floors = [["shop_probe"]]
+	GameState.map_accessible_ids = ["shop_probe"]
+	GameState.map_current_floor = 0
+	GameState.map_last_node_id = ""
+
+	var tree := Engine.get_main_loop() as SceneTree
+	var scene: Control = GameMapScene.instantiate()
+	tree.root.add_child(scene)
+	scene.call("_on_node_btn_pressed", "shop_probe")
+	_assert_eq(GameState.pending_battle_node_type, "shop", "黑市节点点击：记录待处理节点类型为 shop")
+	_assert_eq(GameState.pending_battle_node_floor, 1, "黑市节点点击：记录待处理节点层数")
+	_assert_eq(scene.get("_scene_transition_pending"), true, "黑市节点点击：请求切换到 Shop.tscn")
+	scene.free()
 
 
 func _first_non_battle_node_id() -> String:

@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://char_select_v1"]
+[gd_scene load_steps=4 format=3 uid="uid://char_select_v1"]
 
 [ext_resource type="Script" path="res://scripts/CharacterSelect.gd" id="1_cs"]
 [ext_resource type="Texture2D" path="res://assets/bg/wanjianmen.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/portraits/chen_tianfeng.png" id="3_portrait"]
 
 [node name="CharacterSelect" type="Control"]
 layout_mode = 3
@@ -174,6 +175,7 @@ grow_horizontal = 2
 grow_vertical = 2
 custom_minimum_size = Vector2(0, 0)
 mouse_filter = 2
+texture = ExtResource("3_portrait")
 expand_mode = 1
 stretch_mode = 5
 

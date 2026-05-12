@@ -2,10 +2,13 @@
 ## 16层动态地图场景控制器
 extends Control
 
-const BATTLE_SCENE    := "res://scenes/Battle.tscn"
-const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
+const BATTLE_SCENE      := "res://scenes/Battle.tscn"
+const MAIN_MENU_SCENE   := "res://scenes/MainMenu.tscn"
+const SHOP_SCENE        := "res://scenes/Shop.tscn"
+const ADVENTURE_SCENE   := "res://scenes/AdventureEvent.tscn"
 const CardViewScene   = preload("res://scenes/CardView.tscn")
 const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
+const IN_GAME_MENU_SCRIPT: Script = preload("res://scripts/InGameMenu.gd")
 
 # ── 布局常量 ───────────────────────────────────────────────────────
 const FLOOR_COUNT    := 16
@@ -93,6 +96,12 @@ var _card_zoom_overlay = null
 var _deck_upgrade_check: CheckBox = null
 var _deck_preview_upgraded := false
 var _test_mode := false
+var _scene_transition_pending := false
+var _origin_overlay: Control = null
+var _rolled_blessings: Array = []
+var _selected_blessing_idx: int = -1
+var _origin_confirm_btn: Button = null
+var _blessing_panels: Array[Control] = []
 
 
 func _ready() -> void:
@@ -107,10 +116,10 @@ func _ready() -> void:
 	_build_card_zoom_overlay()
 	_build_deck_upgrade_check()
 	_build_test_mode_toggle()
-	var in_game_menu := InGameMenu.new()
+	var in_game_menu: Node = IN_GAME_MENU_SCRIPT.new()
 	add_child(in_game_menu)
-	in_game_menu.abandon_confirmed.connect(_on_menu_abandon_confirmed)
-	in_game_menu.return_to_menu_confirmed.connect(_on_menu_return_confirmed)
+	in_game_menu.connect("abandon_confirmed", _on_menu_abandon_confirmed)
+	in_game_menu.connect("return_to_menu_confirmed", _on_menu_return_confirmed)
 
 	# 确保 GameState 有地图数据
 	if GameState.map_floors.is_empty():
@@ -458,11 +467,15 @@ func _set_pulse_target(target: BaseButton) -> void:
 
 
 func _update_hp_label() -> void:
+	if hp_label == null:
+		return
 	var hp_max: int = GameState.character.get("hp_max", 60)
 	hp_label.text = "HP %d / %d" % [GameState.current_hp, hp_max]
 
 
 func _update_stone_label() -> void:
+	if _stone_label == null:
+		return
 	_stone_label.text = "%d" % GameState.spirit_stones
 
 
@@ -486,10 +499,13 @@ func _scroll_to_current_floor() -> void:
 # ── 节点点击处理 ─────────────────────────────────────────────────
 
 func _on_node_btn_pressed(node_id: String) -> void:
+	if _scene_transition_pending:
+		return
 	var nd: Dictionary = GameState.map_nodes.get(node_id, {})
 	if nd.is_empty():
 		return
 	var ntype: String = nd["type"]
+	Log.info("GameMap", "点击地图节点 %s（类型=%s）" % [node_id, ntype])
 
 	# 访问节点（标记状态、更新accessible）
 	GameState.visit_map_node(node_id)
@@ -503,7 +519,7 @@ func _on_node_btn_pressed(node_id: String) -> void:
 		"bonfire":
 			_show_bonfire_popup(node_id)
 		"shop":
-			_show_shop_popup(node_id)
+			_enter_shop(node_id)
 		"event":
 			_show_event_popup(node_id)
 		_:
@@ -554,13 +570,33 @@ func _show_shop_popup(_node_id: String) -> void:
 	node_popup.show()
 
 
-func _show_event_popup(_node_id: String) -> void:
-	popup_title.text   = "❓ 执念"
-	popup_desc.text    = "一道残影出现在你面前，似乎有话要说……\n\n（事件系统尚未实装）"
+func _enter_shop(node_id: String) -> void:
+	_scene_transition_pending = true
+	Log.info("GameMap", "进入黑市节点 %s，切换到 %s" % [node_id, SHOP_SCENE])
+	_update_node_visuals()
+	call_deferred("_change_scene_checked", SHOP_SCENE)
+
+
+func _change_scene_checked(scene_path: String) -> void:
+	var err := get_tree().change_scene_to_file(scene_path)
+	if err == OK:
+		return
+	_scene_transition_pending = false
+	Log.error("GameMap", "场景切换失败：%s，错误码=%d" % [scene_path, err])
+	popup_title.text = "无法进入黑市"
+	popup_desc.text = "黑市场景加载失败，请检查 %s。\n错误码：%d" % [scene_path, err]
 	popup_btn1.visible = false
 	popup_btn2.visible = false
-	popup_close_btn.text = "继续前行"
+	popup_close_btn.text = "知道了"
 	node_popup.show()
+
+
+func _show_event_popup(_node_id: String) -> void:
+	var event_id: String = EventDatabase.get_random_event_id(GameState.map_current_floor)
+	GameState.pending_event_id = event_id
+	_scene_transition_pending = true
+	_update_node_visuals()
+	call_deferred("_change_scene_checked", ADVENTURE_SCENE)
 
 
 # ── 弹窗信号 ─────────────────────────────────────────────────────
@@ -578,11 +614,9 @@ func _on_popup_btn2_pressed() -> void:
 func _on_popup_close_btn_pressed() -> void:
 	node_popup.hide()
 	if _pending_node_id == START_NODE_ID:
-		# 起始节点确认后解锁第1层，滚动过去
-		GameState.start_map()
-		_on_popup_close()
-		await get_tree().process_frame
-		_scroll_to_current_floor()
+		_show_origin_overlay()
+	elif _pending_node_id == "__start_done__":
+		_do_start_map()
 	else:
 		_on_popup_close()
 
@@ -746,13 +780,15 @@ func _refresh_bag() -> void:
 
 		if idx < items.size():
 			var item: Dictionary = items[idx]
-			btn.add_theme_stylebox_override("normal",   _bag_slot_style(true))
-			btn.add_theme_stylebox_override("hover",    _bag_slot_style(true, true))
-			btn.add_theme_stylebox_override("pressed",  _bag_slot_style(true))
-			btn.add_theme_stylebox_override("disabled", _bag_slot_style(true))
-			btn.add_theme_stylebox_override("focus",    _bag_slot_style(true))
+			var is_active_formation := str(item.get("id", "")) == GameState.active_formation_id
+			btn.add_theme_stylebox_override("normal",   _bag_slot_style(true, false, is_active_formation))
+			btn.add_theme_stylebox_override("hover",    _bag_slot_style(true, true, is_active_formation))
+			btn.add_theme_stylebox_override("pressed",  _bag_slot_style(true, false, is_active_formation))
+			btn.add_theme_stylebox_override("disabled", _bag_slot_style(true, false, is_active_formation))
+			btn.add_theme_stylebox_override("focus",    _bag_slot_style(true, false, is_active_formation))
 			btn.text = (item.get("name", "?") as String).left(2)
-			btn.tooltip_text = "%s\n%s" % [item.get("name", ""), item.get("effect_desc", "")]
+			var active_tip := "\n[当前阵法]" if is_active_formation else ""
+			btn.tooltip_text = "%s\n%s%s" % [item.get("name", ""), item.get("effect_desc", ""), active_tip]
 			btn.pressed.connect(_on_use_item.bind(idx))
 		else:
 			var empty_style := _bag_slot_style(false)
@@ -772,7 +808,7 @@ func _refresh_bag() -> void:
 	_bag_next.visible = ((_bag_page + 1) * SLOTS_PER_PAGE < items.size())
 
 
-func _bag_slot_style(filled: bool, hovered: bool = false) -> StyleBoxFlat:
+func _bag_slot_style(filled: bool, hovered: bool = false, active: bool = false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.corner_radius_top_left    = 22
 	s.corner_radius_top_right   = 22
@@ -785,6 +821,9 @@ func _bag_slot_style(filled: bool, hovered: bool = false) -> StyleBoxFlat:
 	if filled:
 		s.bg_color     = Color(0.28, 0.22, 0.10, 0.9) if not hovered else Color(0.38, 0.30, 0.14, 0.95)
 		s.border_color = Color(0.82, 0.70, 0.28, 0.95)
+		if active:
+			s.bg_color = Color(0.12, 0.28, 0.20, 0.95) if not hovered else Color(0.16, 0.38, 0.28, 0.95)
+			s.border_color = Color(0.45, 0.95, 0.68, 0.95)
 	else:
 		s.bg_color     = Color(0.08, 0.08, 0.08, 0.45)
 		s.border_color = Color(0.45, 0.40, 0.28, 0.35)
@@ -802,10 +841,24 @@ func _on_bag_next() -> void:
 
 
 func _on_use_item(idx: int) -> void:
-	GameState.remove_consumable(idx)
+	var result: Dictionary = GameState.use_consumable(idx, "map")
 	var max_page := maxi(0, ceili(float(GameState.consumables.size()) / SLOTS_PER_PAGE) - 1)
 	_bag_page = mini(_bag_page, max_page)
+	_update_hp_label()
 	_refresh_bag()
+	if not bool(result.get("ok", false)):
+		_show_item_result(str(result.get("message", "")))
+	elif str(result.get("message", "")) != "":
+		_show_item_result(str(result.get("message", "")))
+
+
+func _show_item_result(message: String) -> void:
+	popup_title.text = "物品"
+	popup_desc.text = message
+	popup_btn1.visible = false
+	popup_btn2.visible = false
+	popup_close_btn.text = "知道了"
+	node_popup.show()
 
 
 # ── 宝物栏 ───────────────────────────────────────────────────────
@@ -923,3 +976,286 @@ func _play_intro_animation() -> void:
 	tw.tween_interval(1.6)
 	tw.tween_property(_intro_label, "modulate:a", 0.0, 0.9).set_ease(Tween.EASE_IN)
 	tw.tween_callback(_intro_overlay.hide)
+
+
+# ── 起源选择 Overlay ────────────────────────────────────────────
+
+func _show_origin_overlay() -> void:
+	if _origin_overlay and is_instance_valid(_origin_overlay):
+		_origin_overlay.queue_free()
+	_rolled_blessings = StartEventDatabase.roll_three(int(Time.get_ticks_msec() % 2147483647))
+	_selected_blessing_idx = -1
+	_blessing_panels.clear()
+
+	_origin_overlay = Control.new()
+	_origin_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_origin_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_origin_overlay.z_index = 200
+	add_child(_origin_overlay)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.80)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_origin_overlay.add_child(dim)
+
+	var vp := get_viewport_rect().size
+	var panel_w := minf(vp.x * 0.88, 980.0)
+	var panel_h := minf(vp.y * 0.76, 560.0)
+
+	var panel := PanelContainer.new()
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.06, 0.055, 0.07, 0.98)
+	ps.border_color = Color(0.72, 0.54, 0.22, 0.80)
+	ps.set_border_width_all(1)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(panel_w, panel_h)
+	panel.offset_left  = -panel_w * 0.5
+	panel.offset_top   = -panel_h * 0.5
+	panel.offset_right  = panel_w * 0.5
+	panel.offset_bottom = panel_h * 0.5
+	_origin_overlay.add_child(panel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 20)
+	panel.add_child(pad)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	pad.add_child(vbox)
+
+	var title_lbl := Label.new()
+	title_lbl.text = "起源抉择"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 30)
+	title_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	vbox.add_child(title_lbl)
+
+	var sub_lbl := Label.new()
+	sub_lbl.text = "择一而行，不可更改。此乃本局命运之基。"
+	sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub_lbl.add_theme_font_size_override("font_size", 15)
+	sub_lbl.add_theme_color_override("font_color", Color(0.72, 0.76, 0.78))
+	vbox.add_child(sub_lbl)
+
+	var sep := HSeparator.new()
+	vbox.add_child(sep)
+
+	var row := HBoxContainer.new()
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 14)
+	vbox.add_child(row)
+
+	for i in range(_rolled_blessings.size()):
+		var bp := _build_blessing_panel(_rolled_blessings[i], i)
+		bp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(bp)
+		_blessing_panels.append(bp)
+
+	_origin_confirm_btn = Button.new()
+	_origin_confirm_btn.text = "确认选择"
+	_origin_confirm_btn.focus_mode = Control.FOCUS_NONE
+	_origin_confirm_btn.custom_minimum_size = Vector2(180, 46)
+	_origin_confirm_btn.add_theme_font_size_override("font_size", 20)
+	_origin_confirm_btn.visible = false
+	_origin_confirm_btn.pressed.connect(_on_origin_confirm_pressed)
+	vbox.add_child(_origin_confirm_btn)
+
+
+func _build_blessing_panel(blessing: Dictionary, idx: int) -> Control:
+	var panel := PanelContainer.new()
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.10, 0.09, 0.12, 0.90)
+	ps.border_color = Color(0.40, 0.30, 0.15, 0.60)
+	ps.set_border_width_all(1)
+	ps.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", ps)
+	panel.set_meta("style", ps)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.gui_input.connect(_on_blessing_panel_input.bind(idx))
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 14)
+	panel.add_child(pad)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	pad.add_child(vb)
+
+	var name_lbl := Label.new()
+	name_lbl.text = blessing.get("name", "")
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 22)
+	name_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	vb.add_child(name_lbl)
+
+	var sep2 := HSeparator.new()
+	vb.add_child(sep2)
+
+	var desc_lbl := Label.new()
+	desc_lbl.text = blessing.get("desc", "")
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	desc_lbl.add_theme_font_size_override("font_size", 15)
+	desc_lbl.add_theme_color_override("font_color", Color(0.90, 0.88, 0.82))
+	vb.add_child(desc_lbl)
+
+	return panel
+
+
+func _on_blessing_panel_input(event: InputEvent, idx: int) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_selected_blessing_idx = idx
+		for i in range(_blessing_panels.size()):
+			var ps: StyleBoxFlat = _blessing_panels[i].get_meta("style")
+			if i == idx:
+				ps.bg_color    = Color(0.20, 0.16, 0.06, 0.95)
+				ps.border_color = Color(1.0, 0.80, 0.25, 0.95)
+				ps.set_border_width_all(2)
+			else:
+				ps.bg_color    = Color(0.10, 0.09, 0.12, 0.90)
+				ps.border_color = Color(0.40, 0.30, 0.15, 0.60)
+				ps.set_border_width_all(1)
+		_origin_confirm_btn.visible = true
+
+
+func _on_origin_confirm_pressed() -> void:
+	if _selected_blessing_idx < 0 or _selected_blessing_idx >= _rolled_blessings.size():
+		return
+	var blessing: Dictionary = _rolled_blessings[_selected_blessing_idx]
+	var effects: Array = blessing.get("effects", [])
+	var has_card_pick := false
+	for e in effects:
+		if str(e.get("type", "")) == "card_pick_by_rarity":
+			has_card_pick = true
+			break
+
+	var instant_effects: Array = effects.filter(func(e): return str(e.get("type", "")) != "card_pick_by_rarity")
+	var result_msg: String = StartEventDatabase.apply_instant_effects(instant_effects)
+
+	if has_card_pick:
+		var pick_effects: Array = effects.filter(func(e): return str(e.get("type", "")) == "card_pick_by_rarity")
+		_show_start_card_picker(pick_effects[0], result_msg)
+	else:
+		_finish_start_node(result_msg)
+
+
+func _show_start_card_picker(pick_effect: Dictionary, pending_msg: String) -> void:
+	var card_ids: Array[String] = StartEventDatabase.get_three_earth_cards()
+
+	var sub := Control.new()
+	sub.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sub.z_index = 50
+	sub.mouse_filter = Control.MOUSE_FILTER_STOP
+	_origin_overlay.add_child(sub)
+
+	var shade := ColorRect.new()
+	shade.color = Color(0.0, 0.0, 0.0, 0.75)
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sub.add_child(shade)
+
+	var vp := get_viewport_rect().size
+	var pw := minf(vp.x * 0.70, 820.0)
+	var ph := minf(vp.y * 0.72, 520.0)
+	var cpanel := PanelContainer.new()
+	var cps := StyleBoxFlat.new()
+	cps.bg_color = Color(0.06, 0.055, 0.07, 0.98)
+	cps.border_color = Color(0.72, 0.54, 0.22, 0.80)
+	cps.set_border_width_all(1)
+	cps.set_corner_radius_all(8)
+	cpanel.add_theme_stylebox_override("panel", cps)
+	cpanel.set_anchors_preset(Control.PRESET_CENTER)
+	cpanel.custom_minimum_size = Vector2(pw, ph)
+	cpanel.offset_left  = -pw * 0.5
+	cpanel.offset_top   = -ph * 0.5
+	cpanel.offset_right  = pw * 0.5
+	cpanel.offset_bottom = ph * 0.5
+	sub.add_child(cpanel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 18)
+	cpanel.add_child(pad)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	pad.add_child(vb)
+
+	var title_lbl := Label.new()
+	title_lbl.text = "功法传承 · 择一修行"
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_font_size_override("font_size", 24)
+	title_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	vb.add_child(title_lbl)
+
+	var row := HBoxContainer.new()
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.add_theme_constant_override("separation", 12)
+	vb.add_child(row)
+
+	const CardViewSceneLocal := preload("res://scenes/CardView.tscn")
+	const CARD_ASPECT_LOCAL := 2752.0 / 1536.0
+	var card_w := int((pw - 56.0 - 12.0 * 2.0) / 3.0)
+	var card_h := int(card_w * CARD_ASPECT_LOCAL)
+
+	for card_id in card_ids:
+		var cd := CardDatabase.get_card(card_id)
+		if cd.is_empty():
+			continue
+		var wrap := VBoxContainer.new()
+		wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		wrap.add_theme_constant_override("separation", 6)
+		row.add_child(wrap)
+
+		var view: Control = CardViewSceneLocal.instantiate()
+		view.custom_minimum_size = Vector2(card_w, card_h)
+		view.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		view.mouse_filter = Control.MOUSE_FILTER_STOP
+		view.set_hover_motion_enabled(false)
+		view.setup(cd, null, false)
+		view.activated.connect(_on_start_card_chosen.bind(card_id, pending_msg, sub))
+		wrap.add_child(view)
+
+	var hint_lbl := Label.new()
+	hint_lbl.text = "点击卡牌选择并加入牌库"
+	hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_lbl.add_theme_font_size_override("font_size", 14)
+	hint_lbl.add_theme_color_override("font_color", Color(0.72, 0.76, 0.78))
+	vb.add_child(hint_lbl)
+
+
+func _on_start_card_chosen(_card_data: Dictionary, card_id: String, pending_msg: String, sub: Control) -> void:
+	GameState.deck.append(card_id)
+	var cd := CardDatabase.get_card(card_id)
+	var card_name: String = str(cd.get("name", card_id))
+	sub.queue_free()
+	var full_msg := (pending_msg + "\n" if not pending_msg.is_empty() else "") + "获得功法：%s" % card_name
+	_finish_start_node(full_msg)
+
+
+func _finish_start_node(result_msg: String) -> void:
+	if _origin_overlay and is_instance_valid(_origin_overlay):
+		_origin_overlay.queue_free()
+	_origin_overlay = null
+	if not result_msg.is_empty():
+		popup_title.text = "起源已定"
+		popup_desc.text = result_msg
+		popup_btn1.visible = false
+		popup_btn2.visible = false
+		popup_close_btn.text = "踏入轮回"
+		_pending_node_id = "__start_done__"
+		node_popup.show()
+	else:
+		_do_start_map()
+
+
+func _do_start_map() -> void:
+	GameState.start_map()
+	_on_popup_close()
+	await get_tree().process_frame
+	_scroll_to_current_floor()

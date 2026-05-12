@@ -7,6 +7,7 @@ const GOLD_DIM := Color(0.48, 0.39, 0.23, 1.0)
 const INK := Color(0.035, 0.052, 0.065, 0.86)
 const INK_DARK := Color(0.018, 0.027, 0.036, 0.93)
 const INK_SOFT := Color(0.08, 0.11, 0.13, 0.72)
+const IN_GAME_MENU_SCRIPT: Script = preload("res://scripts/InGameMenu.gd")
 
 var _selected_sect: String = "万剑门"
 var _selected_char_id: String = "chen_tian_feng"
@@ -51,10 +52,10 @@ func _ready() -> void:
 	start_btn.button_up.connect(_on_start_button_up)
 	call_deferred("_animate_scene_in")
 	# 局内菜单
-	var in_game_menu := InGameMenu.new()
+	var in_game_menu: Node = IN_GAME_MENU_SCRIPT.new()
 	add_child(in_game_menu)
-	in_game_menu.abandon_confirmed.connect(_on_menu_abandon_confirmed)
-	in_game_menu.return_to_menu_confirmed.connect(_on_menu_return_confirmed)
+	in_game_menu.connect("abandon_confirmed", _on_menu_abandon_confirmed)
+	in_game_menu.connect("return_to_menu_confirmed", _on_menu_return_confirmed)
 
 
 func _configure_portrait_layout() -> void:

@@ -13,11 +13,15 @@ const SIZE_TYPE := 60.0
 const SIZE_DESC := 88.0
 const CARD_TEMPLATE := preload("res://assets/card/template.png")
 const CARD_ART_SOURCE_DIR := "res://assets/card/art/"
+const CARD_CORNER_RADIUS_RATIO := 0.085
+const CARD_BOTTOM_CORNER_RADIUS_RATIO := 0.14
 
 var _card_data: Dictionary = {}
 var _description_override: String = ""
 var _description_segments_override: Array = []
 var _art_cache: Dictionary = {}
+var _rounded_mask_enabled := true
+var _mask_style := StyleBoxFlat.new()
 
 var _template: TextureRect
 var _art: TextureRect
@@ -33,6 +37,12 @@ func _ready() -> void:
 	_ensure_layers()
 	resized.connect(_on_resized)
 	call_deferred("refresh")
+
+
+func _draw() -> void:
+	if not _rounded_mask_enabled:
+		return
+	_draw_rounded_mask()
 
 
 func setup(card_data: Dictionary, description_override: String = "", description_segments_override: Array = []) -> void:
@@ -58,6 +68,20 @@ func set_description_segments_override(segments: Array) -> void:
 	_description_segments_override = segments
 	_description_override = _segments_to_text(segments)
 	refresh()
+
+
+func set_rounded_mask_enabled(enabled: bool) -> void:
+	_rounded_mask_enabled = enabled
+	clip_children = CanvasItem.CLIP_CHILDREN_ONLY if enabled else CanvasItem.CLIP_CHILDREN_DISABLED
+	queue_redraw()
+
+
+static func get_corner_radius_for_size(render_size: Vector2) -> int:
+	return maxi(1, int(round(minf(render_size.x, render_size.y) * CARD_CORNER_RADIUS_RATIO)))
+
+
+static func get_bottom_corner_radius_for_size(render_size: Vector2) -> int:
+	return maxi(1, int(round(minf(render_size.x, render_size.y) * CARD_BOTTOM_CORNER_RADIUS_RATIO)))
 
 
 static func get_display_name(card_data: Dictionary) -> String:
@@ -132,6 +156,7 @@ func refresh() -> void:
 
 
 func _on_resized() -> void:
+	queue_redraw()
 	refresh()
 
 
@@ -140,6 +165,7 @@ func _ensure_layers() -> void:
 		return
 
 	clip_contents = true
+	clip_children = CanvasItem.CLIP_CHILDREN_ONLY if _rounded_mask_enabled else CanvasItem.CLIP_CHILDREN_DISABLED
 
 	# 圆角 shader 直接挂在模板 TextureRect 上，TEXTURE = 卡牌框架图，UV 坐标可靠
 	var shader := Shader.new()
@@ -188,6 +214,19 @@ void fragment() {
 	add_child(_type_label)
 	add_child(_desc_label)
 	add_child(_desc_rich_label)
+
+
+func _draw_rounded_mask() -> void:
+	if size.x <= 0.0 or size.y <= 0.0:
+		return
+	var radius := get_corner_radius_for_size(size)
+	var bottom_radius := get_bottom_corner_radius_for_size(size)
+	_mask_style.bg_color = Color.WHITE
+	_mask_style.corner_radius_top_left = radius
+	_mask_style.corner_radius_top_right = radius
+	_mask_style.corner_radius_bottom_right = bottom_radius
+	_mask_style.corner_radius_bottom_left = bottom_radius
+	draw_style_box(_mask_style, Rect2(Vector2.ZERO, size))
 
 
 func _make_label(font_size: int, color: Color, outline_size: int, outline_color: Color) -> Label:

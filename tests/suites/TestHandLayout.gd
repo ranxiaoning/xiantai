@@ -5,6 +5,7 @@ extends RefCounted
 const BattleEngineScript = preload("res://scripts/BattleEngine.gd")
 const BattleSceneScript = preload("res://scripts/BattleScene.gd")
 const CardRendererScript = preload("res://scripts/CardRenderer.gd")
+const CardViewScene = preload("res://scenes/CardView.tscn")
 
 const _CARD_W   := 100.0
 const _SEP_NORM := 12.0
@@ -59,6 +60,8 @@ func run_all() -> Dictionary:
 	_t("test_dynamic_desc_damage_down_red")
 	_t("test_dynamic_desc_damage_same_black")
 	_t("test_dynamic_desc_upgrade_baseline")
+	_t("test_renderer_uses_rounded_child_mask")
+	_t("test_card_view_masks_shadow_and_renderer")
 	_t("test_renderer_plain_description_uses_label_layout")
 	_t("test_renderer_dynamic_description_is_transparent_and_centered")
 
@@ -462,6 +465,40 @@ func test_dynamic_desc_upgrade_baseline() -> void:
 	})
 	_assert_eq(_segments_text(segments), "造成 9 点伤害。", "dynamic desc: upgraded cards compare against upgraded base value")
 	_assert_eq(segments[1]["color"], BattleSceneScript.CARD_NUM_COLOR_NORMAL, "dynamic desc: upgraded base value is black when unchanged")
+
+
+func test_renderer_uses_rounded_child_mask() -> void:
+	var renderer = CardRendererScript.new()
+	renderer.size = Vector2(100, 179)
+	renderer.setup({"id": "01", "name": "card"})
+	renderer.refresh()
+
+	_assert_eq(renderer.clip_children, CanvasItem.CLIP_CHILDREN_ONLY, "CardRenderer clips all layers through rounded mask")
+	_assert_true(CardRendererScript.get_corner_radius_for_size(Vector2(100, 179)) >= 8, "CardRenderer hand-card corner radius is visibly rounded")
+	_assert_true(
+		CardRendererScript.get_bottom_corner_radius_for_size(Vector2(100, 179)) > CardRendererScript.get_corner_radius_for_size(Vector2(100, 179)),
+		"CardRenderer bottom corners are smoother than top ornamental corners"
+	)
+	renderer.free()
+
+
+func test_card_view_masks_shadow_and_renderer() -> void:
+	var view: Control = CardViewScene.instantiate()
+	view.custom_minimum_size = Vector2(100, 179)
+	view.size = Vector2(100, 179)
+	view.setup({"id": "01", "name": "card"}, null, false)
+
+	var renderer: Control = null
+	for child in view.get_children():
+		if child.has_method("set_rounded_mask_enabled"):
+			renderer = child
+			break
+
+	_assert_eq(view.clip_children, CanvasItem.CLIP_CHILDREN_ONLY, "CardView clips shadow/dimmer to rounded card outline")
+	_assert_true(renderer != null, "CardView owns a CardRenderer child")
+	if renderer != null:
+		_assert_eq(renderer.clip_children, CanvasItem.CLIP_CHILDREN_DISABLED, "Nested CardRenderer mask is disabled under CardView mask")
+	view.free()
 
 
 func test_renderer_plain_description_uses_label_layout() -> void:

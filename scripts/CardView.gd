@@ -21,6 +21,7 @@ var _tween: Tween
 
 var anim_pos: Vector2 = Vector2.ZERO
 var anim_rot: float = 0.0
+var _mask_style := StyleBoxFlat.new()
 
 @onready var _art: TextureRect = $Art
 @onready var _panel: Panel = $Panel
@@ -51,10 +52,21 @@ func set_hover_motion_enabled(enabled: bool) -> void:
 
 
 func _ready() -> void:
-	pivot_offset = Vector2(custom_minimum_size.x * 0.5, custom_minimum_size.y)
+	_apply_rounded_child_mask()
+	_update_pivot_offset()
 	mouse_entered.connect(_on_entered)
 	mouse_exited.connect(_on_exited)
+	resized.connect(_on_resized)
 	_ensure_renderer()
+
+
+func _draw() -> void:
+	_draw_rounded_mask()
+
+
+func _on_resized() -> void:
+	_update_pivot_offset()
+	queue_redraw()
 
 
 func _on_entered() -> void:
@@ -107,12 +119,42 @@ func _ensure_renderer() -> void:
 	if _dimmer == null:
 		_dimmer = $Dimmer
 
-	clip_contents = true
+	_apply_rounded_child_mask()
 	_art.hide()
 	_panel.hide()
 
 	_renderer = CardRendererScript.new()
 	_renderer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_renderer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_renderer.set_rounded_mask_enabled(false)
 	add_child(_renderer)
 	move_child(_renderer, _dimmer.get_index())
+
+
+func _apply_rounded_child_mask() -> void:
+	clip_contents = true
+	clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	queue_redraw()
+
+
+func _draw_rounded_mask() -> void:
+	var draw_size := size
+	if draw_size.x <= 0.0 or draw_size.y <= 0.0:
+		draw_size = custom_minimum_size
+	if draw_size.x <= 0.0 or draw_size.y <= 0.0:
+		return
+	var radius := CardRendererScript.get_corner_radius_for_size(draw_size)
+	var bottom_radius := CardRendererScript.get_bottom_corner_radius_for_size(draw_size)
+	_mask_style.bg_color = Color.WHITE
+	_mask_style.corner_radius_top_left = radius
+	_mask_style.corner_radius_top_right = radius
+	_mask_style.corner_radius_bottom_right = bottom_radius
+	_mask_style.corner_radius_bottom_left = bottom_radius
+	draw_style_box(_mask_style, Rect2(Vector2.ZERO, draw_size))
+
+
+func _update_pivot_offset() -> void:
+	var pivot_size := size
+	if pivot_size.x <= 0.0 or pivot_size.y <= 0.0:
+		pivot_size = custom_minimum_size
+	pivot_offset = Vector2(pivot_size.x * 0.5, pivot_size.y)

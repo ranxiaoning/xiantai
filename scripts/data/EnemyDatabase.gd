@@ -34,6 +34,12 @@ var ELITE_QING_TONG_JU_XIANG: Dictionary
 var ELITE_SHEN_YUAN_DA_ZHOU_SHI: Dictionary
 var ELITE_YUAN_GU_SHI_TIAN_CHONG: Dictionary
 
+## 奇遇事件专用敌人
+var EVENT_FENG_XIU_CAN_QU: Dictionary    # Q-104 疯修·残躯
+var EVENT_TAN_LAN_DU_JIE: Dictionary     # Q-107 贪婪的渡劫者
+var EVENT_LI_ZHI_XIU_SHI: Dictionary     # Q-111 理智修士
+var EVENT_SHI_LIAN_KUI_LEI: Dictionary   # Q-117 试炼傀儡
+
 ## 普通/精英怪物 ID 池
 const NORMAL_POOL: Array[String] = [
 	"normal_xue_ling_kuang_tu",
@@ -54,11 +60,14 @@ var _all: Dictionary = {}
 
 func _ready() -> void:
 	_init_enemies()
+	_init_event_enemies()
 	for e in [
 		NORMAL_XUE_LING_KUANG_TU, NORMAL_NI_YING_SI_SHI,
 		NORMAL_QING_TONG_WEI_JIA, NORMAL_FU_HUA_ZHOU_SHI, NORMAL_TUN_SHI_YOU_YAN,
 		ELITE_XUE_YU_KUANG_MO, ELITE_AN_YING_CI_KE,
 		ELITE_QING_TONG_JU_XIANG, ELITE_SHEN_YUAN_DA_ZHOU_SHI, ELITE_YUAN_GU_SHI_TIAN_CHONG,
+		EVENT_FENG_XIU_CAN_QU, EVENT_TAN_LAN_DU_JIE,
+		EVENT_LI_ZHI_XIU_SHI, EVENT_SHI_LIAN_KUI_LEI,
 	]:
 		_all[e["id"]] = e
 
@@ -269,6 +278,61 @@ func _init_enemies() -> void:
 	}
 
 
+func _init_event_enemies() -> void:
+	# ─── 疯修·残躯（Q-104 强行夺取）──────────────────────────────────
+	EVENT_FENG_XIU_CAN_QU = {
+		"id": "event_feng_xiu_can_qu",
+		"name": "疯修·残躯",
+		"lore": "失去理智的修士，徒手搏斗，力量因疯狂而倍增。",
+		"type": "normal", "archetype": "berserker",
+		"hp": 45, "hu_ti": 0,
+		"actions": [
+			{"name": "乱撕", "intent_text": "乱撕 · 9伤害", "type": "attack", "damage": 9},
+			{"name": "狂咬", "intent_text": "狂咬 · 15伤害", "type": "attack", "damage": 15},
+		],
+		"action_cycle": [0, 1],
+	}
+	# ─── 贪婪的渡劫者（Q-107 掀桌子抢劫）──────────────────────────────
+	EVENT_TAN_LAN_DU_JIE = {
+		"id": "event_tan_lan_du_jie",
+		"name": "贪婪的渡劫者",
+		"lore": "专攻富有的旅人，出手快狠准。",
+		"type": "normal", "archetype": "assassin",
+		"hp": 35, "hu_ti": 0,
+		"actions": [
+			{"name": "偷袭", "intent_text": "偷袭 · 10伤害", "type": "attack", "damage": 10},
+			{"name": "连刺", "intent_text": "连刺 · 6伤×2", "type": "attack", "damage": 6, "hits": 2},
+		],
+		"action_cycle": [0, 1],
+	}
+	# ─── 理智修士（Q-111 趁其不备袭击他）─────────────────────────────
+	EVENT_LI_ZHI_XIU_SHI = {
+		"id": "event_li_zhi_xiu_shi",
+		"name": "理智修士",
+		"lore": "身经百战，警觉性极高，攻防兼备。",
+		"type": "normal", "archetype": "balanced",
+		"hp": 30, "hu_ti": 0,
+		"actions": [
+			{"name": "防御", "intent_text": "防御 · 获得7身形", "type": "defend", "shield": 7, "is_shen_xing": true},
+			{"name": "反击", "intent_text": "反击 · 13伤害", "type": "attack", "damage": 13},
+		],
+		"action_cycle": [0, 1],
+	}
+	# ─── 试炼傀儡（Q-117 挑战试炼）───────────────────────────────────
+	EVENT_SHI_LIAN_KUI_LEI = {
+		"id": "event_shi_lian_kui_lei",
+		"name": "试炼傀儡",
+		"lore": "古法阵驱动的守护者，专为考验来者而生。",
+		"type": "normal", "archetype": "tank",
+		"hp": 30, "hu_ti": 5,
+		"actions": [
+			{"name": "固守", "intent_text": "固守 · 获得5护体", "type": "defend", "shield": 5},
+			{"name": "试炼击", "intent_text": "试炼击 · 8伤害", "type": "attack", "damage": 8},
+		],
+		"action_cycle": [0, 1],
+	}
+
+
 func get_enemy(id: String) -> Dictionary:
 	## 返回指定ID怪物的深拷贝（避免共享引用污染）
 	return _all.get(id, {}).duplicate(true)
@@ -286,6 +350,11 @@ func get_enemy_for_node(node_type: String, _floor: int) -> Dictionary:
 		return get_enemy("elite_xue_yu_kuang_mo")
 	elif node_type == "elite":
 		pool = ELITE_POOL
+	elif node_type == "event_battle":
+		var eid: String = GameState.event_battle_enemy_id
+		if not eid.is_empty() and _all.has(eid):
+			return get_enemy(eid)
+		pool = NORMAL_POOL
 	else:
 		pool = NORMAL_POOL
 	var idx: int = randi() % pool.size()

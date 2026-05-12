@@ -13,18 +13,23 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/data/CardDatabase.gd",
 	"res://scripts/data/CharacterDatabase.gd",
 	"res://scripts/data/EnemyDatabase.gd",
+	"res://scripts/data/ShopDatabase.gd",
 	"res://scripts/GameState.gd",
 	"res://scripts/MusicManager.gd",
 	"res://scripts/BattleEngine.gd",
 	"res://scripts/CardRenderer.gd",
 	"res://scripts/CardZoomOverlay.gd",
 	"res://scripts/CharacterSelect.gd",
+	"res://scripts/InGameMenu.gd",
 	"res://scripts/GameMap.gd",
 	"res://scripts/BattleScene.gd",
 	"res://scripts/MapGenerator.gd",
 	"res://scripts/MapDrawLayer.gd",
 	"res://scripts/RewardScreen.gd",
 	"res://scripts/BonfireUpgrade.gd",
+	"res://scripts/ShopScene.gd",
+	"res://scripts/data/EventDatabase.gd",
+	"res://scripts/AdventureEvent.gd",
 ]
 
 const REQUIRED_AUTOLOADS: Array = [
@@ -34,6 +39,8 @@ const REQUIRED_AUTOLOADS: Array = [
 	["CardDatabase", "res://scripts/data/CardDatabase.gd"],
 	["CharacterDatabase", "res://scripts/data/CharacterDatabase.gd"],
 	["EnemyDatabase", "res://scripts/data/EnemyDatabase.gd"],
+	["ShopDatabase", "res://scripts/data/ShopDatabase.gd"],
+	["EventDatabase", "res://scripts/data/EventDatabase.gd"],
 	["GameState", "res://scripts/GameState.gd"],
 	["MusicManager", "res://scripts/MusicManager.gd"],
 ]
@@ -46,9 +53,12 @@ const TEST_SCRIPTS: Array[String] = [
 	"res://tests/suites/TestRewardScreen.gd",
 	"res://tests/suites/TestGameMapFlow.gd",
 	"res://tests/suites/TestCharacterSelect.gd",
+	"res://tests/suites/TestShopDatabase.gd",
+	"res://tests/suites/TestShopTransactions.gd",
 	"res://tests/suites/TestBattleEngineLogic.gd",
 	"res://tests/suites/TestCardEffects.gd",
 	"res://tests/suites/TestMapGenerator.gd",
+	"res://tests/suites/TestEventSystem.gd",
 ]
 
 const SCENES: Array[String] = [
@@ -59,6 +69,7 @@ const SCENES: Array[String] = [
 	"res://scenes/Battle.tscn",
 	"res://scenes/RewardScreen.tscn",
 	"res://scenes/BonfireUpgrade.tscn",
+	"res://scenes/Shop.tscn",
 ]
 
 var _pass_count: int = 0

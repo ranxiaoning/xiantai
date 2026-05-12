@@ -189,6 +189,8 @@ CharacterSelect (Control)
 - `CharacterDatabase.get_sect_data(sect)` → 门派元数据（`bg_path` 等）
 - `CharacterDatabase.get_sect_characters(sect)` → 该门派所有角色列表
 - `CharacterDatabase.get_character(id)` → 单个角色完整数据（含 `portrait_path`）
+- `portrait_path` 必须能通过 `load(path) as Texture2D` 加载成功，角色选择界面据此刷新中央立绘。
+- `CharacterSelect.tscn` 的 `Portrait` 节点默认绑定 `assets/portraits/chen_tianfeng.png`，避免场景进入后的首帧出现空白立绘。
 - 初始资质中【灵力上限】与【灵力回复】分别独立成行展示，不把回复值写在括号里。
 
 ### 扩展指南
@@ -210,6 +212,8 @@ CharacterSelect (Control)
 | 点击门派按钮 | 切换 `_selected_sect`，刷新弟子列表，更新背景图 |
 | 点击弟子按钮 | 切换 `_selected_char_id`，刷新中央立绘与右侧档案，并播放轻量淡入 |
 | 点击"开始轮回" | 按钮轻微缩放反馈，`GameState.start_run(_selected_char_id)` → 跳转 `GameMap.tscn` |
+
+角色选择界面运行时会通过 `preload("res://scripts/InGameMenu.gd")` 创建局内菜单，避免依赖 Godot 编辑器刷新全局脚本类缓存。
 
 ### 视觉状态
 
@@ -244,13 +248,15 @@ CharacterSelect (Control)
 |------|------|------|
 | Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，含 24x24 图标 + 数值，金色）|
 | MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
-| NodePopup | 水平 15–85%，垂直 15–85%，`z_index=100` | 节点事件弹窗（篝火/商店/奇遇/起始叙事），初始隐藏，显示时覆盖地图节点与连线 |
+| NodePopup | 水平 15–85%，垂直 15–85%，`z_index=100` | 节点事件弹窗（篝火/奇遇/起始叙事/物品提示），初始隐藏，显示时覆盖地图节点与连线 |
 | VictoryPanel | 水平 20–80%，垂直 20–80%，`z_index=100` | Boss 击败后胜利面板，初始隐藏 |
 | CardZoomOverlay | 全屏运行时控件，`z_index=250` | 卡组查看时点击小卡显示居中大卡，采用高质量 Shader 实时背景虚化（Blur）效果 |
 | MapDrawLayer | MapContainer 全尺寸 | 节点连线绘制层，固定 `1280 × 1520`，位于节点按钮下方 |
 | RingDrawLayer | MapContainer 全尺寸 | 当前节点外环绘制层，位于节点按钮上方 |
 
 地图卡组弹窗每次打开时 `DeckScroll` 重置到顶部；卡牌缩略图按 5 列铺满弹窗宽度并通过纵向滚动浏览。卡组/牌堆查看中的小卡使用 `CardView.set_hover_motion_enabled(false)` 禁用手牌悬浮位移动画，只保留点击放大交互。`CardZoomOverlay` 打开时从被点击卡牌的当前位置缓动放大到屏幕中央，同时背景通过 `textureLod` 实现平滑的毛玻璃虚化（Blur）效果，弱化背景干扰；点击遮罩或大卡后反向缩回原卡位置并关闭。
+
+GameMap 运行时同样通过 `preload("res://scripts/InGameMenu.gd")` 创建局内菜单，保证从角色选择点击"开始轮回"后不受脚本类缓存影响。
 
 ### MapContainer 布局常量
 
@@ -274,11 +280,11 @@ y = (FLOOR_COUNT - floor) × FLOOR_SPACING + MAP_H_PADDING
 
 | 类型 | 图片 | 说明 |
 |------|------|------|
-| `__start__` | `assets/nodes/start.png` | 起始节点，每局游戏入口 |
+| `__start__` | `assets/nodes/start.png` | 起始节点，每局游戏入口；触发叙事序章 + 起源选择（三选一祝福） |
 | `normal` | `assets/nodes/monster.png` | 普通战斗 |
 | `elite` | `assets/nodes/elite.png` | 精英战斗 |
 | `bonfire` | `assets/nodes/rest.png` | 篝火（调息回复 HP） |
-| `shop` | `assets/nodes/shop.png` | 商店（暂未实装） |
+| `shop` | `assets/nodes/shop.png` | 黑市，点击后跳转 `scenes/Shop.tscn` |
 | `event` | `assets/nodes/adventure.png` | 奇遇事件（暂未实装） |
 | `boss` | `assets/nodes/boss.png` | Boss 节点（第16层唯一） |
 
@@ -292,15 +298,23 @@ CharacterSelect → start_run() → GameMap 加载
   → 起始节点亮起（⬤），第1层节点暗淡
 
 点击起始节点（start.png）
-  → NodePopup 显示起始叙事文本
-  → 点击"踏入轮回"
+  → NodePopup [第一屏] 显示"轮回再起"叙事文本
+  → 点击"踏入轮回" → NodePopup 切换至起源选择屏（第二屏）
+
+  [起源选择屏]
+  → 三列卡片式布局，每列展示一组起源祝福（名称 + 奖励描述）
+  → 玩家点击任意一列 → 该列高亮，出现"确认选择"按钮
+  → 点击"确认选择"
+      → 对应 S-XX 效果即时执行
+      → 弹窗底部消息栏显示获得内容
+  → 点击"踏入轮回"（最终确认）
   → GameState.start_map() → 第1层节点全部解锁（⬤）
   → 地图自动滚动至第1层
 
 点击第 N 层节点（已解锁）
   → GameState.visit_map_node(node_id) 标记已访问
   → battle / bonfire / shop / event 分支处理
-  → 战斗节点：跳转 Battle.tscn；非战斗：NodePopup
+  → 战斗节点：跳转 Battle.tscn；黑市节点：跳转 Shop.tscn；其他非战斗节点：NodePopup
 
 返回地图（战斗胜利后）
   → map_accessible_ids 已更新为第 N+1 层节点
@@ -331,6 +345,7 @@ CharacterSelect → start_run() → GameMap 加载
 | `map_current_floor` | int | 最近访问的层号（0=未开始） |
 | `map_accessible_ids` | Array[String] | 当前可点击的节点 ID 列表 |
 | `map_started` | bool | 是否已通过起始节点进入地图 |
+| `shop_discount_pct` | float | 黑市折扣比例（0.0 = 无折扣；起源祝福 S-03 触发后设为 0.15） |
 | `map_intro_played` | bool | 当前 run 是否已播放过"登仙台 / 第一重天"入场标题；战斗后回地图不重复播放 |
 | `current_hp` | int | 地图与战斗共享的当前生命值；战斗扣血实时同步，战斗胜利或经过非战斗节点后回复【生命回复】点并在地图 HP 显示中保留 |
 | `pending_battle_node` | String | 待进入的战斗节点 ID |
@@ -349,6 +364,7 @@ CharacterSelect → start_run() → GameMap 加载
 - [ ] 点击战斗节点正确跳转战斗场景，返回后下一层解锁
 - [ ] 战斗结束回地图后 HP 保留战斗剩余生命，并额外回复角色【生命回复】点（不超过生命上限）
 - [ ] 经过商店/执念/篝火等非战斗节点后 HP 也按【生命回复】点更新，地图左上 HP 显示准确
+- [ ] 点击黑市节点进入 Shop.tscn，返回后地图灵石、背包、宝物栏刷新
 - [ ] 起始节点在访问后变灰，不可再次点击
 - [ ] 起始节点→第1层连线在访问后变为金色
 - [ ] 篝火节点回复30%HP，HP 显示正确更新
@@ -356,7 +372,59 @@ CharacterSelect → start_run() → GameMap 加载
 
 ---
 
-## 九、战斗界面（Battle）✅ 已优化
+## 九、黑市界面（Shop）✅ V1 已实现
+
+**场景文件**：`scenes/Shop.tscn`  
+**脚本**：`scripts/ShopScene.gd`  
+**数据层**：`scripts/data/ShopDatabase.gd`（Autoload: `ShopDatabase`）
+
+### 布局
+
+| 区域 | 内容 |
+|------|------|
+| 顶部栏 | “黑市”标题、当前灵石、返回地图按钮 |
+| 左栏：卡牌 | 每次刷新 3 张卡牌，使用 `CardView` 预览，点击购买后加入 `GameState.deck` |
+| 中栏：物品 | 每次刷新 4 个物品，包含丹药/符箓/阵法，购买后进入 `GameState.consumables` |
+| 右栏：宝物 | 每次刷新 2 件宝物，已拥有宝物不再进货，购买后进入 `GameState.artifacts` |
+| 底部服务区 | 删除卡牌、升级卡牌；点击后打开牌组选择 overlay |
+| 牌组选择 overlay | 全屏遮罩 + 网格按钮，按卡牌名称与费用选择删除/升级对象 |
+
+### 交互逻辑
+
+| 操作 | 响应 |
+|------|------|
+| 进入黑市 | 按当前地图层数调用 `ShopDatabase.generate_stock(floor, owned_artifact_ids, seed)` |
+| 购买卡牌 | `GameState.buy_shop_card(card_id, price)` 扣灵石并加入牌组，商品从当前货架移除 |
+| 购买物品 | `GameState.buy_shop_item(item, price)`，背包满 10 格时按钮不可用 |
+| 购买宝物 | `GameState.buy_shop_artifact(artifact, price)`，宝物不占背包且不可重复持有 |
+| 删除卡牌 | 每次进入黑市最多 1 次，调用 `GameState.remove_deck_card_at(index, price)` |
+| 升级卡牌 | 只能选择未升级卡，调用 `GameState.upgrade_deck_card_at(index, price)`，id 追加 `+` |
+| 返回地图 | `change_scene_to_file("res://scenes/GameMap.tscn")`，地图重新读取 GameState 刷新灵石/背包/宝物 |
+
+### 地图背包联动
+
+`GameMap.gd` 的背包点击改为统一调用 `GameState.use_consumable(index, "map")`：
+
+| 分类 | 地图点击效果 |
+|------|------|
+| 丹药 `elixir` | 立即应用地图效果并移除 |
+| 阵法 `formation` | 写入 `GameState.active_formation_id`，不消耗；当前阵法格子高亮 |
+| 符箓 `talisman` | 提示战斗中使用暂未开放，不消耗 |
+
+### 手动验证要点
+
+（headless 不可完整验证场景跳转和鼠标交互，需 Godot Editor 运行）
+
+- [ ] 从地图黑市节点进入 `Shop.tscn`
+- [ ] 分别购买卡牌、物品、宝物，灵石扣除且对应 GameState 列表更新
+- [ ] 背包满 10 格后物品购买按钮不可用，宝物仍可购买
+- [ ] 删除卡牌每次进入黑市最多 1 次，费用按 50/75/100/125 递增
+- [ ] 升级卡牌后牌组 id 追加 `+`，已升级卡不可再次选择
+- [ ] 返回地图后，灵石、背包、宝物栏、当前阵法显示同步
+
+---
+
+## 十、战斗界面（Battle）✅ 已优化
 
 **场景文件**：`scenes/Battle.tscn`
 **脚本**：`scripts/BattleScene.gd`
@@ -417,7 +485,7 @@ Battle (Control, Theme: main_theme.tres)
 - **提示信息**：资源不足时通过 Toast 弹出提示。
 ---
 
-## 十、战斗奖励界面（RewardScreen）
+## 十一、战斗奖励界面（RewardScreen）
 
 **场景文件**：`scenes/RewardScreen.tscn`  
 **脚本**：`scripts/RewardScreen.gd`  
@@ -473,12 +541,20 @@ RewardScreen (Control)
 
 ---
 
-## 十一、待办 / 后续界面
+## 十二、待办 / 后续界面
 
 | 界面 | 优先级 | 说明 |
 |------|--------|------|
 | 完整地图 | 高 | 三重天15节点，单向不可逆分叉路径 |
 | 角色立绘 | 中 | 替换 Portrait 占位 ColorRect |
 | 存档 / 继续界面 | 中 | Roguelike 单存档，显示当前重天与层数 |
-| 黑市商店 | 中 | — |
+| 黑市后续 | 中 | 接入符箓战斗使用、阵法开局效果、宝物被动/主动触发 |
 | 执念事件弹窗 | 中 | 文字选项型 |
+
+---
+
+## 十三、卡牌圆角渲染实现补充
+
+- `scripts/CardRenderer.gd` 作为独立卡牌渲染器时，根节点绘制圆角遮罩并设置 `clip_children = CLIP_CHILDREN_ONLY`，统一裁切底板、原画与文字层，避免放大预览和篝火升级大卡出现矩形硬角。
+- `scripts/CardView.gd` 作为手牌/奖励/牌堆小卡外层时，根节点使用同一圆角比例裁切 `Shadow`、`Dimmer` 与内部 `CardRenderer`；内部渲染器关闭自身子裁切，避免嵌套 `CanvasItem` 裁切造成异常。
+- 顶部圆角半径按卡牌当前较短边的 8.5% 计算；左下角和右下角按 14% 计算，手牌 100x179 显示约 14px 底部圆角，放大卡随尺寸等比增大。

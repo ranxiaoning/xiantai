@@ -46,11 +46,15 @@ func _initialize() -> void:
 	_maybe_run("TestGameMapFlow",      func(): return load("res://tests/suites/TestGameMapFlow.gd").new())
 	_maybe_run("TestInGameMenu",       func(): return load("res://tests/suites/TestInGameMenu.gd").new())
 	_maybe_run("TestCharacterSelect",  func(): return load("res://tests/suites/TestCharacterSelect.gd").new())
+	_maybe_run("TestShopDatabase",      func(): return load("res://tests/suites/TestShopDatabase.gd").new())
+	_maybe_run("TestShopTransactions",  func(): return load("res://tests/suites/TestShopTransactions.gd").new())
+	_maybe_run("TestStartNodeDatabase", func(): return load("res://tests/suites/TestStartNodeDatabase.gd").new())
 	_maybe_run("TestBattleEngineLogic",func(): return load("res://tests/suites/TestBattleEngineLogic.gd").new())
 	_maybe_run("TestMapGenerator",     func(): return load("res://tests/suites/TestMapGenerator.gd").new())
 	_maybe_run("TestCardEffects",      func(): return load("res://tests/suites/TestCardEffects.gd").new())
 	_maybe_run("TestEnemyBehavior",    func(): return load("res://tests/suites/TestEnemyBehavior.gd").new())
 	_maybe_run("TestSpiritStones",     func(): return load("res://tests/suites/TestSpiritStones.gd").new())
+	_maybe_run("TestEventSystem",      func(): return load("res://tests/suites/TestEventSystem.gd").new())
 	# 新增套件在此继续 _maybe_run("TestXxx", func(): return load("res://tests/suites/TestXxx.gd").new())
 	# 注意：TestEnemyDebug 是诊断工具，不纳入自动化（手动调用时直接 -s 运行该文件）
 

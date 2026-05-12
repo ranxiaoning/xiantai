@@ -17,8 +17,10 @@ func run_all() -> Dictionary:
 	_t("test_get_sect_data_has_bg_path")
 	_t("test_get_sect_characters_wanjianmen")
 	_t("test_chen_tian_feng_has_portrait_path")
+	_t("test_chen_tian_feng_portrait_resource_loads")
 	_t("test_chen_tian_feng_sect_is_wanjianmen")
 	_t("test_character_select_scene_loads")
+	_t("test_character_select_scene_has_default_portrait")
 	_t("test_character_select_required_nodes_exist")
 	_t("test_portrait_uses_fit_layout")
 	_t("test_chen_tian_feng_has_ui_required_fields")
@@ -55,6 +57,15 @@ func test_chen_tian_feng_has_portrait_path() -> void:
 	_assert_true(c.has("portrait_path"), "程天锋有 portrait_path 字段")
 	_assert_true(not (c.get("portrait_path", "") as String).is_empty(), "程天锋 portrait_path 非空")
 
+
+func test_chen_tian_feng_portrait_resource_loads() -> void:
+	var db := _load_char_db()
+	var c: Dictionary = db.get_character("chen_tian_feng")
+	var portrait_path := c.get("portrait_path", "") as String
+	var texture := load(portrait_path) as Texture2D
+	_assert_true(texture != null, "程天锋 portrait_path 可加载为 Texture2D")
+
+
 func test_chen_tian_feng_sect_is_wanjianmen() -> void:
 	var db := _load_char_db()
 	var c: Dictionary = db.get_character("chen_tian_feng")
@@ -68,6 +79,15 @@ func test_character_select_scene_loads() -> void:
 		var inst := packed.instantiate()
 		_objects_to_free.append(inst)
 		_assert_true(inst != null, "CharacterSelect.tscn 可实例化")
+
+
+func test_character_select_scene_has_default_portrait() -> void:
+	var inst := _load_scene_instance()
+	if inst == null:
+		_fail("CharacterSelect.tscn 实例为空")
+		return
+	var portrait := inst.find_child("Portrait", true, false) as TextureRect
+	_assert_true(portrait != null and portrait.texture != null, "CharacterSelect.tscn 默认带程天锋立绘")
 
 
 func test_character_select_required_nodes_exist() -> void:
