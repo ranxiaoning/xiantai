@@ -49,6 +49,7 @@ func _initialize() -> void:
 	_maybe_run("TestShopDatabase",      func(): return load("res://tests/suites/TestShopDatabase.gd").new())
 	_maybe_run("TestShopTransactions",  func(): return load("res://tests/suites/TestShopTransactions.gd").new())
 	_maybe_run("TestStartNodeDatabase", func(): return load("res://tests/suites/TestStartNodeDatabase.gd").new())
+	_maybe_run("TestStartNodeLogic",    func(): return load("res://tests/suites/TestStartNodeLogic.gd").new())
 	_maybe_run("TestBattleEngineLogic",func(): return load("res://tests/suites/TestBattleEngineLogic.gd").new())
 	_maybe_run("TestMapGenerator",     func(): return load("res://tests/suites/TestMapGenerator.gd").new())
 	_maybe_run("TestCardEffects",      func(): return load("res://tests/suites/TestCardEffects.gd").new())

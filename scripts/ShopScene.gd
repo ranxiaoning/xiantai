@@ -758,7 +758,7 @@ func _close_overlay() -> void:
 
 
 func _discounted_price(base_price: int) -> int:
-	var disc := GameState.shop_discount_pct
+	var disc := GameState.get_shop_discount_pct()
 	if disc > 0.0:
 		return maxi(1, int(base_price * (1.0 - disc)))
 	return base_price

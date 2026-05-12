@@ -57,7 +57,7 @@ const NODE_TEXTURES := {
 @onready var _intro_label:    Label           = $IntroOverlay/IntroLabel
 @onready var _art_prev:       Button          = $TreasureBar/TreasurePrevBtn
 @onready var _art_next:       Button          = $TreasureBar/TreasureNextBtn
-@onready var _art_slots:      HBoxContainer   = $TreasureBar/TreasureSlotContainer
+@onready var _art_slots:      Container       = $TreasureBar/TreasureSlotContainer
 @onready var _deck_overlay:   Control         = %DeckOverlay
 @onready var _deck_count:     Label           = %DeckCount
 @onready var _deck_grid:      GridContainer   = %DeckGrid
@@ -866,13 +866,7 @@ func _show_item_result(message: String) -> void:
 func _refresh_artifacts() -> void:
 	for c in _art_slots.get_children():
 		c.queue_free()
-
-	var arts: Array = GameState.artifacts
-	var start := _art_page * ART_PER_PAGE
-	var count := mini(ART_PER_PAGE, arts.size() - start)
-
-	for i in range(count):
-		var art: Dictionary = arts[start + i]
+	for art in GameState.artifacts:
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(36, 36)
 		btn.add_theme_font_size_override("font_size", 10)
@@ -887,9 +881,8 @@ func _refresh_artifacts() -> void:
 			art.get("type", "passive"), art.get("name", ""), art.get("effect_desc", "")
 		]
 		_art_slots.add_child(btn)
-
-	_art_prev.visible = (_art_page > 0)
-	_art_next.visible = ((_art_page + 1) * ART_PER_PAGE < arts.size())
+	_art_prev.visible = false
+	_art_next.visible = false
 
 
 func _art_slot_style(rarity: String, hovered: bool = false) -> StyleBoxFlat:

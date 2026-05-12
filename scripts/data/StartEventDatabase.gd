@@ -5,26 +5,26 @@ extends Node
 const START_POOL: Array[Dictionary] = [
 	{
 		"id": "S-01", "name": "剑魂觉醒", "weight": 16,
-		"desc": "前尘未散，剑意犹存。\n\n道行起始值 +5；牌库中随机 2 张牌升级。",
+		"desc": "前尘未散，剑意犹存。\n\n获得起源宝物【剑魂觉醒】；牌库中随机 2 张牌升级。",
 		"effects": [
-			{"type": "dao_xing_start", "amount": 5},
+			{"type": "artifact_specific", "id": "R-S01"},
 			{"type": "card_upgrade_random", "count": 2},
 		],
 	},
 	{
 		"id": "S-02", "name": "赤诚护体", "weight": 16,
-		"desc": "铸体之功，功不唐捐。\n\n生命上限 +20；战斗开始额外获得 8 护体。",
+		"desc": "铸体之功，功不唐捐。\n\n生命上限 +20；获得起源宝物【赤诚护体】。",
 		"effects": [
 			{"type": "max_hp_perm", "amount": 20},
-			{"type": "perm_shield", "amount": 8},
+			{"type": "artifact_specific", "id": "R-S02"},
 		],
 	},
 	{
 		"id": "S-03", "name": "贪欲之道", "weight": 16,
-		"desc": "财帛动人心，机关算尽亦风流。\n\n初始灵石 +150；本局黑市所有价格 −15%。",
+		"desc": "财帛动人心，机关算尽亦风流。\n\n初始灵石 +150；获得起源宝物【贪欲之道】。",
 		"effects": [
 			{"type": "stones", "amount": 150},
-			{"type": "shop_discount", "pct": 0.15},
+			{"type": "artifact_specific", "id": "R-S03"},
 		],
 	},
 	{
@@ -43,10 +43,9 @@ const START_POOL: Array[Dictionary] = [
 	},
 	{
 		"id": "S-06", "name": "灵力精进", "weight": 16,
-		"desc": "心静则气聚，气聚则灵盈。\n\n灵力上限 +2；每回合灵力回复额外 +1。",
+		"desc": "心静则气聚，气聚则灵盈。\n\n获得起源宝物【灵力精进】。",
 		"effects": [
-			{"type": "ling_li_max_perm", "amount": 2},
-			{"type": "hp_regen_perm", "amount": 1},
+			{"type": "artifact_specific", "id": "R-S06"},
 		],
 	},
 	{
@@ -58,10 +57,10 @@ const START_POOL: Array[Dictionary] = [
 	},
 	{
 		"id": "S-08", "name": "记忆觉醒", "weight": 4,
-		"desc": "轮回深处，一页天书破壁而来。\n\n获得 1 张随机天品功法；道行起始值 +2。",
+		"desc": "轮回深处，一页天书破壁而来。\n\n获得 1 张随机天品功法；获得起源宝物【记忆觉醒】。",
 		"effects": [
 			{"type": "card_random", "rarity": "天品"},
-			{"type": "dao_xing_start", "amount": 2},
+			{"type": "artifact_specific", "id": "R-S08"},
 		],
 	},
 ]
@@ -109,22 +108,14 @@ func apply_instant_effects(effects: Array) -> String:
 				var n := int(e.get("amount", 0))
 				GameState.character["hu_ti"] = int(GameState.character.get("hu_ti", 0)) + n
 				msgs.append("永久护体 +%d" % n)
-			"dao_xing_start":
-				var n := int(e.get("amount", 0))
-				GameState.dao_xing_battle_start = maxi(0, GameState.dao_xing_battle_start + n)
-				msgs.append("初始道行 +%d" % n)
-			"ling_li_max_perm":
-				var n := int(e.get("amount", 0))
-				GameState.character["ling_li_max"] = maxi(1, int(GameState.character.get("ling_li_max", 20)) + n)
-				msgs.append("灵力上限永久 +%d" % n)
-			"hp_regen_perm":
-				var n := int(e.get("amount", 0))
-				GameState.character["hp_regen"] = int(GameState.character.get("hp_regen", 0)) + n
-				msgs.append("每回合灵力回复 +%d" % n)
-			"shop_discount":
-				var pct := float(e.get("pct", 0.0))
-				GameState.shop_discount_pct = pct
-				msgs.append("黑市价格降低 %d%%" % int(pct * 100.0))
+			"artifact_specific":
+				var art_id := str(e.get("id", ""))
+				var art := ShopDatabase.get_artifact_by_id(art_id)
+				if not art.is_empty():
+					var copy := art.duplicate(true)
+					copy["active_used"] = false
+					GameState.add_artifact(copy)
+					msgs.append("获得起源宝物：%s" % art.get("name", ""))
 			"artifact_random":
 				var rarity := str(e.get("rarity", "yellow"))
 				var art := _random_artifact(rarity)

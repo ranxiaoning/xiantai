@@ -15,7 +15,7 @@ var deck: Array[String] = []
 
 # ── 跨战斗的永久增益 ──────────────────────────────────────────────
 var ling_li_regen_bonus: int = 0   # 引灵归元叠加
-var dao_xing_battle_start: int = 0 # 威名远播等跨战斗道行加成
+var dao_xing_battle_start: int = 0 # 事件获得的跨战斗道行加成
 
 # ── 灵石（局内货币）─────────────────────────────────────────────
 var spirit_stones: int = 0
@@ -30,11 +30,6 @@ var artifacts: Array = []  # 每项：{id, name, rarity, type, effect_desc, flav
 # ── 黑市/物品状态 ───────────────────────────────────────────────
 var active_formation_id: String = ""
 var shop_remove_service_uses: int = 0
-var shop_discount_pct: float = 0.0
-
-# ── 地图进度（旧版，兼容保留）──────────────────────────────────────
-var spawn_node_visited: bool = false
-var pending_battle_node: String = ""  # 即将进入的战斗节点 id
 
 # ── 新地图系统 ─────────────────────────────────────────────────────
 var map_nodes: Dictionary = {}          # node_id -> node_dict
@@ -64,10 +59,8 @@ func start_run(char_id: String) -> void:
 	artifacts.clear()
 	active_formation_id = ""
 	shop_remove_service_uses = 0
-	shop_discount_pct = 0.0
-	dao_xing_battle_start = character.get("talent_dao_xing", 0)
-	spawn_node_visited = false
-	pending_battle_node = ""
+	dao_xing_battle_start = 0
+	
 	# 生成新地图
 	var map_data: Dictionary = _MapGenerator.generate()
 	map_nodes = map_data["nodes"]
@@ -92,15 +85,11 @@ func reset_run() -> void:
 	current_hp = 0
 	deck.clear()
 	ling_li_regen_bonus = 0
-	dao_xing_battle_start = 0
 	spirit_stones = 0
 	consumables.clear()
 	artifacts.clear()
 	active_formation_id = ""
 	shop_remove_service_uses = 0
-	shop_discount_pct = 0.0
-	spawn_node_visited = false
-	pending_battle_node = ""
 	map_nodes = {}
 	map_floors = []
 	map_current_floor = 0
@@ -157,7 +146,6 @@ func visit_map_node(node_id: String) -> void:
 	nd["visited"] = true
 	map_last_node_id = node_id
 	map_current_floor = int(nd["floor"])
-	pending_battle_node = node_id
 	pending_battle_node_type = nd["type"]
 	pending_battle_node_floor = int(nd["floor"])
 
@@ -311,10 +299,21 @@ func _apply_elixir_effect(item: Dictionary) -> void:
 			character["hp_regen"] = int(character.get("hp_regen", 0)) + amount
 		"ling_li_regen":
 			ling_li_regen_bonus += amount
-		"dao_xing":
-			dao_xing_battle_start += amount
 		"dual_regen":
 			character["hp_regen"] = int(character.get("hp_regen", 0)) + amount
 			ling_li_regen_bonus += amount
 		_:
 			apply_hp_change(0)
+
+# --- 辅助方法 ---
+
+func has_artifact(art_id: String) -> bool:
+	for a in artifacts:
+		if str(a.get("id", "")) == art_id:
+			return true
+	return false
+
+func get_shop_discount_pct() -> float:
+	if has_artifact("R-S03"):
+		return 0.15
+	return 0.0

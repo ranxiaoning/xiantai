@@ -71,6 +71,13 @@ const ARTIFACTS := [
 	{"id": "R-13", "name": "万剑之魂", "rarity": "earth", "type": "passive", "price": 210, "effect_desc": "每打出第 3 张术法牌时，额外获得 2 点剑意。", "flavor": "旧日剑魂在连斩中醒来。"},
 	{"id": "R-14", "name": "天道残页", "rarity": "heaven", "type": "passive", "price": 300, "effect_desc": "卡牌奖励至少出现 1 张玄品以上卡牌。", "flavor": "残页上写着不该被凡人读懂的字。"},
 	{"id": "R-15", "name": "轮回心印", "rarity": "heaven", "type": "passive", "price": 360, "effect_desc": "本局首次死亡时，有概率以 20% HP 复活。", "flavor": "灵魂深处仍有一枚不肯散去的印。"},
+	
+	# --- 起源宝物 (不可购买，仅由起始节点赋予) ---
+	{"id": "R-S01", "name": "剑魂觉醒", "rarity": "origin", "type": "passive", "price": 0, "effect_desc": "被动：每场战斗开始时，初始道行 +5。"},
+	{"id": "R-S02", "name": "赤诚护体", "rarity": "origin", "type": "passive", "price": 0, "effect_desc": "被动：每场战斗开始时，获得 8 点护体。"},
+	{"id": "R-S03", "name": "贪欲之道", "rarity": "origin", "type": "passive", "price": 0, "effect_desc": "被动：黑市（商店）所有商品价格降低 15%。"},
+	{"id": "R-S06", "name": "灵力精进", "rarity": "origin", "type": "passive", "price": 0, "effect_desc": "被动：战斗内最大灵力上限 +2，且每回合开始额外回复 1 点灵力。"},
+	{"id": "R-S08", "name": "记忆觉醒", "rarity": "origin", "type": "passive", "price": 0, "effect_desc": "被动：每场战斗开始时，初始道行 +2。"},
 ]
 
 

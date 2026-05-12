@@ -157,8 +157,8 @@ anchor_top = 0.08
 anchor_bottom = 0.08
 offset_left = 8.0
 offset_top = 4.0
-offset_right = 446.0
-offset_bottom = 44.0
+offset_right = 820.0
+offset_bottom = 84.0
 theme_override_constants/separation = 4
 alignment = 0
 
@@ -171,9 +171,9 @@ flat = true
 theme_override_font_sizes/font_size = 13
 text = "<"
 
-[node name="TreasureSlotContainer" type="HBoxContainer" parent="TreasureBar"]
+[node name="TreasureSlotContainer" type="FlowContainer" parent="TreasureBar"]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
 [node name="TreasureNextBtn" type="Button" parent="TreasureBar"]

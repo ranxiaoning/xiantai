@@ -30,17 +30,28 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 	if not GameState.character.is_empty() \
 			and str(char_data.get("id", "")) == str(GameState.character.get("id", "")):
 		player_start_hp = clampi(GameState.current_hp, 1, player_hp_max)
+	var dao_xing := int(char_data.get("talent_dao_xing", 0)) + GameState.dao_xing_battle_start
+	if GameState.has_artifact("R-S01"): dao_xing += 5
+	if GameState.has_artifact("R-S08"): dao_xing += 2
+	
+	var ling_li_max := int(char_data.get("ling_li_max", 20))
+	if GameState.has_artifact("R-S06"): ling_li_max += 2
+	
+	var initial_shield := 0
+	if GameState.has_artifact("R-S02"): initial_shield += 8
+
 	s = {
 		# 玩家
 		"player_hp":          player_start_hp,
 		"player_hp_max":      player_hp_max,
-		"player_hu_ti":       0,
+		"player_shield":      initial_shield,
+		"player_hu_ti":       char_data.get("hu_ti", 0),
 		"player_ling_li":     0,
-		"player_ling_li_max": char_data.get("ling_li_max", 20),
+		"player_ling_li_max": ling_li_max,
 		"player_ling_li_regen": GameState.get_ling_li_regen(),
 		"player_dao_hui":     char_data.get("dao_hui_max", 10),
 		"player_dao_hui_max": char_data.get("dao_hui_max", 10),
-		"player_dao_xing":    GameState.dao_xing_battle_start,
+		"player_dao_xing":    dao_xing,
 		"player_damage_mult": char_data.get("damage_mult", 1.0),
 		"player_statuses":    {},   # {"lie_shang":n, "xu_ruo":n, ...}
 		"skill_used_this_turn": false,
@@ -406,6 +417,7 @@ func _start_player_turn() -> void:
 
 	# 回合开始：灵力回复
 	var regen: int = s["player_ling_li_regen"]
+	if GameState.has_artifact("R-S06"): regen += 1
 	s["player_ling_li"] = min(s["player_ling_li"] + regen, s["player_ling_li_max"])
 	_log("═══ 第 %d 回合 ═══  灵力 +%d → %d" % [s["turn"], regen, s["player_ling_li"]])
 
