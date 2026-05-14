@@ -70,19 +70,17 @@ func _on_resized() -> void:
 
 
 func _on_entered() -> void:
-	if not _hover_motion_enabled:
-		return
-	z_index = 10
-	var to_pos = anim_pos + Vector2(0, -14)
-	_animate(HOVER_SCALE, to_pos, 0.0)
+	if _hover_motion_enabled:
+		z_index = 10
+		var to_pos = anim_pos + Vector2(0, -14)
+		_animate(HOVER_SCALE, to_pos, 0.0)
 	hovered.emit(card_data, get_global_rect())
 
 
 func _on_exited() -> void:
-	if not _hover_motion_enabled:
-		return
-	z_index = 0
-	_animate(NORMAL_SCALE, anim_pos, anim_rot)
+	if _hover_motion_enabled:
+		z_index = 0
+		_animate(NORMAL_SCALE, anim_pos, anim_rot)
 	unhovered.emit()
 
 
