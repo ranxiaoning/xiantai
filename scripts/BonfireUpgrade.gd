@@ -2,16 +2,17 @@
 ## 篝火升级卡牌全屏场景。
 extends Control
 
-const GAME_MAP_SCENE       := "res://scenes/GameMap.tscn"
-const CardViewScene        = preload("res://scenes/CardView.tscn")
-const CardZoomOverlayScript = preload("res://scripts/CardZoomOverlay.gd")
+const GAME_MAP_SCENE    := "res://scenes/GameMap.tscn"
+const CardViewScene     = preload("res://scenes/CardView.tscn")
+const CardRendererScript = preload("res://scripts/CardRenderer.gd")
 
 const COLS        := 5
 const H_SEP       := 10
 const CARD_ASPECT := 2752.0 / 1536.0
 const PAD_X       := 96.0
 
-var _card_zoom_overlay
+var _preview_shade: ColorRect
+var _preview_renderer
 
 
 func _ready() -> void:
@@ -50,10 +51,6 @@ func _build_ui() -> void:
 	hint.offset_bottom = 98
 	add_child(hint)
 
-	# 先创建 zoom overlay，后续信号连接会引用它
-	_card_zoom_overlay = CardZoomOverlayScript.new()
-	add_child(_card_zoom_overlay)
-
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
 	scroll.offset_top    = 104
@@ -82,21 +79,36 @@ func _build_ui() -> void:
 		var view: Control = CardViewScene.instantiate()
 		view.custom_minimum_size = Vector2(card_w, card_h)
 		view.mouse_filter        = Control.MOUSE_FILTER_STOP
+		view.set_hover_motion_enabled(false)
 		view.setup(card_data, null, false)
 
 		if already_upgraded:
 			view.modulate.a = 0.4
 			view.set_usable(false)
-			# 鼠标移入已升级卡时关闭可能残留的 zoom
-			view.unhovered.connect(_card_zoom_overlay.hide_card)
 		else:
 			var upgraded_data := card_data.duplicate(true)
 			upgraded_data["is_upgraded"] = true
 			view.hovered.connect(_on_card_hovered.bind(upgraded_data))
-			view.unhovered.connect(_card_zoom_overlay.hide_card)
+			view.unhovered.connect(_on_card_unhovered)
 			view.activated.connect(_on_card_selected.bind(i))
 
 		grid.add_child(view)
+
+	# 升级预览浮层：MOUSE_FILTER_IGNORE 保证不拦截底层卡牌的鼠标事件
+	_preview_shade = ColorRect.new()
+	_preview_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_preview_shade.color = Color(0.0, 0.0, 0.0, 0.55)
+	_preview_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_shade.z_index = 200
+	_preview_shade.hide()
+	add_child(_preview_shade)
+
+	_preview_renderer = CardRendererScript.new()
+	_preview_renderer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_renderer.z_index = 201
+	_preview_renderer.hide()
+	add_child(_preview_renderer)
+	_layout_preview()
 
 	var skip_btn := Button.new()
 	skip_btn.text       = "跳过"
@@ -107,13 +119,34 @@ func _build_ui() -> void:
 	skip_btn.offset_right  = -vp.x * 0.35
 	skip_btn.offset_top    = -58
 	skip_btn.offset_bottom = -8
+	skip_btn.z_index       = 202
 	skip_btn.pressed.connect(_on_skip)
 	add_child(skip_btn)
 
 
+func _layout_preview() -> void:
+	if _preview_renderer == null:
+		return
+	var vp := get_viewport_rect().size
+	var card_h := minf(vp.y - 72.0, 660.0)
+	var card_w := card_h / CARD_ASPECT
+	if card_w > vp.x - 72.0:
+		card_w = vp.x - 72.0
+		card_h = card_w * CARD_ASPECT
+	_preview_renderer.size     = Vector2(card_w, card_h)
+	_preview_renderer.position = (vp - Vector2(card_w, card_h)) * 0.5
+
+
 # hovered 信号：(card_data, rect)；bind 追加 upgraded_data → 回调收到 (card_data, rect, upgraded_data)
-func _on_card_hovered(_original_cd: Dictionary, rect: Rect2, upgraded_data: Dictionary) -> void:
-	_card_zoom_overlay.show_card(upgraded_data, "", rect)
+func _on_card_hovered(_original_cd: Dictionary, _rect: Rect2, upgraded_data: Dictionary) -> void:
+	_preview_renderer.setup(upgraded_data)
+	_preview_renderer.show()
+	_preview_shade.show()
+
+
+func _on_card_unhovered() -> void:
+	_preview_renderer.hide()
+	_preview_shade.hide()
 
 
 # activated 信号：(card_data)；bind 追加 deck_index → 回调收到 (card_data, deck_index)
