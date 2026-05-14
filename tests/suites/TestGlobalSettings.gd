@@ -22,12 +22,19 @@ func run_all() -> Dictionary:
 	_t("test_default_sfx_volume")
 	_t("test_default_language")
 	_t("test_default_fullscreen")
+	_t("test_default_display_mode_windowed")
+	_t("test_default_borderless_window")
 	_t("test_default_resolution_index")
 	_t("test_save_reload_master_volume")
 	_t("test_save_reload_resolution_index")
 	_t("test_save_reload_fullscreen")
+	_t("test_save_reload_display_mode")
+	_t("test_set_display_mode_syncs_legacy_flags")
+	_t("test_legacy_fullscreen_migrates_display_mode")
+	_t("test_legacy_borderless_defaults_windowed")
 	_t("test_save_reload_language")
 	_t("test_clamp_overflow")
+	_t("test_clamp_display_mode_overflow")
 	_t("test_clamp_negative")
 	_t("test_load_missing_file_uses_defaults")
 	_t("test_volume_boundary_zero")
@@ -72,6 +79,13 @@ func test_default_language() -> void:
 func test_default_fullscreen() -> void:
 	_assert_false(_gs().fullscreen, "默认非全屏")
 
+func test_default_display_mode_windowed() -> void:
+	var gs := _gs()
+	_assert_eq(gs.display_mode, gs.DISPLAY_MODE_WINDOWED, "默认显示模式=窗口化")
+
+func test_default_borderless_window() -> void:
+	_assert_false(_gs().borderless_window, "默认非无边框窗口")
+
 func test_default_resolution_index() -> void:
 	_assert_eq(_gs().resolution_index, 0, "默认分辨率下标=0")
 
@@ -88,9 +102,39 @@ func test_save_reload_resolution_index() -> void:
 	_assert_eq(gs2.resolution_index, 2, "分辨率下标写入再读出=2")
 
 func test_save_reload_fullscreen() -> void:
-	var gs := _gs(); gs.fullscreen = true; _save(gs)
+	var gs := _gs(); gs.set_display_mode(gs.DISPLAY_MODE_FULLSCREEN); _save(gs)
 	var gs2 := _gs(); _load(gs2)
 	_assert_true(gs2.fullscreen, "全屏标志写入再读出=true")
+
+func test_save_reload_display_mode() -> void:
+	var gs := _gs(); gs.set_display_mode(gs.DISPLAY_MODE_BORDERLESS); _save(gs)
+	var gs2 := _gs(); _load(gs2)
+	_assert_eq(gs2.display_mode, gs2.DISPLAY_MODE_BORDERLESS, "显示模式写入再读出=无边框")
+	_assert_true(gs2.borderless_window, "无边框标志随显示模式同步")
+
+func test_set_display_mode_syncs_legacy_flags() -> void:
+	var gs := _gs()
+	gs.set_display_mode(gs.DISPLAY_MODE_BORDERLESS)
+	_assert_false(gs.fullscreen, "无边框模式不是全屏")
+	_assert_true(gs.borderless_window, "无边框模式同步 borderless_window")
+	gs.set_display_mode(gs.DISPLAY_MODE_FULLSCREEN)
+	_assert_true(gs.fullscreen, "全屏模式同步 fullscreen")
+	_assert_false(gs.borderless_window, "全屏模式关闭 borderless_window")
+
+func test_legacy_fullscreen_migrates_display_mode() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("display", "fullscreen", true)
+	cfg.save(TEST_CFG)
+	var gs := _gs(); _load(gs)
+	_assert_eq(gs.display_mode, gs.DISPLAY_MODE_FULLSCREEN, "旧全屏配置迁移到全屏显示模式")
+
+func test_legacy_borderless_defaults_windowed() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("display", "fullscreen", false)
+	cfg.set_value("display", "borderless_window", true)
+	cfg.save(TEST_CFG)
+	var gs := _gs(); _load(gs)
+	_assert_eq(gs.display_mode, gs.DISPLAY_MODE_WINDOWED, "旧隐藏无边框默认迁移到窗口化")
 
 func test_save_reload_language() -> void:
 	var gs := _gs(); gs.language = "en"; _save(gs)
@@ -104,6 +148,13 @@ func test_clamp_overflow() -> void:
 	var gs := _gs(); _load(gs)
 	_assert_true(gs.resolution_index < gs.RESOLUTIONS.size(), "越界下标被截断")
 	_assert_true(gs.resolution_index >= 0, "截断后下标>=0")
+
+func test_clamp_display_mode_overflow() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("display", "display_mode", 9999)
+	cfg.save(TEST_CFG)
+	var gs := _gs(); _load(gs)
+	_assert_eq(gs.display_mode, gs.DISPLAY_MODE_FULLSCREEN, "显示模式越界截断到最大项")
 
 func test_clamp_negative() -> void:
 	var cfg := ConfigFile.new()
@@ -147,7 +198,9 @@ func _save(gs: Object) -> void:
 	cfg.set_value("audio",   "music_volume",     gs.music_volume)
 	cfg.set_value("audio",   "sfx_volume",       gs.sfx_volume)
 	cfg.set_value("display", "resolution_index", gs.resolution_index)
-	cfg.set_value("display", "fullscreen",       gs.fullscreen)
+	cfg.set_value("display", "display_mode",     gs.display_mode)
+	cfg.set_value("display", "fullscreen",       gs.display_mode == gs.DISPLAY_MODE_FULLSCREEN)
+	cfg.set_value("display", "borderless_window", gs.display_mode == gs.DISPLAY_MODE_BORDERLESS)
 	cfg.set_value("locale",  "language",         gs.language)
 	cfg.save(TEST_CFG)
 
@@ -159,9 +212,18 @@ func _load(gs: Object) -> void:
 	gs.music_volume     = cfg.get_value("audio",   "music_volume",     gs.music_volume)
 	gs.sfx_volume       = cfg.get_value("audio",   "sfx_volume",       gs.sfx_volume)
 	gs.resolution_index = cfg.get_value("display", "resolution_index", gs.resolution_index)
-	gs.fullscreen       = cfg.get_value("display", "fullscreen",       gs.fullscreen)
+	if cfg.has_section_key("display", "display_mode"):
+		gs.display_mode = cfg.get_value("display", "display_mode", gs.display_mode)
+	else:
+		gs.fullscreen = cfg.get_value("display", "fullscreen", gs.fullscreen)
+		gs.borderless_window = cfg.get_value("display", "borderless_window", gs.borderless_window)
+		if gs.fullscreen:
+			gs.display_mode = gs.DISPLAY_MODE_FULLSCREEN
 	gs.language         = cfg.get_value("locale",  "language",         gs.language)
 	gs.resolution_index = clampi(gs.resolution_index, 0, gs.RESOLUTIONS.size() - 1)
+	gs.display_mode = clampi(gs.display_mode, gs.DISPLAY_MODE_WINDOWED, gs.DISPLAY_MODE_COUNT - 1)
+	gs.fullscreen = gs.display_mode == gs.DISPLAY_MODE_FULLSCREEN
+	gs.borderless_window = gs.display_mode == gs.DISPLAY_MODE_BORDERLESS
 
 func _assert_eq(a, b, label: String) -> void:
 	if a == b: _ok(label)

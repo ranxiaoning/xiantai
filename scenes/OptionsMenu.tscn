@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://options_menu_v1"]
+[gd_scene load_steps=3 format=3 uid="uid://options_menu_v1"]
 
 [ext_resource type="Script" path="res://scripts/OptionsMenu.gd" id="1_optmenu"]
+[ext_resource type="Texture2D" path="res://assets/bg/menu.png" id="2_bg"]
 
 [node name="OptionsMenu" type="Control"]
 layout_mode = 3
@@ -9,95 +10,130 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1_optmenu")
 
-[node name="BG" type="ColorRect" parent="."]
+[node name="BG" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.039, 0.039, 0.082, 1)
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="PageTitle" type="Label" parent="."]
+[node name="Overlay" type="ColorRect" parent="."]
 layout_mode = 1
-anchor_left = 0.0
-anchor_top = 0.04
+anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.12
-horizontal_alignment = 1
-vertical_alignment = 1
-text = "选项"
-theme_override_font_sizes/font_size = 36
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.006, 0.014, 0.020, 0.60)
 
-[node name="Content" type="VBoxContainer" parent="."]
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
-anchor_left = 0.25
-anchor_top = 0.14
-anchor_right = 0.75
-anchor_bottom = 0.88
+anchors_preset = -1
+anchor_left = 0.2
+anchor_top = 0.095
+anchor_right = 0.8
+anchor_bottom = 0.905
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelPad" type="MarginContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 42
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 42
+theme_override_constants/margin_bottom = 30
+
+[node name="Content" type="VBoxContainer" parent="SettingsPanel/PanelPad"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PageTitle" type="Label" parent="SettingsPanel/PanelPad/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "选项"
+horizontal_alignment = 1
+
+[node name="PageSubTitle" type="Label" parent="SettingsPanel/PanelPad/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "调整云台映照、音量与语言"
+horizontal_alignment = 1
+
+[node name="HeaderRule" type="ColorRect" parent="SettingsPanel/PanelPad/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+color = Color(0.96, 0.76, 0.38, 0.62)
+
+[node name="Display" type="VBoxContainer" parent="SettingsPanel/PanelPad/Content"]
+layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Display" type="VBoxContainer" parent="Content"]
+[node name="SectionDisplay" type="Label" parent="SettingsPanel/PanelPad/Content/Display"]
 layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="SectionDisplay" type="Label" parent="Content/Display"]
-layout_mode = 2
-text = "── 显示 ──"
-theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+text = "显示"
+theme_override_colors/font_color = Color(0.93, 0.77, 0.43, 1)
 theme_override_font_sizes/font_size = 15
 
-[node name="ResolutionRow" type="HBoxContainer" parent="Content/Display"]
+[node name="DisplayModeRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Display"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 40)
 
-[node name="ResolutionRowLabel" type="Label" parent="Content/Display/ResolutionRow"]
+[node name="DisplayModeRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Display/DisplayModeRow"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(140, 0)
+text = "显示模式"
+vertical_alignment = 1
+
+[node name="DisplayModeOption" type="OptionButton" parent="SettingsPanel/PanelPad/Content/Display/DisplayModeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+custom_minimum_size = Vector2(270, 44)
+
+[node name="ResolutionRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Display"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+
+[node name="ResolutionRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Display/ResolutionRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 0)
 text = "分辨率"
 vertical_alignment = 1
 
-[node name="ResolutionOption" type="OptionButton" parent="Content/Display/ResolutionRow"]
+[node name="ResolutionOption" type="OptionButton" parent="SettingsPanel/PanelPad/Content/Display/ResolutionRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(270, 44)
 
-[node name="FullscreenRow" type="HBoxContainer" parent="Content/Display"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
-
-[node name="FullscreenRowLabel" type="Label" parent="Content/Display/FullscreenRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "全屏"
-vertical_alignment = 1
-
-[node name="FullscreenCheck" type="CheckButton" parent="Content/Display/FullscreenRow"]
-layout_mode = 2
-size_flags_horizontal = 8
-
-[node name="Divider1" type="HSeparator" parent="Content"]
+[node name="Divider1" type="HSeparator" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
 
-[node name="Audio" type="VBoxContainer" parent="Content"]
+[node name="Audio" type="VBoxContainer" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="SectionAudio" type="Label" parent="Content/Audio"]
+[node name="SectionAudio" type="Label" parent="SettingsPanel/PanelPad/Content/Audio"]
 layout_mode = 2
-text = "── 音频 ──"
-theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+text = "音频"
+theme_override_colors/font_color = Color(0.93, 0.77, 0.43, 1)
 theme_override_font_sizes/font_size = 15
 
-[node name="MasterRow" type="HBoxContainer" parent="Content/Audio"]
+[node name="MasterRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Audio"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 40)
 
-[node name="MasterRowLabel" type="Label" parent="Content/Audio/MasterRow"]
+[node name="MasterRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/MasterRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(140, 0)
 text = "总音量"
 vertical_alignment = 1
 
-[node name="MasterSlider" type="HSlider" parent="Content/Audio/MasterRow"]
+[node name="MasterSlider" type="HSlider" parent="SettingsPanel/PanelPad/Content/Audio/MasterRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -105,24 +141,26 @@ max_value = 1.0
 step = 0.01
 value = 1.0
 
-[node name="MasterLabel" type="Label" parent="Content/Audio/MasterRow"]
+[node name="MasterLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/MasterRow"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(48, 0)
+custom_minimum_size = Vector2(64, 0)
 text = "100%"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="MusicRow" type="HBoxContainer" parent="Content/Audio"]
+[node name="MusicRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Audio"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 40)
 
-[node name="MusicRowLabel" type="Label" parent="Content/Audio/MusicRow"]
+[node name="MusicRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/MusicRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(140, 0)
 text = "音乐音量"
 vertical_alignment = 1
 
-[node name="MusicSlider" type="HSlider" parent="Content/Audio/MusicRow"]
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/PanelPad/Content/Audio/MusicRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -130,24 +168,26 @@ max_value = 1.0
 step = 0.01
 value = 0.8
 
-[node name="MusicLabel" type="Label" parent="Content/Audio/MusicRow"]
+[node name="MusicLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/MusicRow"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(48, 0)
+custom_minimum_size = Vector2(64, 0)
 text = "80%"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="SFXRow" type="HBoxContainer" parent="Content/Audio"]
+[node name="SFXRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Audio"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 40)
 
-[node name="SFXRowLabel" type="Label" parent="Content/Audio/SFXRow"]
+[node name="SFXRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/SFXRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(140, 0)
 text = "音效音量"
 vertical_alignment = 1
 
-[node name="SFXSlider" type="HSlider" parent="Content/Audio/SFXRow"]
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/PanelPad/Content/Audio/SFXRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 0.0
@@ -155,66 +195,68 @@ max_value = 1.0
 step = 0.01
 value = 0.8
 
-[node name="SFXLabel" type="Label" parent="Content/Audio/SFXRow"]
+[node name="SFXLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Audio/SFXRow"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(48, 0)
+custom_minimum_size = Vector2(64, 0)
 text = "80%"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="Divider2" type="HSeparator" parent="Content"]
+[node name="Divider2" type="HSeparator" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
 
-[node name="Locale" type="VBoxContainer" parent="Content"]
+[node name="Locale" type="VBoxContainer" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="SectionLocale" type="Label" parent="Content/Locale"]
+[node name="SectionLocale" type="Label" parent="SettingsPanel/PanelPad/Content/Locale"]
 layout_mode = 2
-text = "── 语言 / Language ──"
-theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
+text = "语言 / Language"
+theme_override_colors/font_color = Color(0.93, 0.77, 0.43, 1)
 theme_override_font_sizes/font_size = 15
 
-[node name="LanguageRow" type="HBoxContainer" parent="Content/Locale"]
+[node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content/Locale"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 40)
 
-[node name="LanguageRowLabel" type="Label" parent="Content/Locale/LanguageRow"]
+[node name="LanguageRowLabel" type="Label" parent="SettingsPanel/PanelPad/Content/Locale/LanguageRow"]
 layout_mode = 2
-size_flags_horizontal = 3
-text = "语言 / Language"
+custom_minimum_size = Vector2(140, 0)
+text = "界面语言"
 vertical_alignment = 1
 
-[node name="LanguageOption" type="OptionButton" parent="Content/Locale/LanguageRow"]
+[node name="LanguageOption" type="OptionButton" parent="SettingsPanel/PanelPad/Content/Locale/LanguageRow"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 8
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(270, 44)
 
-[node name="Divider3" type="HSeparator" parent="Content"]
+[node name="Divider3" type="HSeparator" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
 
-[node name="ActionRow" type="HBoxContainer" parent="Content"]
+[node name="ActionRow" type="HBoxContainer" parent="SettingsPanel/PanelPad/Content"]
 layout_mode = 2
-alignment = 2
-theme_override_constants/separation = 16
+alignment = 1
+theme_override_constants/separation = 18
 
-[node name="BtnApply" type="Button" parent="Content/ActionRow"]
+[node name="BtnApply" type="Button" parent="SettingsPanel/PanelPad/Content/ActionRow"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(150, 46)
 text = "应用"
-theme_override_font_sizes/font_size = 17
 
-[node name="BtnBack" type="Button" parent="Content/ActionRow"]
+[node name="BtnBack" type="Button" parent="SettingsPanel/PanelPad/Content/ActionRow"]
+unique_name_in_owner = true
 layout_mode = 2
-custom_minimum_size = Vector2(120, 44)
+custom_minimum_size = Vector2(150, 46)
 text = "返回"
-theme_override_font_sizes/font_size = 17
 
-[connection signal="item_selected"   from="Content/Display/ResolutionRow/ResolutionOption"  to="." method="_on_resolution_option_item_selected"]
-[connection signal="toggled"         from="Content/Display/FullscreenRow/FullscreenCheck"    to="." method="_on_fullscreen_check_toggled"]
-[connection signal="value_changed"   from="Content/Audio/MasterRow/MasterSlider"             to="." method="_on_master_slider_value_changed"]
-[connection signal="value_changed"   from="Content/Audio/MusicRow/MusicSlider"               to="." method="_on_music_slider_value_changed"]
-[connection signal="value_changed"   from="Content/Audio/SFXRow/SFXSlider"                   to="." method="_on_sfx_slider_value_changed"]
-[connection signal="item_selected"   from="Content/Locale/LanguageRow/LanguageOption"        to="." method="_on_language_option_item_selected"]
-[connection signal="pressed"         from="Content/ActionRow/BtnApply"                       to="." method="_on_btn_apply_pressed"]
-[connection signal="pressed"         from="Content/ActionRow/BtnBack"                        to="." method="_on_btn_back_pressed"]
+[connection signal="item_selected" from="SettingsPanel/PanelPad/Content/Display/ResolutionRow/ResolutionOption" to="." method="_on_resolution_option_item_selected"]
+[connection signal="item_selected" from="SettingsPanel/PanelPad/Content/Display/DisplayModeRow/DisplayModeOption" to="." method="_on_display_mode_option_item_selected"]
+[connection signal="value_changed" from="SettingsPanel/PanelPad/Content/Audio/MasterRow/MasterSlider" to="." method="_on_master_slider_value_changed"]
+[connection signal="value_changed" from="SettingsPanel/PanelPad/Content/Audio/MusicRow/MusicSlider" to="." method="_on_music_slider_value_changed"]
+[connection signal="value_changed" from="SettingsPanel/PanelPad/Content/Audio/SFXRow/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
+[connection signal="item_selected" from="SettingsPanel/PanelPad/Content/Locale/LanguageRow/LanguageOption" to="." method="_on_language_option_item_selected"]
+[connection signal="pressed" from="SettingsPanel/PanelPad/Content/ActionRow/BtnApply" to="." method="_on_btn_apply_pressed"]
+[connection signal="pressed" from="SettingsPanel/PanelPad/Content/ActionRow/BtnBack" to="." method="_on_btn_back_pressed"]

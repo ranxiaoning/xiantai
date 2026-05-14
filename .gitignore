@@ -24,6 +24,29 @@ Desktop.ini
 
 # 美术与音频资源（体积过大，不入库）
 assets/
+# 卡牌立绘是卡牌数据的一部分，新卡必须随代码提交对应 PNG。
+!assets/
+assets/*
+!assets/card/
+assets/card/*
+!assets/card/art/
+assets/card/art/*
+!assets/card/art/*.png
+!assets/fonts/
+assets/fonts/*
+!assets/fonts/*.otf
+!assets/fonts/*.otf.import
+!assets/fonts/OFL.txt
+!assets/ui/
+assets/ui/*
+!assets/ui/menu/
+assets/ui/menu/*
+!assets/ui/menu/*.png
+!assets/ui/menu/*.png.import
+!assets/portraits/
+assets/portraits/*
+!assets/portraits/chen_tianfeng_cutout.png
+!assets/portraits/chen_tianfeng_cutout.png.import
 bug_image/                                                                                                                                                                                                                                                                                                                                                                                                                                                             
 
 # 编辑器配置（按需取消注释）

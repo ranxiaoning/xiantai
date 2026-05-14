@@ -4,6 +4,11 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.cfg"
 
+const DISPLAY_MODE_WINDOWED := 0
+const DISPLAY_MODE_BORDERLESS := 1
+const DISPLAY_MODE_FULLSCREEN := 2
+const DISPLAY_MODE_COUNT := 3
+
 # 可选分辨率列表
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720),
@@ -18,13 +23,14 @@ var music_volume: float = 0.8
 var sfx_volume: float = 0.8
 
 # 显示
-var resolution_index: int = 0   # 对应 RESOLUTIONS 中的下标
+var resolution_index: int = 0
+var display_mode: int = DISPLAY_MODE_WINDOWED
 var fullscreen: bool = false
+var borderless_window: bool = false
 
 # 语言
-var language: String = "zh_CN"  # "zh_CN" | "en"
+var language: String = "zh_CN"
 
-# ─────────────────────────────────────────────
 var _config := ConfigFile.new()
 
 
@@ -34,32 +40,38 @@ func _ready() -> void:
 	apply_all()
 
 
-# ── 持久化 ────────────────────────────────────
-
 func load_settings() -> void:
 	if _config.load(SETTINGS_PATH) != OK:
-		return  # 首次运行，使用默认值
-	master_volume    = _config.get_value("audio",   "master_volume",   master_volume)
-	music_volume     = _config.get_value("audio",   "music_volume",    music_volume)
-	sfx_volume       = _config.get_value("audio",   "sfx_volume",      sfx_volume)
+		return
+	master_volume = _config.get_value("audio", "master_volume", master_volume)
+	music_volume = _config.get_value("audio", "music_volume", music_volume)
+	sfx_volume = _config.get_value("audio", "sfx_volume", sfx_volume)
 	resolution_index = _config.get_value("display", "resolution_index", resolution_index)
-	fullscreen       = _config.get_value("display", "fullscreen",       fullscreen)
-	language         = _config.get_value("locale",  "language",        language)
-	# 边界保护
-	resolution_index = clamp(resolution_index, 0, RESOLUTIONS.size() - 1)
+	if _config.has_section_key("display", "display_mode"):
+		display_mode = _config.get_value("display", "display_mode", display_mode)
+	else:
+		fullscreen = _config.get_value("display", "fullscreen", fullscreen)
+		borderless_window = _config.get_value("display", "borderless_window", borderless_window)
+		display_mode = _display_mode_from_legacy_flags()
+	language = _config.get_value("locale", "language", language)
+	resolution_index = clampi(resolution_index, 0, RESOLUTIONS.size() - 1)
+	display_mode = clampi(display_mode, DISPLAY_MODE_WINDOWED, DISPLAY_MODE_COUNT - 1)
+	_sync_legacy_display_flags()
 
 
 func save_settings() -> void:
-	_config.set_value("audio",   "master_volume",    master_volume)
-	_config.set_value("audio",   "music_volume",     music_volume)
-	_config.set_value("audio",   "sfx_volume",       sfx_volume)
+	display_mode = clampi(display_mode, DISPLAY_MODE_WINDOWED, DISPLAY_MODE_COUNT - 1)
+	_sync_legacy_display_flags()
+	_config.set_value("audio", "master_volume", master_volume)
+	_config.set_value("audio", "music_volume", music_volume)
+	_config.set_value("audio", "sfx_volume", sfx_volume)
 	_config.set_value("display", "resolution_index", resolution_index)
-	_config.set_value("display", "fullscreen",       fullscreen)
-	_config.set_value("locale",  "language",         language)
+	_config.set_value("display", "display_mode", display_mode)
+	_config.set_value("display", "fullscreen", fullscreen)
+	_config.set_value("display", "borderless_window", borderless_window)
+	_config.set_value("locale", "language", language)
 	_config.save(SETTINGS_PATH)
 
-
-# ── 应用设置 ───────────────────────────────────
 
 func apply_all() -> void:
 	apply_audio()
@@ -69,18 +81,29 @@ func apply_all() -> void:
 
 func apply_audio() -> void:
 	_set_bus_volume("Master", master_volume)
-	_set_bus_volume("Music",  music_volume)
-	_set_bus_volume("SFX",    sfx_volume)
+	_set_bus_volume("Music", music_volume)
+	_set_bus_volume("SFX", sfx_volume)
+
+
+func set_display_mode(mode: int) -> void:
+	display_mode = clampi(mode, DISPLAY_MODE_WINDOWED, DISPLAY_MODE_COUNT - 1)
+	_sync_legacy_display_flags()
 
 
 func apply_display() -> void:
-	if fullscreen:
+	display_mode = clampi(display_mode, DISPLAY_MODE_WINDOWED, DISPLAY_MODE_COUNT - 1)
+	_sync_legacy_display_flags()
+	if display_mode == DISPLAY_MODE_FULLSCREEN:
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_BORDERLESS, false)
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		DisplayServer.window_set_flag(
+			DisplayServer.WINDOW_FLAG_BORDERLESS,
+			display_mode == DISPLAY_MODE_BORDERLESS
+		)
 		var res := RESOLUTIONS[resolution_index]
 		DisplayServer.window_set_size(res)
-		# 窗口居中
 		var screen_size := DisplayServer.screen_get_size()
 		DisplayServer.window_set_position((screen_size - res) / 2)
 
@@ -88,8 +111,6 @@ func apply_display() -> void:
 func apply_language() -> void:
 	TranslationServer.set_locale(language)
 
-
-# ── 内部工具 ───────────────────────────────────
 
 func _set_bus_volume(bus_name: String, linear: float) -> void:
 	var idx := AudioServer.get_bus_index(bus_name)
@@ -99,7 +120,6 @@ func _set_bus_volume(bus_name: String, linear: float) -> void:
 
 
 func _ensure_audio_buses() -> void:
-	# Godot 默认只有 Master，手动补充 Music / SFX 子总线
 	if AudioServer.get_bus_index("Music") == -1:
 		AudioServer.add_bus()
 		var idx := AudioServer.bus_count - 1
@@ -110,3 +130,14 @@ func _ensure_audio_buses() -> void:
 		var idx := AudioServer.bus_count - 1
 		AudioServer.set_bus_name(idx, "SFX")
 		AudioServer.set_bus_send(idx, "Master")
+
+
+func _display_mode_from_legacy_flags() -> int:
+	if fullscreen:
+		return DISPLAY_MODE_FULLSCREEN
+	return DISPLAY_MODE_WINDOWED
+
+
+func _sync_legacy_display_flags() -> void:
+	fullscreen = display_mode == DISPLAY_MODE_FULLSCREEN
+	borderless_window = display_mode == DISPLAY_MODE_BORDERLESS

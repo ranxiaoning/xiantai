@@ -1,0 +1,4 @@
+interface:
+  display_name: "ArtDirection"
+  short_description: "Art direction and prototype assets"
+  default_prompt: "Use art-direction to set visual style, asset lists, naming, prompts, and prototype-ready image asset requirements."

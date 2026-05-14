@@ -2,12 +2,8 @@
 extends Control
 
 const GAME_MAP_SCENE := "res://scenes/GameMap.tscn"
-const GOLD := Color(0.82, 0.68, 0.39, 1.0)
-const GOLD_DIM := Color(0.48, 0.39, 0.23, 1.0)
-const INK := Color(0.035, 0.052, 0.065, 0.86)
-const INK_DARK := Color(0.018, 0.027, 0.036, 0.93)
-const INK_SOFT := Color(0.08, 0.11, 0.13, 0.72)
 const IN_GAME_MENU_SCRIPT: Script = preload("res://scripts/InGameMenu.gd")
+const MenuUiStyle = preload("res://scripts/ui/MenuUiStyle.gd")
 
 var _selected_sect: String = "万剑门"
 var _selected_char_id: String = "chen_tian_feng"
@@ -17,9 +13,12 @@ var _char_group := ButtonGroup.new()
 var _display_tween: Tween = null
 
 @onready var bg_rect: TextureRect = $BG
+@onready var page_title: Label = %PageTitle
+@onready var page_subtitle: Label = %PageSubTitle
 @onready var sect_bar: HBoxContainer = %SectBar
 @onready var char_list_box: VBoxContainer = %CharListBox
 @onready var char_list_title: Label = $MainContent/SidebarPanel/SidebarPad/CharListPanel/CharListTitle
+@onready var char_list_hint: Label = $MainContent/SidebarPanel/SidebarPad/CharListPanel/CharListHint
 @onready var char_name_label: Label = %CharName
 @onready var char_title_label: Label = %CharTitle
 @onready var portrait: TextureRect = %Portrait
@@ -37,13 +36,17 @@ var _display_tween: Tween = null
 @onready var portrait_frame: PanelContainer = $MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame
 @onready var portrait_stage: Control = $MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage
 @onready var stats_card: PanelContainer = $MainContent/StatsCard
+@onready var stats_title: Label = $MainContent/StatsCard/StatsPad/StatsPanel/StatsTitle
+@onready var talent_title: Label = $MainContent/StatsCard/StatsPad/StatsPanel/TalentTitle
+@onready var skill_title: Label = $MainContent/StatsCard/StatsPad/StatsPanel/SkillTitle
 @onready var talent_panel: PanelContainer = $MainContent/StatsCard/StatsPad/StatsPanel/TalentPanel
 @onready var skill_panel: PanelContainer = $MainContent/StatsCard/StatsPad/StatsPanel/SkillPanel
 @onready var start_btn: Button = %StartBtn
-@onready var main_content: HBoxContainer = %MainContent
+@onready var main_content: Control = %MainContent
 
 
 func _ready() -> void:
+	theme = load("res://theme/main_theme.tres")
 	MusicManager.play("char_select")
 	_configure_portrait_layout()
 	_apply_static_styles()
@@ -51,7 +54,10 @@ func _ready() -> void:
 	start_btn.button_down.connect(_on_start_button_down)
 	start_btn.button_up.connect(_on_start_button_up)
 	call_deferred("_animate_scene_in")
-	# 局内菜单
+	_add_in_game_menu()
+
+
+func _add_in_game_menu() -> void:
 	var in_game_menu: Node = IN_GAME_MENU_SCRIPT.new()
 	add_child(in_game_menu)
 	in_game_menu.connect("abandon_confirmed", _on_menu_abandon_confirmed)
@@ -61,7 +67,7 @@ func _ready() -> void:
 func _configure_portrait_layout() -> void:
 	var viewport_h := get_viewport_rect().size.y
 	portrait_frame.clip_contents = true
-	portrait_frame.custom_minimum_size = Vector2(0.0, clampf(viewport_h * 0.445, 300.0, 500.0))
+	portrait_frame.custom_minimum_size = Vector2(0.0, clampf(viewport_h * 0.60, 420.0, 640.0))
 	portrait_frame.size_flags_vertical = Control.SIZE_FILL
 	portrait_stage.clip_contents = true
 	portrait_stage.custom_minimum_size = Vector2.ZERO
@@ -79,93 +85,37 @@ func _configure_portrait_layout() -> void:
 
 
 func _apply_static_styles() -> void:
-	_apply_panel(sidebar_panel, INK, GOLD_DIM, 0.55)
-	_apply_panel(hero_panel, Color(0.03, 0.045, 0.055, 0.72), GOLD_DIM, 0.52)
-	_apply_panel(portrait_frame, Color(0.02, 0.027, 0.032, 0.82), GOLD, 0.72)
-	_apply_panel(stats_card, INK_DARK, GOLD_DIM, 0.58)
-	_apply_panel(talent_panel, INK_SOFT, GOLD_DIM, 0.40)
-	_apply_panel(skill_panel, INK_SOFT, GOLD_DIM, 0.40)
-	_style_start_button()
-
-
-func _apply_panel(panel: PanelContainer, bg: Color, border: Color, border_alpha: float) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg
-	var b := border
-	b.a = border_alpha
-	style.border_color = b
-	style.set_border_width_all(1)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
-	style.shadow_color = Color(0, 0, 0, 0.36)
-	style.shadow_size = 10
-	style.shadow_offset = Vector2(0, 4)
-	panel.add_theme_stylebox_override("panel", style)
-
-
-func _button_style(bg: Color, border: Color, font: Color) -> Dictionary:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg
-	style.border_color = border
-	style.set_border_width_all(1)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_right = 5
-	style.corner_radius_bottom_left = 5
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 7
-	style.content_margin_bottom = 7
-	return {"style": style, "font": font}
-
-
-func _apply_button_theme(btn: Button, compact: bool = false) -> void:
-	var normal_data := _button_style(Color(0.045, 0.062, 0.074, 0.86), Color(0.36, 0.32, 0.24, 0.75), Color(0.80, 0.86, 0.90))
-	var normal: StyleBoxFlat = normal_data["style"]
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color(0.075, 0.098, 0.11, 0.92)
-	hover.border_color = Color(0.70, 0.58, 0.33, 0.88)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = Color(0.58, 0.45, 0.20, 0.92)
-	pressed.border_color = Color(0.92, 0.76, 0.40, 1.0)
-	var focus := hover.duplicate() as StyleBoxFlat
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("focus", focus)
-	btn.add_theme_color_override("font_color", normal_data["font"])
-	btn.add_theme_color_override("font_hover_color", Color(0.92, 0.90, 0.78))
-	btn.add_theme_color_override("font_pressed_color", Color(0.08, 0.07, 0.04))
-	btn.add_theme_font_size_override("font_size", 14 if compact else 15)
-	btn.focus_mode = Control.FOCUS_NONE
-
-
-func _style_start_button() -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.68, 0.50, 0.20, 0.94)
-	normal.border_color = Color(0.94, 0.77, 0.38, 0.95)
-	normal.set_border_width_all(1)
-	normal.corner_radius_top_left = 6
-	normal.corner_radius_top_right = 6
-	normal.corner_radius_bottom_right = 6
-	normal.corner_radius_bottom_left = 6
-	normal.content_margin_left = 18
-	normal.content_margin_right = 18
-	normal.content_margin_top = 10
-	normal.content_margin_bottom = 10
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color(0.78, 0.60, 0.27, 0.98)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = Color(0.48, 0.35, 0.15, 0.98)
-	start_btn.add_theme_stylebox_override("normal", normal)
-	start_btn.add_theme_stylebox_override("hover", hover)
-	start_btn.add_theme_stylebox_override("pressed", pressed)
-	start_btn.add_theme_color_override("font_color", Color(0.08, 0.06, 0.035))
-	start_btn.add_theme_color_override("font_hover_color", Color(0.05, 0.04, 0.02))
-	start_btn.add_theme_color_override("font_pressed_color", Color(0.95, 0.88, 0.67))
-	start_btn.pivot_offset = start_btn.size * 0.5
+	MenuUiStyle.apply_heading(page_title, 34, Color(1.0, 0.94, 0.72, 1.0))
+	MenuUiStyle.apply_body(page_subtitle, 14, Color(0.78, 0.88, 0.92, 0.90))
+	MenuUiStyle.apply_panel(sidebar_panel, "jade")
+	MenuUiStyle.apply_panel(hero_panel, "empty")
+	MenuUiStyle.apply_panel(portrait_frame, "stage")
+	MenuUiStyle.apply_panel(stats_card, "jade")
+	MenuUiStyle.apply_panel(talent_panel, "scroll")
+	MenuUiStyle.apply_panel(skill_panel, "scroll")
+	MenuUiStyle.apply_body(char_list_title, 15, Color(0.92, 0.76, 0.40, 1.0))
+	MenuUiStyle.apply_body(char_list_hint, 12, Color(0.58, 0.70, 0.74, 0.90))
+	MenuUiStyle.apply_body(char_title_label, 15, Color(0.90, 0.78, 0.48, 1.0))
+	MenuUiStyle.apply_heading(char_name_label, 42, Color(1.0, 0.96, 0.80, 1.0))
+	MenuUiStyle.apply_body(lore_label, 15, Color(0.80, 0.90, 0.92, 0.94))
+	MenuUiStyle.apply_body(stats_title, 16, Color(0.36, 0.30, 0.16, 1.0))
+	MenuUiStyle.apply_body(talent_title, 15, Color(0.90, 0.72, 0.34, 1.0))
+	MenuUiStyle.apply_body(skill_title, 15, Color(0.90, 0.72, 0.34, 1.0))
+	MenuUiStyle.apply_body(talent_label, 14, Color(0.16, 0.24, 0.24, 0.98))
+	MenuUiStyle.apply_body(skill_label, 14, Color(0.16, 0.24, 0.24, 0.98))
+	MenuUiStyle.apply_button(start_btn, "primary", 21)
+	for tile_name in ["HPTile", "HPRegenTile", "LingLiTile", "LingLiRegenTile", "DaoHuiTile", "DmgTile"]:
+		var tile := find_child(tile_name, true, false) as PanelContainer
+		if tile:
+			MenuUiStyle.apply_panel(tile, "stat")
+	for key_name in ["HPKey", "HPRegenKey", "LingLiKey", "LingLiRegenKey", "DaoHuiKey", "DmgKey"]:
+		var key_label := find_child(key_name, true, false) as Label
+		if key_label:
+			MenuUiStyle.apply_body(key_label, 12, Color(0.70, 0.86, 0.84, 0.92))
+	for label in [
+		hp_label, hp_regen_label, ling_li_label, ling_li_regen_label, dao_hui_label, damage_mult_label
+	]:
+		MenuUiStyle.apply_body(label, 18, Color(1.0, 0.96, 0.78, 1.0))
 
 
 func _build_sect_bar() -> void:
@@ -177,8 +127,8 @@ func _build_sect_bar() -> void:
 		btn.text = sect
 		btn.toggle_mode = true
 		btn.button_group = _sect_group
-		btn.custom_minimum_size = Vector2(126, 38)
-		_apply_button_theme(btn, true)
+		btn.custom_minimum_size = Vector2(150, 42)
+		MenuUiStyle.apply_button(btn, "secondary", 15)
 		btn.pressed.connect(_select_sect.bind(sect))
 		sect_bar.add_child(btn)
 	if not sects.is_empty():
@@ -214,9 +164,9 @@ func _build_char_list() -> void:
 		btn.button_group = _char_group
 		btn.pressed.connect(_select_char.bind(c["id"]))
 		btn.size_flags_horizontal = Control.SIZE_FILL
-		btn.custom_minimum_size = Vector2(0, 42)
+		btn.custom_minimum_size = Vector2(0, 50)
 		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_apply_button_theme(btn)
+		MenuUiStyle.apply_button(btn, "secondary", 15)
 		char_list_box.add_child(btn)
 		if c["id"] == _selected_char_id:
 			btn.button_pressed = true
@@ -233,10 +183,11 @@ func _refresh_display() -> void:
 	if c.is_empty():
 		return
 	char_name_label.text = c["name"]
-	char_title_label.text = c["sect"] + "  ·  " + c["title"]
+	char_title_label.text = "%s · %s" % [c["sect"], c["title"]]
 	lore_label.text = c["lore"]
-	if c.has("portrait_path") and not (c["portrait_path"] as String).is_empty():
-		portrait.texture = load(c["portrait_path"])
+	var portrait_path := c.get("portrait_cutout_path", c.get("portrait_path", "")) as String
+	if not portrait_path.is_empty():
+		portrait.texture = load(portrait_path)
 	else:
 		portrait.texture = null
 	hp_label.text = str(c["hp_max"])
@@ -244,7 +195,7 @@ func _refresh_display() -> void:
 	ling_li_label.text = str(c["ling_li_max"])
 	ling_li_regen_label.text = "%d/回合" % int(c["ling_li_regen"])
 	dao_hui_label.text = str(c["dao_hui_max"])
-	damage_mult_label.text = "×%.1f" % c["damage_mult"]
+	damage_mult_label.text = "x%.1f" % c["damage_mult"]
 	talent_label.text = "【%s】%s" % [c["talent_name"], c["talent_desc"]]
 	skill_label.text = "【%s】%s" % [c["skill_name"], c["skill_desc"]]
 	_animate_selection()

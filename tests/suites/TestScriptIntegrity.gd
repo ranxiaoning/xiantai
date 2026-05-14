@@ -10,6 +10,8 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/GlobalSettings.gd",
 	"res://scripts/MainMenu.gd",
 	"res://scripts/OptionsMenu.gd",
+	"res://scripts/ui/MenuUiStyle.gd",
+	"res://scripts/ui/SafeNodeUiStyle.gd",
 	"res://scripts/data/CardDatabase.gd",
 	"res://scripts/data/CharacterDatabase.gd",
 	"res://scripts/data/EnemyDatabase.gd",
@@ -17,6 +19,8 @@ const GAME_SCRIPTS: Array[String] = [
 	"res://scripts/GameState.gd",
 	"res://scripts/MusicManager.gd",
 	"res://scripts/BattleEngine.gd",
+	"res://scripts/ArtifactIcon.gd",
+	"res://scripts/StatusIcon.gd",
 	"res://scripts/CardRenderer.gd",
 	"res://scripts/CardZoomOverlay.gd",
 	"res://scripts/CharacterSelect.gd",
@@ -53,12 +57,20 @@ const TEST_SCRIPTS: Array[String] = [
 	"res://tests/suites/TestRewardScreen.gd",
 	"res://tests/suites/TestGameMapFlow.gd",
 	"res://tests/suites/TestCharacterSelect.gd",
+	"res://tests/suites/TestMenuScreens.gd",
+	"res://tests/suites/TestSafeNodeUi.gd",
 	"res://tests/suites/TestShopDatabase.gd",
 	"res://tests/suites/TestShopTransactions.gd",
+	"res://tests/helpers/FlowHarness.gd",
+	"res://tests/suites/TestPlayerJourneyFlow.gd",
 	"res://tests/suites/TestBattleEngineLogic.gd",
 	"res://tests/suites/TestCardEffects.gd",
 	"res://tests/suites/TestMapGenerator.gd",
 	"res://tests/suites/TestEventSystem.gd",
+]
+
+const TOOL_SCRIPTS: Array[String] = [
+	"res://tools/UiCapture.gd",
 ]
 
 const SCENES: Array[String] = [
@@ -82,6 +94,7 @@ func run_all() -> Dictionary:
 
 	_check_scripts_group("游戏脚本", GAME_SCRIPTS)
 	_check_scripts_group("测试脚本", TEST_SCRIPTS)
+	_check_scripts_group("工具脚本", TOOL_SCRIPTS)
 	_check_autoloads()
 	_check_scene_script_refs()
 

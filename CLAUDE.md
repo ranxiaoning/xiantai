@@ -6,6 +6,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Godot game project. When working on `.gd`, `.tscn`, `.tres`, UI scenes, resources, scene loading, headless validation, exports, or Godot runtime errors, actively use the available Godot-related skills as needed, especially `godot`, `godot-ui`, `godot-architect`, `game-dev`, and `game-test`.
 
+## Agent UI debugging
+
+When debugging UI, scene loading, layout, visual state, or Godot runtime issues where seeing the current screen would help, use the diagnostic screenshot tool before guessing from code alone.
+
+```batch
+capture_ui.bat --list
+capture_ui.bat <preset>
+capture_ui.bat battle --size 1920x1080 --wait 90
+capture_ui.bat all
+capture_ui.bat main_menu --visible
+```
+
+Presets: `main_menu`, `options`, `character_select`, `game_map`, `battle`, `reward`, `shop`, `bonfire`, `event`.
+
+By default the tool uses an offscreen real Godot render window, so agent debug captures should not appear on the desktop. It writes PNG screenshots plus `manifest.json` and `nodes.txt` to `tests/results/ui-captures/<run_id>/`, which is ignored by git. This is not pure headless rendering and not a pass/fail automated test suite. Use `--visible` only when a human intentionally wants to watch the window.
+
+## Project skill allocation
+
+Codex is the primary agent for this repository. Keep project-local skills in `.agents/skills` limited to exactly ten 《无尽仙台》 department skills. Do not vendor general-purpose skills into this repository.
+
+- `game-director` — overall vision, scope, priority, milestones, and cross-department routing.
+- `game-design` — system design for core loops, battle rules, resources, map flow, rewards, and rule boundaries.
+- `content-design` — cards, enemies, bosses, artifacts, events, professions, talents, rewards, and flavor text.
+- `balance-economy` — costs, damage, defense, probability, reward strength, shop economy, growth curves, and exploit checks.
+- `tech-architecture` — Godot architecture, Autoload/Resource/schema decisions, persistence, i18n, and cross-module refactors.
+- `game-dev` — Godot gameplay/data/scene/resource/i18n implementation and demand-document sync.
+- `ui-ux` — layout, interaction flow, information hierarchy, readability, targeting, and player feedback.
+- `art-direction` — visual style, asset lists, image prompts, naming, import requirements, and prototype-ready art assets.
+- `audio-direction` — music/SFX style, cue sheets, bus routing, loops, audio prompts, and prototype-ready audio requirements.
+- `game-test` — suite selection, test authoring, headless validation, manual UI/art/audio checks, balance validation, and release readiness.
+
+Mandatory workflow: every non-trivial user request enters through `game-director` first. The director clarifies goal, scope, constraints, success criteria, and department routing before any implementation, asset work, or documentation rewrite begins. Pure Q&A may be answered directly.
+
+Decision authority: the user is the consultant and final commander. If any requirement is unclear, even on a small detail, stop and ask before proceeding. Codex may recommend a default, but the user owns final confirmation for requirements, scope, key tradeoffs, and the start-work plan.
+
+Tiered routing: small, clear changes may involve only `game-director`, the relevant delivery skill, and `game-test`; larger work routes through design/content/balance as needed, `tech-architecture` for major Godot architecture or data-contract changes, delivery skills for implementation/UI/art/audio, and `game-test` for validation.
+
+Collaboration model: default to single-agent orchestration where Codex applies department skills in sequence and assembles the result. For large parallelizable work, split tasks only when responsibilities are clear, require synchronization at key dependency or conflict points, and have Codex/`game-director` integrate code, docs, assets, and test evidence before final reporting.
+
+Presentation rule: show a concise director routing summary before substantive work, naming which departments are involved, why, and what each must deliver. Before changing tracked files for non-trivial work, provide a decision-complete implementation plan and wait for user confirmation or an explicit implementation request.
+
+Default department chain: `game-director` sets scope -> design/content/balance produce specs as needed -> `tech-architecture` reviews major changes -> dev/UI/art/audio prepare implementation and assets -> `game-test` validates. Use globally installed skills for broad methods such as `godot`, `godot-ui`, `godot-architect`, `diagnose`, `tdd`, `grill-me`, planning, handoff, or communication style.
+
 ## 项目概述
 
 **《无尽仙台》** 是一款类杀戮尖塔的回合制构筑卡牌游戏，修仙题材。游戏讲述玩家在"登仙台"中反复轮回、记忆积累、寻找破局之法的故事。
@@ -70,7 +113,7 @@ theme/        # 主题/样式资源（待创建）
 - 节点类型：⚔️普通战斗 / 👹精英战斗 / 🔥篝火（调息或升级） / 💰黑市 / ❓奇遇事件 / 🚪天门Boss
 - 单向不可逆路线，玩家从底部向上推进
 - 第5、10层收束（强制节点），第5/10层前后分叉
-- Boss结构：第一重天【剥皮仙君】（DPS检测）/ 第二重天【无面司命】（防守控制）/ 第三重天【收割者·巨灵神机/伪善之门】（流派检测）/ 隐藏终局【天宫之主】
+- Boss结构：第一重天【丹狱童尊】（污染与灵力考核）/ 第二重天【无面司命】（防守控制）/ 第三重天【收割者·巨灵神机/伪善之门】（流派检测）/ 隐藏终局【天宫之主】
 
 ### 战斗奖励流程
 1. 战斗胜利 → 三选一抽卡（按稀有度概率）
@@ -84,6 +127,7 @@ theme/        # 主题/样式资源（待创建）
 | 文件 | 内容 |
 |------|------|
 | `UI界面.md` | UI规范：菜单/选项/布局/视觉风格（已实现部分的设计依据） |
+| `项目协作架构.md` | 项目本地 10 部门 skill 分工、默认流水线、交接与验收规则 |
 | `需求.txt` | 总体需求与展示方式 |
 | `游戏背景.txt` | 世界观与叙事设定 |
 | `战斗.md` | 完整战斗规则手册 |
@@ -91,7 +135,7 @@ theme/        # 主题/样式资源（待创建）
 | `局内地图.txt` | 地图机制与三重天结构 |
 | `职业类型.txt` | 职业与角色天赋 |
 | `怪物类型.txt` | 敌方单位设计 |
-| `商店商品.txt` | 黑市商品列表 |
+| `商店商品.md` | 黑市商品列表 |
 | `执念.txt` | 奇遇事件设计（55个，三重天分布） |
 | `宝物.txt` | 宝物（Artifact）系统：R-01~R-23 完整数据、稀有度、触发规则 |
 
@@ -116,6 +160,7 @@ theme/        # 主题/样式资源（待创建）
 # 精准测试（日常开发，只跑受影响的 suite）
 run_suite.bat TestBattleEngineLogic
 run_suite.bat TestBattleEngineLogic TestCardEffects TestEnemyBehavior
+run_suite.bat TestScriptIntegrity TestPlayerJourneyFlow
 
 # 全量回归（仅限 git commit 前）
 run_regression.bat
@@ -138,15 +183,19 @@ run_regression.bat
 | `BattleScene.gd` / `CardRenderer.gd` | TestHandLayout |
 | 任意 `.gd` 新增或删除 | TestScriptIntegrity（**总是先跑**） |
 
+> 涉及战斗、地图、奖励、商店、事件或角色选择的基础用户流程改动，除上表对应 suite 外，必须加跑 `TestPlayerJourneyFlow`。
+
 **测试框架说明**：
 - 入口：`tests/TestMain.gd`（extends SceneTree，headless 运行）
 - 结果文件：`tests/results/latest.txt`（退出码 0=通过，1=失败）
+- 基础玩家旅程：`tests/suites/TestPlayerJourneyFlow.gd` + `tests/helpers/FlowHarness.gd`，覆盖新局、地图、战斗胜利、奖励、黑市、事件/篝火与 pending 清理
 - 诊断工具：`tests/suites/TestEnemyDebug.gd`（不纳入自动化，手动调试时直接 `-s` 运行）
 
 ## 开发注意事项
 
 - GUI模式下，拖拽打出需要目标的卡牌时必须渲染指向目标的连线特效
 - 道法牌（Power）打出后自动移出本局，无需标注"耗尽"
+- 新增任何卡牌（含污染牌、Boss专属牌）时，必须同步设计并接入卡牌立绘资源；原型期可用占位风格资产，但不得留下空白立绘
 - 所有能回复生命或造成免死/秒杀效果的卡牌必须带【耗尽】词缀（防止刷血漏洞）
 - 高难度解锁"飞升/枷锁"系统后地图出现迷雾路线和燃血刑官变体
 

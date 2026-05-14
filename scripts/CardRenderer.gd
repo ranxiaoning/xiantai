@@ -283,10 +283,13 @@ func _place_text_center(label: Label, text: String, render_size: Vector2, cx: fl
 
 
 func _load_art_texture() -> Texture2D:
-	var id_str: String = _card_data.get("id", "")
-	if id_str.is_empty():
-		return null
-	var path := "%s%02d.png" % [CARD_ART_SOURCE_DIR, int(id_str)]
+	var path := str(_card_data.get("art_path", ""))
+	if path.is_empty():
+		var id_str := str(_card_data.get("id", ""))
+		var art_id := id_str.trim_suffix("+")
+		if art_id.is_empty() or not art_id.is_valid_int():
+			return null
+		path = "%s%02d.png" % [CARD_ART_SOURCE_DIR, int(art_id)]
 	if _art_cache.has(path):
 		return _art_cache[path]
 
@@ -336,6 +339,8 @@ func _get_card_type_label() -> String:
 			return "秘法"
 		"power":
 			return "道法"
+		"curse":
+			return "污染"
 		_:
 			return str(_card_data.get("type", "术法"))
 

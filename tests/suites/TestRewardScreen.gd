@@ -21,6 +21,8 @@ func run_all() -> Dictionary:
 	_t("test_action_row_is_bottom_bar")
 	_t("test_upgrade_checkbox_bottom_left_and_not_inside_card_panel")
 	_t("test_upgrade_toggle_rebuilds_without_duplicate_slots")
+	_t("test_pending_reward_stone_bonus_applies_and_clears")
+	_t("test_pending_reward_min_rarity_applies_and_clears")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
@@ -98,6 +100,40 @@ func test_upgrade_toggle_rebuilds_without_duplicate_slots() -> void:
 	scene.free()
 
 
+func test_pending_reward_stone_bonus_applies_and_clears() -> void:
+	GameState.start_run("chen_tian_feng")
+	GameState.pending_battle_node_type = "normal"
+	GameState.set("pending_reward_stones_bonus", 20)
+	GameState.set("pending_reward_min_rarity", "")
+	var scene := _make_ready_reward_screen()
+
+	_assert_eq(scene.get("_stone_gain"), 50, "奖励页：下次奖励灵石加成并入结算")
+	_assert_eq(GameState.get("pending_reward_stones_bonus"), 0, "奖励页：领取前已清空下次灵石加成")
+
+	scene.free()
+
+
+func test_pending_reward_min_rarity_applies_and_clears() -> void:
+	seed(20260512)
+	GameState.start_run("chen_tian_feng")
+	GameState.pending_battle_node_type = "normal"
+	GameState.set("pending_reward_stones_bonus", 0)
+	GameState.set("pending_reward_min_rarity", "地品")
+	var scene := _make_ready_reward_screen()
+	var offered: Array = scene.get("_offered_cards")
+	var has_floor := false
+	for card in offered:
+		if card is Dictionary and _rarity_rank(str(card.get("rarity", "黄品"))) >= _rarity_rank("地品"):
+			has_floor = true
+			break
+
+	_assert_eq(str(scene.get("_reward_min_rarity")), "地品", "奖励页：记录本次卡牌奖励最低稀有度")
+	_assert_true(has_floor, "奖励页：至少出现 1 张达到保底稀有度的卡")
+	_assert_eq(str(GameState.get("pending_reward_min_rarity")), "", "奖励页：清空下次卡牌奖励稀有度保底")
+
+	scene.free()
+
+
 func _make_open_reward_screen() -> Control:
 	var tree := Engine.get_main_loop() as SceneTree
 	var root: Window = tree.root
@@ -121,6 +157,31 @@ func _make_open_reward_screen() -> Control:
 	scene.call("_build_upgrade_preview_check")
 	scene.call("_on_card_reward_btn_pressed")
 	return scene
+
+
+func _make_ready_reward_screen() -> Control:
+	var tree := Engine.get_main_loop() as SceneTree
+	var root: Window = tree.root
+	var scene: Control = RewardScreenScene.instantiate()
+	root.add_child(scene)
+	scene.set("_stones_btn", scene.get_node("RewardPopup/PopupPad/PopupVBox/StonesBtn"))
+	scene.set("_card_reward_btn", scene.get_node("RewardPopup/PopupPad/PopupVBox/CardRewardBtn"))
+	scene.set("_popup_continue", scene.get_node("RewardPopup/PopupPad/PopupVBox/PopupContinue"))
+	scene.set("_card_panel", scene.get_node("CardPanel"))
+	scene.set("_cards_row", scene.get_node("CardPanel/CardPanelPad/CardPanelVBox/CardsRow"))
+	scene.set("_confirm_btn", scene.get_node("CardPanel/CardPanelPad/CardPanelVBox/ActionRow/ConfirmBtn"))
+	scene.set("_skip_btn", scene.get_node("CardPanel/CardPanelPad/CardPanelVBox/ActionRow/SkipBtn"))
+	scene.set("_action_row", scene.get_node("CardPanel/CardPanelPad/CardPanelVBox/ActionRow"))
+	scene.call("_initialize_reward_screen")
+	return scene
+
+
+func _rarity_rank(rarity: String) -> int:
+	match rarity:
+		"玄品": return 1
+		"地品": return 2
+		"天品": return 3
+		_: return 0
 
 
 func _t(method: String) -> void:

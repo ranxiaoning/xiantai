@@ -1,0 +1,4 @@
+interface:
+  display_name: "GameDirector"
+  short_description: "Project production and creative direction"
+  default_prompt: "Use game-director to set vision, priority, milestones, and cross-discipline handoff for Endless Immortal Terrace."

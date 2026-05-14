@@ -24,6 +24,7 @@ var _slot_card_views:  Array[Control] = []
 var _slot_tweens:      Array          = []
 var _upgrade_check:    CheckBox       = null
 var _preview_upgraded: bool           = false
+var _reward_min_rarity: String        = ""
 
 # ── 弹窗节点 ─────────────────────────────────────────────────────────
 @onready var _stones_btn:      Button        = %StonesBtn
@@ -40,12 +41,20 @@ var _preview_upgraded: bool           = false
 
 func _ready() -> void:
 	MusicManager.play("map")
+	_initialize_reward_screen()
+
+
+func _initialize_reward_screen() -> void:
 	_card_panel.hide()
 	_prepare_action_row_bottom_bar()
 	_build_upgrade_preview_check()
 
 	var node_type: String = GameState.pending_battle_node_type
-	_stone_gain = 60 if node_type == "elite" else 30
+	var reward_bonus := GameState.consume_pending_reward_bonuses()
+	_reward_min_rarity = str(reward_bonus.get("min_rarity", ""))
+	_stone_gain = (60 if node_type == "elite" else 30) + int(reward_bonus.get("stones_bonus", 0))
+	GameState.pending_battle_node_type = ""
+	GameState.pending_battle_node_floor = 0
 	_stones_btn.text = "灵石  +%d" % _stone_gain
 
 	_offered_cards = _pick_three_cards()
@@ -68,6 +77,7 @@ func _pick_three_cards() -> Array[Dictionary]:
 				break
 		if not dup:
 			result.append(card)
+	_apply_reward_min_rarity(result, all_cards)
 	return result
 
 
@@ -82,6 +92,42 @@ func _pick_one_by_rarity(all_cards: Array[Dictionary]) -> Dictionary:
 	if pool.is_empty():
 		pool = all_cards
 	return pool[randi() % pool.size()]
+
+
+func _apply_reward_min_rarity(result: Array[Dictionary], all_cards: Array[Dictionary]) -> void:
+	if _reward_min_rarity.is_empty() or result.is_empty():
+		return
+	for card in result:
+		if _rarity_rank(str(card.get("rarity", "黄品"))) >= _rarity_rank(_reward_min_rarity):
+			return
+	var replacement := _pick_one_at_least_rarity(all_cards, _reward_min_rarity, result)
+	if replacement.is_empty():
+		return
+	result[result.size() - 1] = replacement
+
+
+func _pick_one_at_least_rarity(all_cards: Array[Dictionary], rarity: String, current: Array[Dictionary]) -> Dictionary:
+	var used := {}
+	for card in current:
+		used[str(card.get("id", ""))] = true
+	var pool := all_cards.filter(func(c: Dictionary) -> bool:
+		return _rarity_rank(str(c.get("rarity", "黄品"))) >= _rarity_rank(rarity) and not used.has(str(c.get("id", "")))
+	)
+	if pool.is_empty():
+		pool = all_cards.filter(func(c: Dictionary) -> bool:
+			return _rarity_rank(str(c.get("rarity", "黄品"))) >= _rarity_rank(rarity)
+		)
+	if pool.is_empty():
+		return {}
+	return pool[randi() % pool.size()]
+
+
+func _rarity_rank(rarity: String) -> int:
+	match rarity:
+		"玄品": return 1
+		"地品": return 2
+		"天品": return 3
+		_: return 0
 
 
 # ── 弹窗按钮回调 ──────────────────────────────────────────────────────

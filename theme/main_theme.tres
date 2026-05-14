@@ -1,14 +1,17 @@
-[gd_resource type="Theme" load_steps=11 format=3]
+[gd_resource type="Theme" load_steps=13 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansSC-Regular.otf" id="1_body"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSerifSC-Regular.otf" id="2_title"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
-bg_color = Color(0.10, 0.08, 0.14, 0.82)
+bg_color = Color(0.05, 0.16, 0.17, 0.86)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.62, 0.50, 0.28, 1.0)
+border_color = Color(0.76, 0.62, 0.34, 1.0)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -19,12 +22,12 @@ content_margin_left = 14.0
 content_margin_right = 14.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
-bg_color = Color(0.22, 0.22, 0.28, 0.96)
+bg_color = Color(0.09, 0.25, 0.25, 0.96)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(1.0, 1.0, 1.0, 1.0)
+border_color = Color(0.98, 0.86, 0.52, 1.0)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -35,7 +38,7 @@ content_margin_left = 14.0
 content_margin_right = 14.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
-bg_color = Color(0.06, 0.05, 0.09, 0.95)
+bg_color = Color(0.03, 0.10, 0.12, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -65,7 +68,7 @@ content_margin_left = 14.0
 content_margin_right = 14.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.05, 0.05, 0.1, 0.75)
+bg_color = Color(0.04, 0.12, 0.13, 0.72)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -114,12 +117,22 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [resource]
+default_font = ExtResource("1_body")
+Label/fonts/font = ExtResource("1_body")
+Label/font_sizes/font_size = 15
 Button/styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 Button/styles/focus    = SubResource("StyleBoxEmpty_focus")
 Button/styles/hover    = SubResource("StyleBoxFlat_btn_hover")
 Button/styles/normal   = SubResource("StyleBoxFlat_btn_normal")
 Button/styles/pressed  = SubResource("StyleBoxFlat_btn_pressed")
+Button/fonts/font = ExtResource("1_body")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_panel")
+OptionButton/fonts/font = ExtResource("1_body")
+OptionButton/styles/normal = SubResource("StyleBoxFlat_btn_normal")
+OptionButton/styles/hover = SubResource("StyleBoxFlat_btn_hover")
+OptionButton/styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+OptionButton/styles/focus = SubResource("StyleBoxEmpty_focus")
+CheckButton/fonts/font = ExtResource("1_body")
 ProgressBar/styles/background = SubResource("StyleBoxFlat_hp_bg")
 ProgressBar/styles/fill = SubResource("StyleBoxFlat_hp_fill")
 RichTextLabel/styles/normal = SubResource("StyleBoxFlat_log")

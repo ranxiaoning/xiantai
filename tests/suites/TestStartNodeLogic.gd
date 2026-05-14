@@ -50,7 +50,8 @@ func test_s02_devotion() -> void:
 	
 	# 验证战斗内效果
 	var engine = _create_battle_engine()
-	_assert_eq(engine.s["player_shield"], 8, "R-S02 战斗开局获得 8 点护体(护盾)")
+	_assert_eq(engine.s["player_hu_ti"], 8, "R-S02 战斗开局获得 8 点护体")
+	_assert_true(not engine.s.has("player_shield"), "R-S02 不再写入 player_shield 旧字段")
 
 
 func test_s03_greed() -> void:

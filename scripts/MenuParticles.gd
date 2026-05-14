@@ -1,6 +1,6 @@
 extends Control
 
-const COUNT = 45
+const COUNT = 34
 var _p: Array = []
 
 func _ready() -> void:
@@ -11,8 +11,8 @@ func _ready() -> void:
 	for i in COUNT:
 		_p.append({
 			"pos":   Vector2(randf() * s.x, randf() * s.y),
-			"vel":   Vector2(randf_range(-8.0, 8.0), randf_range(-22.0, -10.0)),
-			"size":  randf_range(1.5, 3.2),
+			"vel":   Vector2(randf_range(-4.0, 4.0), randf_range(-13.0, -4.0)),
+			"size":  randf_range(1.2, 2.6),
 			"phase": randf() * TAU,
 			"spd":   randf_range(0.8, 1.5),
 			"gold":  randf() > 0.4,
@@ -24,7 +24,7 @@ func _process(delta: float) -> void:
 	for pt in _p:
 		pt["phase"] += delta * pt["spd"]
 		pt["pos"] += (pt["vel"] as Vector2) * delta
-		pt["pos"].x += sin(pt["phase"] * 0.7) * 12.0 * delta
+		pt["pos"].x += sin(pt["phase"] * 0.7) * 6.0 * delta
 		if pt["pos"].y < -10.0:
 			pt["pos"] = Vector2(randf() * s.x, s.y + 5.0)
 	queue_redraw()
@@ -35,9 +35,9 @@ func _draw() -> void:
 		var r: float = pt["size"]
 		var c: Color
 		if pt["gold"]:
-			c = Color(1.0, 0.82, 0.35, a * 0.85)
+			c = Color(1.0, 0.82, 0.35, a * 0.58)
 		else:
-			c = Color(0.75, 0.88, 1.0, a * 0.70)
+			c = Color(0.78, 0.90, 1.0, a * 0.42)
 		var glow := c; glow.a *= 0.22
 		draw_circle(pt["pos"], r * 3.8, glow)
 		var mid := c; mid.a *= 0.50

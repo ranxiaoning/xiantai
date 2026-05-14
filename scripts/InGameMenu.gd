@@ -21,7 +21,7 @@ var _confirm_label: Label
 var _ok_btn:        Button
 var _settings_overlay: Control
 var _res_option:       OptionButton
-var _fullscreen_check: CheckButton
+var _display_mode_option: OptionButton
 var _master_slider:    HSlider
 var _master_label:     Label
 var _music_slider:     HSlider
@@ -288,6 +288,22 @@ func _build_settings_overlay() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	# 显示模式行
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(mode_row)
+	_add_row_label(mode_row, "显示模式")
+	_display_mode_option = OptionButton.new()
+	_display_mode_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_display_mode_option.focus_mode = Control.FOCUS_NONE
+	_display_mode_option.add_item("窗口化")
+	_display_mode_option.add_item("无边框窗口")
+	_display_mode_option.add_item("全屏")
+	_display_mode_option.item_selected.connect(func(idx: int) -> void:
+		GlobalSettings.set_display_mode(idx)
+		_res_option.disabled = idx == GlobalSettings.DISPLAY_MODE_FULLSCREEN)
+	mode_row.add_child(_display_mode_option)
+
 	# 分辨率行
 	var res_row := HBoxContainer.new()
 	res_row.add_theme_constant_override("separation", 10)
@@ -301,17 +317,6 @@ func _build_settings_overlay() -> void:
 	_res_option.item_selected.connect(
 		func(idx: int) -> void: GlobalSettings.resolution_index = idx)
 	res_row.add_child(_res_option)
-
-	# 全屏行
-	var fs_row := HBoxContainer.new()
-	vbox.add_child(fs_row)
-	_add_row_label(fs_row, "全屏")
-	_fullscreen_check = CheckButton.new()
-	_fullscreen_check.focus_mode = Control.FOCUS_NONE
-	_fullscreen_check.toggled.connect(func(on: bool) -> void:
-		GlobalSettings.fullscreen = on
-		_res_option.disabled = on)
-	fs_row.add_child(_fullscreen_check)
 
 	# 主音量
 	var mr: Array = _make_volume_row(vbox, "主音量")
@@ -375,9 +380,11 @@ func _build_settings_overlay() -> void:
 # ── 设置加载 / 应用 ───────────────────────────────────────────────────
 
 func _load_settings_to_ui() -> void:
+	_display_mode_option.selected     = GlobalSettings.display_mode
 	_res_option.selected             = GlobalSettings.resolution_index
-	_res_option.disabled             = GlobalSettings.fullscreen
-	_fullscreen_check.button_pressed = GlobalSettings.fullscreen
+	_res_option.disabled             = (
+		GlobalSettings.display_mode == GlobalSettings.DISPLAY_MODE_FULLSCREEN
+	)
 	_master_slider.value = GlobalSettings.master_volume
 	_music_slider.value  = GlobalSettings.music_volume
 	_sfx_slider.value    = GlobalSettings.sfx_volume

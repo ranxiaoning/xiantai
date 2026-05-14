@@ -15,7 +15,10 @@ func run_all() -> Dictionary:
 	_t("test_shop_database_script_exists")
 	_t("test_item_and_artifact_totals")
 	_t("test_items_include_three_categories")
+	_t("test_items_have_dual_use_data")
+	_t("test_artifacts_do_not_expose_type_field")
 	_t("test_generate_stock_counts")
+	_t("test_generate_stock_respects_extra_item_bonus")
 	_t("test_card_upgrade_and_remove_prices")
 	_t("test_owned_artifacts_do_not_appear_in_stock")
 
@@ -36,8 +39,8 @@ func test_item_and_artifact_totals() -> void:
 	var db := _load_shop_db()
 	if db == null:
 		return
-	_assert_eq(db.call("get_all_items").size(), 45, "黑市物品总数为 45")
-	_assert_eq(db.call("get_all_artifacts").size(), 15, "黑市宝物总数为 15")
+	_assert_eq(db.call("get_all_items").size(), 25, "黑市背包消耗品总数为 25")
+	_assert_eq(db.call("get_all_artifacts").size(), 27, "宝物总数（22可购买+5起源）为 27")
 
 
 func test_items_include_three_categories() -> void:
@@ -52,6 +55,32 @@ func test_items_include_three_categories() -> void:
 	_assert_true(cats.has("formation"), "物品包含阵法")
 
 
+func test_items_have_dual_use_data() -> void:
+	var db := _load_shop_db()
+	if db == null:
+		return
+	var ids := {}
+	for item in db.call("get_all_items"):
+		ids[str(item.get("id", ""))] = true
+		_assert_true(item.has("map_use"), "%s 包含地图用途数据" % item.get("id", ""))
+		_assert_true(item.has("battle_use"), "%s 包含战斗用途数据" % item.get("id", ""))
+		_assert_true(not str(item.get("effect_desc", "")).is_empty(), "%s 包含展示描述" % item.get("id", ""))
+	_assert_true(ids.has("D-02"), "保留事件固定奖励 D-02")
+	_assert_true(ids.has("D-03"), "保留事件固定奖励 D-03")
+	var wind_talisman: Dictionary = db.call("get_item_by_id", "T-02")
+	var wind_map_use: Dictionary = wind_talisman.get("map_use", {})
+	_assert_eq(str(wind_map_use.get("type", "")), "next_floor_any_node", "风符·逐云是符箓自身的下一层任选地图效果")
+
+
+func test_artifacts_do_not_expose_type_field() -> void:
+	var db := _load_shop_db()
+	if db == null:
+		return
+	for art in db.call("get_all_artifacts"):
+		_assert_true(not (art as Dictionary).has("type"), "%s 不再暴露主动/被动 type 字段" % art.get("id", ""))
+		_assert_true(not (art as Dictionary).has("active_used"), "%s 不再暴露主动宝物 active_used 字段" % art.get("id", ""))
+
+
 func test_generate_stock_counts() -> void:
 	var db := _load_shop_db()
 	if db == null:
@@ -60,6 +89,22 @@ func test_generate_stock_counts() -> void:
 	_assert_eq((stock.get("cards", []) as Array).size(), 3, "每次黑市生成 3 张卡牌")
 	_assert_eq((stock.get("items", []) as Array).size(), 4, "每次黑市生成 4 个物品")
 	_assert_eq((stock.get("artifacts", []) as Array).size(), 2, "每次黑市生成 2 件宝物")
+
+
+func test_generate_stock_respects_extra_item_bonus() -> void:
+	var db := _load_shop_db()
+	if db == null:
+		return
+	var supports_extra_arg := false
+	for method in db.get_method_list():
+		if str(method.get("name", "")) == "generate_stock" and (method.get("args", []) as Array).size() >= 4:
+			supports_extra_arg = true
+			break
+	_assert_true(supports_extra_arg, "generate_stock 支持下次黑市额外物品参数")
+	if not supports_extra_arg:
+		return
+	var stock: Dictionary = db.call("generate_stock", 4, [], 12345, 1)
+	_assert_eq((stock.get("items", []) as Array).size(), 5, "下次黑市加货使物品货架 +1")
 
 
 func test_card_upgrade_and_remove_prices() -> void:

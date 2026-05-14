@@ -37,17 +37,18 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 	var ling_li_max := int(char_data.get("ling_li_max", 20))
 	if GameState.has_artifact("R-S06"): ling_li_max += 2
 	
-	var initial_shield := 0
-	if GameState.has_artifact("R-S02"): initial_shield += 8
+	var base_ling_li_regen := int(char_data.get("ling_li_regen", 3))
+	var initial_hu_ti := int(char_data.get("hu_ti", 0))
+	if GameState.has_artifact("R-S02"): initial_hu_ti += 8
 
 	s = {
 		# 玩家
 		"player_hp":          player_start_hp,
 		"player_hp_max":      player_hp_max,
-		"player_shield":      initial_shield,
-		"player_hu_ti":       char_data.get("hu_ti", 0),
+		"player_hu_ti":       initial_hu_ti,
 		"player_ling_li":     0,
 		"player_ling_li_max": ling_li_max,
+		"player_ling_li_base_regen": base_ling_li_regen,
 		"player_ling_li_regen": GameState.get_ling_li_regen(),
 		"player_dao_hui":     char_data.get("dao_hui_max", 10),
 		"player_dao_hui_max": char_data.get("dao_hui_max", 10),
@@ -67,14 +68,19 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 		# 本回合临时加成
 		"next_attack_bonus":  0,  # 踏雪无痕
 		"extra_draw_next_turn": 0,
+		"death_save_charges": 0,
+		"debuff_ward_charges": 0,
 
 		# 敌人
 		"enemy_hp":          enemy_data.get("hp", 30),
 		"enemy_hp_max":      enemy_data.get("hp", 30),
 		"enemy_hu_ti":       enemy_data.get("hu_ti", 0),
 		"enemy_statuses":    {},
+		"enemy_jing_ci":     enemy_data.get("passive_jing_ci_n", 0),
+		"enemy_dao_xing":    enemy_data.get("dao_xing", 0),
 		"enemy_data":        enemy_data,
 		"enemy_action_idx":  0,
+		"enemy_action_delay": 0,
 		"enemy_intent_text": "",
 
 		# 元数据
@@ -93,6 +99,9 @@ func init(char_data: Dictionary, deck_ids: Array, enemy_data: Dictionary) -> voi
 			_next_instance_id += 1
 			s["draw_pile"].append(card)
 	s["draw_pile"].shuffle()
+	for effect in GameState.consume_pending_battle_consumable_effects():
+		if effect is Dictionary:
+			apply_consumable_effect(effect)
 	_update_enemy_intent()
 
 
@@ -112,8 +121,77 @@ func start_battle() -> void:
 
 # ── 玩家行动 ──────────────────────────────────────────────────────
 
+func apply_consumable_effect(effect: Dictionary) -> Dictionary:
+	var kind := str(effect.get("type", ""))
+	var amount := int(effect.get("amount", 0))
+	match kind:
+		"compound":
+			for sub in effect.get("effects", []):
+				if sub is Dictionary:
+					apply_consumable_effect(sub)
+		"heal":
+			_heal_player(amount)
+		"hu_ti", "block":
+			_add_player_hu_ti(amount)
+		"ling_li":
+			s["player_ling_li"] = mini(int(s.get("player_ling_li", 0)) + amount, int(s.get("player_ling_li_max", 20)))
+			_log("  物品灵力 +%d → %d" % [amount, s["player_ling_li"]])
+		"dao_hui":
+			s["player_dao_hui"] = mini(int(s.get("player_dao_hui", 0)) + amount, int(s.get("player_dao_hui_max", 10)))
+			_log("  物品道慧 +%d → %d" % [amount, s["player_dao_hui"]])
+		"dao_xing":
+			s["player_dao_xing"] = int(s.get("player_dao_xing", 0)) + amount
+			_log("  物品道行 %+d → %d" % [amount, s["player_dao_xing"]])
+		"draw":
+			_draw_cards(amount)
+		"start_draw":
+			s["hand_size"] = maxi(0, int(s.get("hand_size", STARTING_HAND_SIZE)) + amount)
+			_log("  起手抽牌 %+d → %d" % [amount, s["hand_size"]])
+		"damage":
+			var dmg := amount
+			if effect.get("boss_half", false) and _is_boss_enemy():
+				dmg = maxi(1, floori(float(dmg) * 0.5))
+			_deal_damage_to_enemy(dmg)
+		"lifesteal":
+			_apply_lifesteal_damage(amount)
+		"enemy_status":
+			_add_enemy_status(str(effect.get("key", "")), int(effect.get("stacks", 1)))
+		"player_status":
+			_add_player_status(str(effect.get("key", "")), int(effect.get("stacks", 1)))
+		"cleanse":
+			_cleanse_player_statuses(amount)
+		"next_attack_bonus":
+			s["next_attack_bonus"] = int(s.get("next_attack_bonus", 0)) + amount
+			_log("  下一张术法伤害 %+d" % amount)
+		"delay_enemy_action":
+			s["enemy_action_delay"] = int(s.get("enemy_action_delay", 0)) + maxi(1, amount)
+			_log("  敌方行动延后 %d 次" % maxi(1, amount))
+		"enemy_dao_xing":
+			s["enemy_dao_xing"] = maxi(0, int(s.get("enemy_dao_xing", 0)) + amount)
+			_log("  敌方道行 %+d → %d" % [amount, s["enemy_dao_xing"]])
+		"death_save":
+			s["death_save_charges"] = int(s.get("death_save_charges", 0)) + maxi(1, amount)
+			_log("  预置濒死保护 %d 次" % s["death_save_charges"])
+		"debuff_ward":
+			s["debuff_ward_charges"] = int(s.get("debuff_ward_charges", 0)) + maxi(1, amount)
+			_log("  预置负面免疫 %d 次" % s["debuff_ward_charges"])
+		_:
+			push_warning("BattleEngine.apply_consumable_effect: 未实现效果 type = " + kind)
+	return s
+
+
+func apply_battle_consumable_effect(effect: Dictionary) -> Dictionary:
+	if str(s.get("phase", "")) == "over":
+		return s
+	apply_consumable_effect(effect)
+	if not _check_battle_end():
+		state_changed.emit()
+	return s
+
 func can_play_card(card: Dictionary) -> bool:
 	if s["phase"] != "player":
+		return false
+	if _is_unplayable_card(card):
 		return false
 	return s["player_ling_li"] >= card.get("ling_li", 0) and \
 		   s["player_dao_hui"] >= card.get("dao_hui", 0)
@@ -123,6 +201,8 @@ func can_play_card(card: Dictionary) -> bool:
 func get_play_block_reason(card: Dictionary) -> String:
 	if s["phase"] != "player":
 		return ""
+	if _is_unplayable_card(card):
+		return "禁锢"
 	var lack_ling: bool = int(s["player_ling_li"]) < card.get("ling_li", 0)
 	var lack_dao: bool  = int(s["player_dao_hui"]) < card.get("dao_hui", 0)
 	if lack_ling and lack_dao:
@@ -179,14 +259,21 @@ func end_turn() -> void:
 	if s["phase"] != "player":
 		return
 	_log("── 回合结束 ──")
-	# 检查并移除带有【溃散】(ethereal) 词缀的卡牌，其他手牌保留到下回合
+	# 检查并移除带有【溃散】的牌；回合结束反噬只结算惩罚，不自动移除。
 	var kept_hand = []
 	for card in s["hand"]:
-		if "ethereal" in card.get("keywords", []):
+		var hp_loss: int = int(card.get("end_turn_hp_loss", 0))
+		if hp_loss > 0:
+			_apply_direct_player_hp_loss(hp_loss, str(card.get("name", "污染牌")))
+			_log("  → %s 反噬后仍留在手牌" % card.get("name", "污染牌"))
+			kept_hand.append(card)
+		elif "ethereal" in card.get("keywords", []):
 			_log("  → 溃散触发：%s 已耗尽" % card["name"])
 		else:
 			kept_hand.append(card)
 	s["hand"] = kept_hand
+	if _check_battle_end():
+		return
 	# 道慧清零
 	s["player_dao_hui"] = 0
 	# 玩家状态 tick（在玩家回合结束时递减，确保敌人施加的状态能作用到本回合）
@@ -203,6 +290,13 @@ func _enemy_turn() -> void:
 	var enemy_data: Dictionary = s["enemy_data"]
 	var actions: Array = enemy_data.get("actions", [])
 	if actions.is_empty():
+		_start_player_turn()
+		return
+	if int(s.get("enemy_action_delay", 0)) > 0:
+		s["enemy_action_delay"] = int(s.get("enemy_action_delay", 0)) - 1
+		_log("敌方行动被延后。")
+		_update_enemy_intent()
+		state_changed.emit()
 		_start_player_turn()
 		return
 
@@ -240,14 +334,11 @@ func _enemy_turn() -> void:
 					s["enemy_hp"] = min(s["enemy_hp"] + hp_lost, s["enemy_hp_max"])
 					_log("  吸血回复 %d HP（当前%d）" % [hp_lost, s["enemy_hp"]])
 
-			## 攻击后自身获得身形（盾击）
+			## 攻击后自身获得护体（盾击）
 			if action.has("self_shield_after"):
 				var sh: int = action["self_shield_after"]
-				if action.get("self_shield_is_shen_xing", false):
-					s["enemy_shen_xing"] = s.get("enemy_shen_xing", 0) + sh
-					_log("  获得 %d 身形" % sh)
-				else:
-					s["enemy_hu_ti"] += sh
+				s["enemy_hu_ti"] += sh
+				_log("  获得 %d 点护体（共 %d）" % [sh, s["enemy_hu_ti"]])
 
 			## 攻击附带给玩家的状态（如震慑）
 			var ps = action.get("player_status", null)
@@ -261,18 +352,13 @@ func _enemy_turn() -> void:
 			var ic = action.get("insert_card", null)
 			if ic != null:
 				_insert_curse_card(ic)
+			_insert_curse_cards(action.get("insert_cards", []))
 
 		"defend":
-			## ── 防守类：敌人获得护体或身形 ──────────────
+			## ── 防守类：敌人获得护体 ──────────────
 			var sh: int = action.get("shield", 0)
-			if action.get("is_shen_xing", false):
-				# 身形（临时格挡，回合结束清零）
-				s["enemy_shen_xing"] = s.get("enemy_shen_xing", 0) + sh
-				_log("  获得 %d 点身形（临时护盾）" % sh)
-			else:
-				# 永久护体
-				s["enemy_hu_ti"] += sh
-				_log("  获得 %d 点护体（共 %d）" % [sh, s["enemy_hu_ti"]])
+			s["enemy_hu_ti"] += sh
+			_log("  获得 %d 点护体（共 %d）" % [sh, s["enemy_hu_ti"]])
 
 		"buff":
 			## ── 增益类：敌人自身获得状态 ─────────────────
@@ -294,13 +380,26 @@ func _enemy_turn() -> void:
 			var ic_d = action.get("insert_card", null)
 			if ic_d != null:
 				_insert_curse_card(ic_d)
+			_insert_curse_cards(action.get("insert_cards", []))
+
+		"drain":
+			var drain_max: int = maxi(0, int(action.get("ling_li_drain", 0)))
+			var drained: int = mini(int(s.get("player_ling_li", 0)), drain_max)
+			s["player_ling_li"] = int(s.get("player_ling_li", 0)) - drained
+			_log("  灵力被抽离 %d 点（剩余 %d）" % [drained, s["player_ling_li"]])
+
+		"recover":
+			var heal: int = maxi(0, int(action.get("heal", 0)))
+			if heal > 0:
+				s["enemy_hp"] = mini(int(s.get("enemy_hp", 0)) + heal, int(s.get("enemy_hp_max", 0)))
+				_log("  敌人回复 %d HP（当前 %d/%d）" % [heal, s["enemy_hp"], s["enemy_hp_max"]])
+			var shield: int = maxi(0, int(action.get("shield", 0)))
+			if shield > 0:
+				s["enemy_hu_ti"] = int(s.get("enemy_hu_ti", 0)) + shield
+				_log("  获得 %d 点护体（共 %d）" % [shield, s["enemy_hu_ti"]])
 
 	if _check_battle_end():
 		return
-
-	## 回合结束：清零身形（临时格挡）
-	if s.get("enemy_shen_xing", 0) > 0:
-		s["enemy_shen_xing"] = 0
 
 	# 敌方状态 tick（在敌方回合结束时递减）
 	_tick_enemy_statuses()
@@ -343,6 +442,10 @@ func _apply_player_status_from_action(status_data) -> void:
 		var stacks: int = status_data.get("stacks", 1)
 		if key.is_empty():
 			return
+		if _is_negative_status(key) and int(s.get("debuff_ward_charges", 0)) > 0:
+			s["debuff_ward_charges"] = int(s.get("debuff_ward_charges", 0)) - 1
+			_log("  负面状态被净符抵消：%s" % key)
+			return
 		if not s["player_statuses"].has(key):
 			s["player_statuses"][key] = 0
 		s["player_statuses"][key] += stacks
@@ -367,6 +470,28 @@ func _apply_enemy_self_status(status_data: Dictionary) -> void:
 			_log("  敌人状态 %s +%d" % [key, stacks])
 
 
+func _is_unplayable_card(card: Dictionary) -> bool:
+	return "unplayable" in card.get("keywords", []) and not bool(card.get("playable_curse", false))
+
+
+func _apply_direct_player_hp_loss(amount: int, source_name: String) -> void:
+	var loss: int = maxi(0, amount)
+	if loss <= 0:
+		return
+	s["player_hp"] = maxi(0, int(s.get("player_hp", 0)) - loss)
+	if not GameState.character.is_empty():
+		GameState.apply_hp_change(-loss)
+	_log("  %s 无视护体损失 %d HP → %d" % [source_name, loss, s["player_hp"]])
+
+
+func _insert_curse_cards(insert_cards) -> void:
+	if not (insert_cards is Array):
+		return
+	for insert_data in insert_cards:
+		if insert_data is Dictionary:
+			_insert_curse_card(insert_data)
+
+
 ## ── 插入污染牌到玩家牌库 ─────────────────────────────────────────
 func _insert_curse_card(insert_data: Dictionary) -> void:
 	var card_id: String = insert_data.get("card_id", "an_shang")
@@ -379,6 +504,14 @@ func _insert_curse_card(insert_data: Dictionary) -> void:
 		"is_curse":  true,
 		"_instance_id": _next_instance_id,
 	}
+	if card_id == "lan_sui_dan":
+		curse_card["ling_li"] = 2
+		curse_card["dao_hui"] = 0
+		curse_card["keywords"] = ["exhaust"]
+		curse_card["playable_curse"] = true
+		curse_card["end_turn_hp_loss"] = 5
+		curse_card["art_path"] = "res://assets/card/art/lan_sui_dan.png"
+		curse_card["desc"] = "打出后耗尽。回合结束仍在手牌时，无视护体失去5点生命。"
 	_next_instance_id += 1
 	match target:
 		"discard":
@@ -388,9 +521,12 @@ func _insert_curse_card(insert_data: Dictionary) -> void:
 			s["draw_pile"].push_front(curse_card)
 			_log("  塞入【%s】→ 抽牌堆顶（下回合必抽）" % curse_card["name"])
 		"hand":
-			if s["hand"].size() < 10:
+			if s["hand"].size() < HAND_LIMIT:
 				s["hand"].append(curse_card)
-			_log("  塞入【%s】→ 手牌" % curse_card["name"])
+				_log("  塞入【%s】→ 手牌" % curse_card["name"])
+			else:
+				s["draw_pile"].push_front(curse_card)
+				_log("  手牌已满，【%s】改入抽牌堆顶" % curse_card["name"])
 
 
 func _get_curse_name(card_id: String) -> String:
@@ -400,6 +536,7 @@ func _get_curse_name(card_id: String) -> String:
 		"mi_wang":    return "迷惘"
 		"ji_sheng":   return "寄生道果"
 		"xin_mo":     return "心魔"
+		"lan_sui_dan": return "烂髓丹"
 		_:            return card_id
 
 
@@ -484,11 +621,79 @@ func _deal_damage_to_player(amount: int) -> void:
 	s["player_hp"] = max(0, s["player_hp"] - hp_dmg)
 	_log("  受到 %d 伤害（护体吸收 %d，HP --%d → %d）" % [int(final_dmg), absorbed, hp_dmg, s["player_hp"]])
 	GameState.apply_hp_change(-hp_dmg)
+	if s["player_hp"] <= 0:
+		_try_trigger_death_save()
 
 
 func _add_player_hu_ti(amount: int) -> void:
 	s["player_hu_ti"] += amount
 	_log("  获得 %d 护体（共 %d）" % [amount, s["player_hu_ti"]])
+
+
+func _heal_player(amount: int) -> void:
+	if amount <= 0:
+		return
+	s["player_hp"] = mini(int(s.get("player_hp", 0)) + amount, int(s.get("player_hp_max", 60)))
+	if not GameState.character.is_empty():
+		GameState.current_hp = int(s["player_hp"])
+	_log("  回复 %d HP → %d/%d" % [amount, s["player_hp"], s["player_hp_max"]])
+
+
+func _apply_lifesteal_damage(amount: int) -> void:
+	var before_hp := int(s.get("enemy_hp", 0))
+	_deal_damage_to_enemy(amount)
+	var hp_lost := maxi(0, before_hp - int(s.get("enemy_hp", 0)))
+	if hp_lost > 0:
+		_heal_player(hp_lost)
+
+
+func _add_enemy_status(key: String, stacks: int) -> void:
+	if key.is_empty() or stacks == 0:
+		return
+	if not s["enemy_statuses"].has(key):
+		s["enemy_statuses"][key] = 0
+	s["enemy_statuses"][key] += stacks
+	_log("  敌方状态：%s %+d（共%d）" % [key, stacks, s["enemy_statuses"][key]])
+
+
+func _add_player_status(key: String, stacks: int) -> void:
+	if key.is_empty() or stacks == 0:
+		return
+	if not s["player_statuses"].has(key):
+		s["player_statuses"][key] = 0
+	s["player_statuses"][key] += stacks
+	_log("  玩家状态：%s %+d（共%d）" % [key, stacks, s["player_statuses"][key]])
+
+
+func _cleanse_player_statuses(count: int) -> void:
+	var remaining := maxi(0, count)
+	for key in s["player_statuses"].keys():
+		if remaining <= 0:
+			break
+		if _is_negative_status(str(key)):
+			s["player_statuses"].erase(key)
+			remaining -= 1
+	_log("  清除负面状态 %d 个" % (maxi(0, count) - remaining))
+
+
+func _is_negative_status(key: String) -> bool:
+	return ["lie_shang", "ku_jie", "xu_ruo", "zhen_she"].has(key)
+
+
+func _is_boss_enemy() -> bool:
+	var enemy_data: Dictionary = s.get("enemy_data", {})
+	return str(enemy_data.get("type", "")) == "boss" or str(enemy_data.get("node_type", "")) == "boss"
+
+
+func _try_trigger_death_save() -> bool:
+	if int(s.get("death_save_charges", 0)) <= 0:
+		return false
+	s["death_save_charges"] = int(s.get("death_save_charges", 0)) - 1
+	s["player_hp"] = 1
+	if not GameState.character.is_empty():
+		GameState.current_hp = 1
+	_log("  濒死保护触发，HP 保留为 1。")
+	return true
 
 
 # ── 卡牌效果执行 ──────────────────────────────────────────────────
@@ -745,9 +950,7 @@ func _draw_cards(count: int) -> void:
 	var remaining: int = count
 	while remaining > 0:
 		if s["draw_pile"].is_empty():
-			if _reshuffle_deck():
-				remaining = int(s["hand_size"])
-			else:
+			if not _reshuffle_deck():
 				_log("  牌库已耗尽")
 				break
 		if s["hand"].size() >= HAND_LIMIT:
@@ -764,15 +967,12 @@ func _draw_cards(count: int) -> void:
 
 func _reshuffle_deck() -> bool:
 	var cards_to_shuffle: Array = []
-	for card in s["hand"]:
-		cards_to_shuffle.append(card)
 	for card in s["discard_pile"]:
 		cards_to_shuffle.append(card)
 	if cards_to_shuffle.is_empty():
 		return false
-	_log("  ── 牌库耗尽：手牌与弃牌洗回抽牌堆，重抽%d张 ──" % s["hand_size"])
+	_log("  ── 牌库耗尽：弃牌堆洗回抽牌堆 ──")
 	s["draw_pile"] = cards_to_shuffle.duplicate()
-	s["hand"].clear()
 	s["discard_pile"].clear()
 	s["draw_pile"].shuffle()
 	deck_reshuffled.emit(cards_to_shuffle.duplicate(true))
@@ -818,6 +1018,9 @@ func _check_battle_end() -> bool:
 		state_changed.emit()
 		return true
 	if s["player_hp"] <= 0:
+		if _try_trigger_death_save():
+			state_changed.emit()
+			return false
 		s["phase"] = "over"
 		s["battle_won"] = false
 		_log("══ 战斗失败 ══")

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TechArchitecture"
+  short_description: "Godot technical architecture"
+  default_prompt: "Use tech-architecture before new systems, Autoloads, Resources, schemas, persistence, i18n, or cross-module refactors."

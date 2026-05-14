@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://game_map_v1"]
+[gd_scene load_steps=7 format=3 uid="uid://game_map_v1"]
 
 [ext_resource type="Script" path="res://scripts/GameMap.gd" id="1_gm"]
 [ext_resource type="Texture2D" path="res://assets/bg/map.png" id="2_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/spirit_stone.png" id="3_stone"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_deck.svg" id="4_deck_icon"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ccdfn"]
 bg_color = Color(0.1, 0.09, 0.08, 0.96)
@@ -138,15 +139,23 @@ vertical_alignment = 1
 
 [node name="DeckBtn" type="Button" parent="Header"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.80
-anchor_right = 0.98
+anchor_left = 1.0
+anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -120.0
 offset_top = 4.0
+offset_right = -68.0
 offset_bottom = -4.0
-theme_override_font_sizes/font_size = 14
-text = "查看卡组"
+mouse_default_cursor_shape = 2
+tooltip_text = "查看卡组"
+icon = ExtResource("4_deck_icon")
+icon_alignment = 1
+vertical_icon_alignment = 1
+expand_icon = true
+flat = true
 
 [node name="TreasureBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -197,32 +206,63 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
+[node name="PopupScrim" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 99
+mouse_filter = 0
+color = Color(0, 0, 0, 0.64)
+
 [node name="NodePopup" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.15
-anchor_top = 0.15
-anchor_right = 0.85
-anchor_bottom = 0.85
+anchor_left = 0.17
+anchor_top = 0.16
+anchor_right = 0.83
+anchor_bottom = 0.84
+z_index = 100
 theme_override_styles/panel = SubResource("StyleBoxFlat_ccdfn")
 
 [node name="PopupVBox" type="VBoxContainer" parent="NodePopup"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
 [node name="PopupPad" type="MarginContainer" parent="NodePopup/PopupVBox"]
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 12
+size_flags_vertical = 3
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 14
 
 [node name="PopupInner" type="VBoxContainer" parent="NodePopup/PopupVBox/PopupPad"]
 layout_mode = 2
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+theme_override_constants/separation = 14
 
-[node name="PopupTitle" type="Label" parent="NodePopup/PopupVBox/PopupPad/PopupInner"]
+[node name="PopupHeader" type="HBoxContainer" parent="NodePopup/PopupVBox/PopupPad/PopupInner"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="PopupTitlePill" type="PanelContainer" parent="NodePopup/PopupVBox/PopupPad/PopupInner/PopupHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PopupTitlePad" type="MarginContainer" parent="NodePopup/PopupVBox/PopupPad/PopupInner/PopupHeader/PopupTitlePill"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 6
+
+[node name="PopupTitle" type="Label" parent="NodePopup/PopupVBox/PopupPad/PopupInner/PopupHeader/PopupTitlePill/PopupTitlePad"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.65, 0.4, 1)
@@ -230,37 +270,44 @@ theme_override_font_sizes/font_size = 24
 text = "节点标题"
 horizontal_alignment = 1
 
-[node name="PopupDesc" type="Label" parent="NodePopup/PopupVBox/PopupPad/PopupInner"]
+[node name="PopupBodyScroll" type="ScrollContainer" parent="NodePopup/PopupVBox/PopupPad/PopupInner"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="PopupDesc" type="Label" parent="NodePopup/PopupVBox/PopupPad/PopupInner/PopupBodyScroll"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 15
 text = "节点描述"
 autowrap_mode = 3
 
-[node name="PopupBtnRow" type="HBoxContainer" parent="NodePopup/PopupVBox"]
+[node name="PopupActions" type="HBoxContainer" parent="NodePopup/PopupVBox"]
 layout_mode = 2
+offset_bottom = 62.0
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="PopupBtn1" type="Button" parent="NodePopup/PopupVBox/PopupBtnRow"]
+[node name="PopupBtn1" type="Button" parent="NodePopup/PopupVBox/PopupActions"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(180, 48)
+custom_minimum_size = Vector2(190, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "操作1"
 
-[node name="PopupBtn2" type="Button" parent="NodePopup/PopupVBox/PopupBtnRow"]
+[node name="PopupBtn2" type="Button" parent="NodePopup/PopupVBox/PopupActions"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(180, 48)
+custom_minimum_size = Vector2(190, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "操作2"
 
 [node name="PopupCloseBtn" type="Button" parent="NodePopup/PopupVBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 48)
+custom_minimum_size = Vector2(190, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 16
@@ -406,8 +453,8 @@ horizontal_alignment = 1
 vertical_alignment = 1
 modulate = Color(1, 1, 1, 0)
 
-[connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn1" to="." method="_on_popup_btn1_pressed"]
-[connection signal="pressed" from="NodePopup/PopupVBox/PopupBtnRow/PopupBtn2" to="." method="_on_popup_btn2_pressed"]
+[connection signal="pressed" from="NodePopup/PopupVBox/PopupActions/PopupBtn1" to="." method="_on_popup_btn1_pressed"]
+[connection signal="pressed" from="NodePopup/PopupVBox/PopupActions/PopupBtn2" to="." method="_on_popup_btn2_pressed"]
 [connection signal="pressed" from="NodePopup/PopupVBox/PopupCloseBtn" to="." method="_on_popup_close_btn_pressed"]
 [connection signal="pressed" from="VictoryPanel/VictoryVBox/VictoryBtn" to="." method="_on_victory_btn_pressed"]
 [connection signal="pressed" from="Header/DeckBtn" to="." method="_on_deck_btn_pressed"]

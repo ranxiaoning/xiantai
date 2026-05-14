@@ -63,7 +63,12 @@ func run_all() -> Dictionary:
 	_t("test_renderer_uses_rounded_child_mask")
 	_t("test_card_view_masks_shadow_and_renderer")
 	_t("test_renderer_plain_description_uses_label_layout")
+	_t("test_renderer_loads_explicit_art_path_for_special_cards")
 	_t("test_renderer_dynamic_description_is_transparent_and_centered")
+	_t("test_battle_scene_init_uses_pending_node_type")
+	_t("test_player_status_entries_include_core_and_temporary_icons")
+	_t("test_enemy_status_entries_are_stable_and_hide_when_empty")
+	_t("test_battle_scene_status_bars_replace_dao_xing_badge")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
@@ -161,7 +166,7 @@ func test_reshuffle_preserves_hand() -> void:
 	var discard = _make_cards(4, 100)
 	var e := _make_engine(hand, [], discard)
 	e.call("_reshuffle_deck")
-	_assert_eq(e.get("s")["hand"].size(), 0, "洗牌：当前手牌洗回抽牌堆")
+	_assert_eq(e.get("s")["hand"].size(), 8, "洗牌：当前手牌保持不变")
 
 
 func test_reshuffle_merges_discard_to_draw() -> void:
@@ -182,8 +187,8 @@ func test_reshuffle_empty_discard_noop() -> void:
 	var hand = _make_cards(3)
 	var e := _make_engine(hand, [], [])
 	e.call("_reshuffle_deck")
-	_assert_eq(e.get("s")["hand"].size(),      0, "弃牌堆为空但有手牌：手牌洗回抽牌堆")
-	_assert_eq(e.get("s")["draw_pile"].size(), 3, "弃牌堆为空但有手牌：抽牌堆获得3张")
+	_assert_eq(e.get("s")["hand"].size(),      3, "弃牌堆为空但有手牌：手牌保持不变")
+	_assert_eq(e.get("s")["draw_pile"].size(), 0, "弃牌堆为空但有手牌：抽牌堆不增加")
 
 
 func test_draw_normal() -> void:
@@ -203,23 +208,23 @@ func test_draw_hand_cap_10() -> void:
 
 
 func test_draw_triggers_reshuffle_not_hand_wipe() -> void:
-	# 手牌8张，抽牌堆空，弃牌堆3张 → 触发洗牌，并重抽3张
+	# 手牌8张，抽牌堆空，弃牌堆3张 → 触发洗牌，只从弃牌堆抽1张
 	var hand    = _make_cards(8)
 	var discard = _make_cards(3, 50)
 	var e := _make_engine(hand, [], discard)
 	e.call("_draw_cards", 1)
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "手牌8张触发洗牌后重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 9, "手牌8张触发洗牌后抽1张，实际：%d" % sz)
 
 
 func test_draw_large_hand_stays_large_after_reshuffle() -> void:
-	# 9张手牌，抽牌堆空，弃牌堆20张，_draw_cards(1) 后应重洗并重抽3
+	# 9张手牌，抽牌堆空，弃牌堆20张，_draw_cards(1) 后应洗弃牌并抽到上限
 	var hand    = _make_cards(9)
 	var discard = _make_cards(20, 100)
 	var e := _make_engine(hand, [], discard)
 	e.call("_draw_cards", 1)
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "9张手牌触发洗牌后重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 10, "9张手牌触发洗牌后抽到上限，实际：%d" % sz)
 
 
 func test_draw_empty_draw_and_empty_discard() -> void:
@@ -242,14 +247,14 @@ func test_draw_exactly_fills_to_cap() -> void:
 
 func test_reshuffle_then_draw_continues_correctly() -> void:
 	# 手牌2张，抽牌堆1张，弃牌堆5张
-	# _draw_cards(4)：先抽1张，抽牌堆耗尽后重洗当前手牌+弃牌，并重抽3张
+	# _draw_cards(4)：先抽1张，抽牌堆耗尽后只洗弃牌堆，并继续抽3张
 	var hand    = _make_cards(2)
 	var draw    = _make_cards(1, 50)
 	var discard = _make_cards(5, 60)
 	var e := _make_engine(hand, draw, discard)
 	e.call("_draw_cards", 4)
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "抽牌中途耗尽后重洗并重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 6, "抽牌中途耗尽后继续从弃牌堆抽3张，实际：%d" % sz)
 
 
 # ──────────────────────────────────────────────────
@@ -288,7 +293,7 @@ func test_turn_start_9cards_empty_draw_reshuffle() -> void:
 	var e := _make_turn_state(9, 0, 15)
 	e.call("_start_player_turn")
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "回合开始(9张+空抽牌堆): 重洗后重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 10, "回合开始(9张+空抽牌堆): 洗弃牌并抽到上限，实际：%d" % sz)
 
 
 func test_turn_start_9cards_nonempty_draw() -> void:
@@ -328,7 +333,7 @@ func test_turn_start_no_draw_no_discard_preserves_hand() -> void:
 	var e := _make_turn_state(9, 0, 0)
 	e.call("_start_player_turn")
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "回合开始(仅手牌可洗): 重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 9, "回合开始(双堆为空): 手牌保持不变，实际：%d" % sz)
 
 
 func test_turn_start_extra_draw_cleared_after_use() -> void:
@@ -392,7 +397,7 @@ func test_card25_large_hand_redraw_preserves_count() -> void:
 	var e := _make_effect_state(8, 0, 2)  # draw=0 触发洗牌路径
 	e.call("_apply_card_effect", {"id": "25", "is_upgraded": false})
 	var sz: int = e.get("s")["hand"].size()
-	_assert_eq(sz, 3, "乱局重整(空抽牌堆): 洗牌后重抽3张，实际：%d" % sz)
+	_assert_eq(sz, 9, "乱局重整(空抽牌堆): 弃牌后重抽9张，实际：%d" % sz)
 
 
 func test_card25_large_hand_cap_respected() -> void:
@@ -518,6 +523,17 @@ func test_renderer_plain_description_uses_label_layout() -> void:
 	_assert_true(not rich_visible, "plain card description does not use RichTextLabel")
 
 
+func test_renderer_loads_explicit_art_path_for_special_cards() -> void:
+	var renderer = CardRendererScript.new()
+	renderer.set("_card_data", {
+		"id": "lan_sui_dan",
+		"name": "烂髓丹",
+		"art_path": "res://assets/card/art/lan_sui_dan.png",
+	})
+	var tex = renderer.call("_load_art_texture")
+	_assert_true(tex is Texture2D, "CardRenderer supports explicit art_path for non-numeric special cards")
+
+
 func test_renderer_dynamic_description_is_transparent_and_centered() -> void:
 	var renderer = CardRendererScript.new()
 	renderer.size = Vector2(280, 502)
@@ -545,6 +561,99 @@ func test_renderer_dynamic_description_is_transparent_and_centered() -> void:
 		_assert_true(rich_label.get_theme_stylebox("normal") is StyleBoxEmpty, "dynamic card description background is transparent")
 	if rich_label != null and desc_label != null:
 		_assert_true(rich_label.position.y > desc_label.position.y, "dynamic card description is vertically centered in the description box")
+
+
+func test_battle_scene_init_uses_pending_node_type() -> void:
+	seed(20260513)
+	GameState.start_run("chen_tian_feng")
+	GameState.pending_battle_node_type = "normal"
+	GameState.pending_battle_node_floor = 1
+	var tree := Engine.get_main_loop() as SceneTree
+	var packed: PackedScene = load("res://scenes/Battle.tscn")
+	var scene: Node = packed.instantiate()
+	tree.root.add_child(scene)
+	var enemy_label := scene.find_child("EnemyName", true, false) as Label
+	_assert_true(enemy_label != null, "BattleScene 初始化不依赖已删除的 pending_battle_node 字段")
+	if enemy_label != null:
+		_assert_true(not enemy_label.text.is_empty(), "BattleScene 初始化后已选定敌人")
+	scene.free()
+	GameState.reset_run()
+
+
+func test_player_status_entries_include_core_and_temporary_icons() -> void:
+	GameState.character = {"ling_li_regen": 3}
+	GameState.artifacts.clear()
+	var entries: Array = BattleSceneScript.build_player_status_entries({
+		"player_ling_li_regen": 5,
+		"player_ling_li_base_regen": 3,
+		"player_dao_xing": 7,
+		"player_statuses": {"xin_liu": 2, "lie_shang": 1},
+		"next_attack_bonus": 8,
+		"next_turn_dao_xing": 1,
+		"extra_draw_next_turn": 2,
+		"death_save_charges": 1,
+		"debuff_ward_charges": 1,
+	})
+	var ids := _entry_ids(entries)
+	_assert_eq(ids.slice(0, 4), ["base_ling_li_regen", "bonus_ling_li_regen", "dao_xing", "xin_liu"], "玩家状态 icon 固定优先级：基础回复/额外回复/道行/正面")
+	_assert_true(ids.has("lie_shang"), "玩家状态 icon 包含负面状态")
+	_assert_true(ids.has("next_attack_bonus"), "玩家状态 icon 包含下一攻加伤")
+	_assert_true(ids.has("next_turn_dao_xing"), "玩家状态 icon 包含下回合道行")
+	_assert_true(ids.has("extra_draw_next_turn"), "玩家状态 icon 包含下回合额外抽牌")
+	_assert_true(ids.has("death_save_charges"), "玩家状态 icon 包含濒死保护")
+	_assert_true(ids.has("debuff_ward_charges"), "玩家状态 icon 包含负面免疫")
+	_assert_eq(_entry_value(entries, "base_ling_li_regen"), 3, "基础灵力回复 icon 数字为基础回复")
+	_assert_eq(_entry_value(entries, "bonus_ling_li_regen"), 2, "额外灵力回复 icon 数字为额外值")
+	_assert_eq(_entry_value(entries, "dao_xing"), 7, "道行 icon 数字为层数")
+
+
+func test_enemy_status_entries_are_stable_and_hide_when_empty() -> void:
+	var entries: Array = BattleSceneScript.build_enemy_status_entries({
+		"enemy_dao_xing": 3,
+		"enemy_jing_ci": 2,
+		"enemy_statuses": {"ku_jie": 2, "lie_shang": 1},
+		"enemy_action_delay": 1,
+	})
+	_assert_eq(_entry_ids(entries), ["enemy_dao_xing", "jing_ci", "lie_shang", "ku_jie", "enemy_action_delay"], "敌方状态 icon 固定排序")
+	_assert_eq(_entry_value(entries, "enemy_dao_xing"), 3, "敌方道行 icon 数字为层数")
+	var empty_entries: Array = BattleSceneScript.build_enemy_status_entries({"enemy_statuses": {}})
+	_assert_eq(empty_entries.size(), 0, "无状态目标返回空状态列表")
+
+
+func test_battle_scene_status_bars_replace_dao_xing_badge() -> void:
+	GameState.start_run("chen_tian_feng")
+	GameState.pending_battle_node_type = "normal"
+	GameState.pending_battle_node_floor = 1
+	var tree := Engine.get_main_loop() as SceneTree
+	var packed: PackedScene = load("res://scenes/Battle.tscn")
+	var scene: Node = packed.instantiate()
+	tree.root.add_child(scene)
+	var player_bar := scene.find_child("PlayerStatusBar", true, false)
+	var enemy_bar := scene.find_child("EnemyStatusBar", true, false)
+	var dao_badge := scene.find_child("DaoXingBadge", true, false)
+	_assert_true(player_bar != null, "BattleScene 创建玩家状态 icon 栏")
+	_assert_true(enemy_bar != null, "BattleScene 创建敌方状态 icon 栏")
+	_assert_true(dao_badge == null, "底部资源区不再创建独立道行栏")
+	if player_bar != null:
+		_assert_true(player_bar.visible, "玩家基础状态栏默认可见")
+		_assert_true(player_bar.get_child_count() >= 2, "玩家状态栏至少显示基础灵力回复和道行")
+	scene.free()
+	GameState.reset_run()
+
+
+func _entry_ids(entries: Array) -> Array:
+	var ids: Array = []
+	for entry in entries:
+		ids.append(str((entry as Dictionary).get("id", "")))
+	return ids
+
+
+func _entry_value(entries: Array, id: String) -> int:
+	for entry in entries:
+		var data := entry as Dictionary
+		if str(data.get("id", "")) == id:
+			return int(data.get("value", 0))
+	return -999
 
 
 func _segments_text(segments: Array) -> String:

@@ -1,8 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://char_select_v1"]
+[gd_scene load_steps=11 format=3 uid="uid://char_select_v1"]
 
 [ext_resource type="Script" path="res://scripts/CharacterSelect.gd" id="1_cs"]
 [ext_resource type="Texture2D" path="res://assets/bg/wanjianmen.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/portraits/chen_tianfeng.png" id="3_portrait"]
+[ext_resource type="Texture2D" path="res://assets/portraits/chen_tianfeng_cutout.png" id="3_portrait"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/cloud_divider.png" id="4_divider"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_hp.png" id="5_hp"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_recovery.png" id="6_recovery"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_lingli.png" id="7_lingli"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_daohui.png" id="8_daohui"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/icon_damage.png" id="9_damage"]
+[ext_resource type="Texture2D" path="res://assets/ui/menu/seal_ring.png" id="10_seal"]
 
 [node name="CharacterSelect" type="Control"]
 layout_mode = 3
@@ -31,7 +38,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.018, 0.027, 0.036, 0.52)
+mouse_filter = 2
+color = Color(0.012, 0.026, 0.038, 0.24)
 
 [node name="TopShade" type="ColorRect" parent="."]
 layout_mode = 1
@@ -39,18 +47,28 @@ anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 0.22
 grow_horizontal = 2
-color = Color(0.018, 0.023, 0.03, 0.55)
+mouse_filter = 2
+color = Color(0.012, 0.020, 0.030, 0.42)
+
+[node name="BottomShade" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.004, 0.010, 0.016, 0.44)
 
 [node name="PageTitle" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.045
-anchor_top = 0.035
+anchor_top = 0.045
 anchor_right = 0.48
 anchor_bottom = 0.12
-theme_override_colors/font_color = Color(0.9, 0.84, 0.62, 1)
-theme_override_font_sizes/font_size = 24
 text = "择一人，入登仙台"
 vertical_alignment = 1
 
@@ -59,62 +77,82 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.047
-anchor_top = 0.105
-anchor_right = 0.52
-anchor_bottom = 0.15
-theme_override_colors/font_color = Color(0.68, 0.75, 0.82, 1)
-theme_override_font_sizes/font_size = 13
+anchor_top = 0.112
+anchor_right = 0.56
+anchor_bottom = 0.155
 text = "万剑门残锋仍在，轮回从此刻重新起势"
 
 [node name="SectBar" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.58
+anchor_left = 0.72
 anchor_top = 0.055
 anchor_right = 0.955
 anchor_bottom = 0.13
 alignment = 2
 theme_override_constants/separation = 10
 
-[node name="MainContent" type="HBoxContainer" parent="."]
+[node name="MainContent" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.045
-anchor_top = 0.17
+anchor_top = 0.155
 anchor_right = 0.955
-anchor_bottom = 0.86
-theme_override_constants/separation = 16
+anchor_bottom = 0.875
+
+[node name="SealRing" type="TextureRect" parent="MainContent"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.395
+anchor_top = 0.040
+anchor_right = 0.395
+anchor_bottom = 0.040
+offset_left = -170.0
+offset_top = -170.0
+offset_right = 170.0
+offset_bottom = 170.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.32)
+texture = ExtResource("10_seal")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="SidebarPanel" type="PanelContainer" parent="MainContent"]
-layout_mode = 2
-custom_minimum_size = Vector2(210, 0)
-size_flags_horizontal = 0
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.075
+anchor_right = 0.185
+anchor_bottom = 0.500
 
 [node name="SidebarPad" type="MarginContainer" parent="MainContent/SidebarPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
+theme_override_constants/margin_left = 18
 theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 16
+theme_override_constants/margin_right = 18
 theme_override_constants/margin_bottom = 18
 
 [node name="CharListPanel" type="VBoxContainer" parent="MainContent/SidebarPanel/SidebarPad"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="CharListTitle" type="Label" parent="MainContent/SidebarPanel/SidebarPad/CharListPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.86, 0.73, 0.46, 1)
-theme_override_font_sizes/font_size = 14
 text = "万剑门弟子"
 
 [node name="CharListHint" type="Label" parent="MainContent/SidebarPanel/SidebarPad/CharListPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.56, 0.64, 0.72, 1)
-theme_override_font_sizes/font_size = 12
 text = "选择本次轮回的执剑人"
 autowrap_mode = 3
+
+[node name="CharListRule" type="TextureRect" parent="MainContent/SidebarPanel/SidebarPad/CharListPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+mouse_filter = 2
+texture = ExtResource("4_divider")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="CharListBox" type="VBoxContainer" parent="MainContent/SidebarPanel/SidebarPad/CharListPanel"]
 unique_name_in_owner = true
@@ -123,47 +161,56 @@ size_flags_vertical = 3
 theme_override_constants/separation = 8
 
 [node name="HeroPanel" type="PanelContainer" parent="MainContent"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.35
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.155
+anchor_right = 0.680
+anchor_bottom = 1.0
 
 [node name="HeroPad" type="MarginContainer" parent="MainContent/HeroPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
 
 [node name="CharDetailPanel" type="VBoxContainer" parent="MainContent/HeroPanel/HeroPad"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="CharTitle" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.83, 0.75, 0.52, 1)
-theme_override_font_sizes/font_size = 14
-text = "万剑门  ·  剑修·入境"
+text = "万剑门 · 剑修 · 入境"
 horizontal_alignment = 1
 
 [node name="PortraitFrame" type="PanelContainer" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 320)
+custom_minimum_size = Vector2(0, 500)
 size_flags_vertical = 1
 clip_contents = true
 
 [node name="PortraitMargin" type="MarginContainer" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame"]
 layout_mode = 2
-theme_override_constants/margin_left = 6
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 6
-theme_override_constants/margin_bottom = 6
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
 
 [node name="PortraitStage" type="Control" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 clip_contents = true
+
+[node name="StageMist" type="ColorRect" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage"]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.72
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.76, 0.90, 0.88, 0.08)
 
 [node name="Portrait" type="TextureRect" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage"]
 unique_name_in_owner = true
@@ -182,178 +229,306 @@ stretch_mode = 5
 [node name="CharName" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.94, 0.86, 1)
-theme_override_font_sizes/font_size = 34
 text = "程天锋"
 horizontal_alignment = 1
 
 [node name="Lore" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.72, 0.78, 0.84, 1)
-theme_override_font_sizes/font_size = 14
+custom_minimum_size = Vector2(0, 48)
 text = "万剑门末代传人，一身剑道不曾磨灭。"
 horizontal_alignment = 1
 autowrap_mode = 3
 
 [node name="StatsCard" type="PanelContainer" parent="MainContent"]
-layout_mode = 2
-custom_minimum_size = Vector2(340, 0)
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.700
+anchor_top = 0.040
+anchor_right = 1.0
+anchor_bottom = 0.875
 
 [node name="StatsPad" type="MarginContainer" parent="MainContent/StatsCard"]
 layout_mode = 2
-theme_override_constants/margin_left = 20
+theme_override_constants/margin_left = 22
 theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
+theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 20
 
 [node name="StatsPanel" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="StatsTitle" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.86, 0.73, 0.46, 1)
-theme_override_font_sizes/font_size = 14
 text = "初始资质"
 
 [node name="Stats" type="GridContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
 columns = 2
-theme_override_constants/h_separation = 14
-theme_override_constants/v_separation = 9
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="HPKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="HPTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+custom_minimum_size = Vector2(132, 70)
+
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("5_hp")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="HPKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad/TileRow/Text"]
+layout_mode = 2
 text = "生命上限"
 
-[node name="HPValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="HPValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
 text = "60"
 
-[node name="HPRegenKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="HPRegenTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+custom_minimum_size = Vector2(132, 70)
+
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("6_recovery")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="HPRegenKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad/TileRow/Text"]
+layout_mode = 2
 text = "生命回复"
 
-[node name="HPRegenValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="HPRegenValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
 text = "5"
 
-[node name="LingLiKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="LingLiTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+custom_minimum_size = Vector2(132, 70)
+
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("7_lingli")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="LingLiKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad/TileRow/Text"]
+layout_mode = 2
 text = "灵力上限"
 
-[node name="LingLiValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="LingLiValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
 text = "20"
 
-[node name="LingLiRegenKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="LingLiRegenTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+custom_minimum_size = Vector2(132, 70)
+
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("6_recovery")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="LingLiRegenKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad/TileRow/Text"]
+layout_mode = 2
 text = "灵力回复"
 
-[node name="LingLiRegenValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="LingLiRegenValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
 text = "3/回合"
 
-[node name="DaoHuiKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="DaoHuiTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
-text = "道慧上限"
+custom_minimum_size = Vector2(132, 70)
 
-[node name="DaoHuiValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("8_daohui")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="DaoHuiKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad/TileRow/Text"]
+layout_mode = 2
+text = "道蕴上限"
+
+[node name="DaoHuiValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
 text = "6"
 
-[node name="DmgKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="DmgTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.55, 0.63, 0.7, 1)
+custom_minimum_size = Vector2(132, 70)
+
+[node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad/TileRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(34, 34)
+texture = ExtResource("9_damage")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad/TileRow"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="DmgKey" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad/TileRow/Text"]
+layout_mode = 2
 text = "伤害倍率"
 
-[node name="DmgValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
+[node name="DmgValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.94, 0.94, 0.9, 1)
-theme_override_font_sizes/font_size = 17
-text = "×1.1"
+text = "x1.1"
 
 [node name="TalentTitle" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.86, 0.73, 0.46, 1)
-theme_override_font_sizes/font_size = 14
 text = "天赋"
 
 [node name="TalentPanel" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 76)
 
 [node name="TalentPad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/TalentPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
 
 [node name="TalentDesc" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/TalentPanel/TalentPad"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.83, 0.87, 1)
-theme_override_font_sizes/font_size = 14
 text = "【剑道之基】战斗开始时获得 1 层【道行】。"
 autowrap_mode = 3
 
 [node name="SkillTitle" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.86, 0.73, 0.46, 1)
-theme_override_font_sizes/font_size = 14
 text = "英雄技能"
 
 [node name="SkillPanel" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 82)
 
 [node name="SkillPad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/SkillPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
 
 [node name="SkillDesc" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/SkillPanel/SkillPad"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.83, 0.87, 1)
-theme_override_font_sizes/font_size = 14
-text = "【剑意凝神】消耗 6 点道慧，获得 1 层【道行】。"
+text = "【剑意凝神】消耗 6 点道蕴，获得 1 层【道行】。"
 autowrap_mode = 3
 
 [node name="StartBtn" type="Button" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.725
-anchor_top = 0.89
+anchor_left = 0.720
+anchor_top = 0.895
 anchor_right = 0.955
-anchor_bottom = 0.965
-theme_override_font_sizes/font_size = 21
+anchor_bottom = 0.968
 text = "开始轮回"
 
 [connection signal="pressed" from="StartBtn" to="." method="_on_btn_start_pressed"]

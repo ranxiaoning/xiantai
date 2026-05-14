@@ -17,7 +17,6 @@ func run_all() -> Dictionary:
 	var s1 = e1.get("s")
 	s1["enemy_dao_xing"] = 0
 	s1["enemy_jing_ci"] = 0
-	s1["enemy_shen_xing"] = 0
 	s1["enemy_hp_max"] = s1["enemy_hp"]
 	
 	lines.append("  [诊断] 腐化咒师 actions[0] type: %s" % enemy["actions"][0].get("type","?"))
@@ -35,7 +34,6 @@ func run_all() -> Dictionary:
 	var s2 = e2.get("s")
 	s2["enemy_dao_xing"] = 0
 	s2["enemy_jing_ci"] = enemy2.get("passive_jing_ci_n", 0)
-	s2["enemy_shen_xing"] = 0
 	s2["enemy_hp_max"] = s2["enemy_hp"]
 	
 	lines.append("  [诊断] 青铜巨像 actions[1] type: %s" % enemy2["actions"][1].get("type","?"))

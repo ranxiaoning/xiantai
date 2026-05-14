@@ -22,14 +22,20 @@ var spirit_stones: int = 0
 
 # ── 背包（丹药/符箓/阵法，共享上限）──────────────────────────────
 const BAG_CAPACITY: int = 10
-var consumables: Array = []  # 每项：{id, name, type, effect_desc}
+var consumables: Array = []  # 每项：{id, name, category, effect_desc, map_use, battle_use}
 
 # ── 宝物（Artifact，无上限，独立于背包）──────────────────────────
-var artifacts: Array = []  # 每项：{id, name, rarity, type, effect_desc, flavor, active_used}
+var artifacts: Array = []  # 每项：{id, name, rarity, effect_desc, artifact_detail}
+var last_acquired_artifact_id: String = ""
 
 # ── 黑市/物品状态 ───────────────────────────────────────────────
 var active_formation_id: String = ""
 var shop_remove_service_uses: int = 0
+var pending_battle_consumable_effects: Array = []
+var pending_shop_discount_pct: float = 0.0
+var pending_shop_extra_items: int = 0
+var pending_reward_stones_bonus: int = 0
+var pending_reward_min_rarity: String = ""
 
 # ── 新地图系统 ─────────────────────────────────────────────────────
 var map_nodes: Dictionary = {}          # node_id -> node_dict
@@ -57,9 +63,15 @@ func start_run(char_id: String) -> void:
 	spirit_stones = 100
 	consumables.clear()
 	artifacts.clear()
+	last_acquired_artifact_id = ""
 	active_formation_id = ""
 	shop_remove_service_uses = 0
 	dao_xing_battle_start = 0
+	pending_battle_consumable_effects.clear()
+	pending_shop_discount_pct = 0.0
+	pending_shop_extra_items = 0
+	pending_reward_stones_bonus = 0
+	pending_reward_min_rarity = ""
 	
 	# 生成新地图
 	var map_data: Dictionary = _MapGenerator.generate()
@@ -88,8 +100,15 @@ func reset_run() -> void:
 	spirit_stones = 0
 	consumables.clear()
 	artifacts.clear()
+	last_acquired_artifact_id = ""
 	active_formation_id = ""
 	shop_remove_service_uses = 0
+	dao_xing_battle_start = 0
+	pending_battle_consumable_effects.clear()
+	pending_shop_discount_pct = 0.0
+	pending_shop_extra_items = 0
+	pending_reward_stones_bonus = 0
+	pending_reward_min_rarity = ""
 	map_nodes = {}
 	map_floors = []
 	map_current_floor = 0
@@ -178,7 +197,9 @@ func get_map_node(node_id: String) -> Dictionary:
 
 
 func add_artifact(item: Dictionary) -> void:
-	artifacts.append(item)
+	var clean := _clean_artifact(item)
+	artifacts.append(clean)
+	last_acquired_artifact_id = str(clean.get("id", ""))
 
 
 func remove_artifact(index: int) -> void:
@@ -235,9 +256,7 @@ func buy_shop_artifact(artifact: Dictionary, price: int) -> bool:
 			return false
 	if not spend_spirit_stones(price):
 		return false
-	var item := artifact.duplicate(true)
-	item["active_used"] = false
-	artifacts.append(item)
+	add_artifact(artifact)
 	Log.info("GameState", "黑市购买宝物：%s" % artifact.get("name", artifact.get("id", "")))
 	return true
 
@@ -271,39 +290,181 @@ func use_consumable(index: int, context: String = "map") -> Dictionary:
 	if index < 0 or index >= consumables.size():
 		return {"ok": false, "message": "物品不存在。"}
 	var item: Dictionary = consumables[index]
-	var category := str(item.get("category", ""))
-	if category == "formation":
-		active_formation_id = str(item.get("id", ""))
-		return {"ok": true, "message": "已激活阵法：%s" % item.get("name", active_formation_id)}
-	if category == "talisman":
-		return {"ok": false, "message": "符箓将在战斗中开放使用。"}
-	if category != "elixir" or context != "map":
+	if context == "battle":
+		var battle_use: Dictionary = item.get("battle_use", {})
+		if battle_use.is_empty():
+			return {"ok": false, "message": "当前战斗无法使用该物品。"}
+		consumables.remove_at(index)
+		return {
+			"ok": true,
+			"message": "已使用：%s" % item.get("name", "物品"),
+			"battle_use": battle_use.duplicate(true),
+		}
+	if context != "map":
+		return {"ok": false, "message": "当前场景无法使用该物品。"}
+	var map_use: Dictionary = item.get("map_use", {})
+	if map_use.is_empty():
+		map_use = _legacy_item_map_use(item)
+	if map_use.is_empty():
 		return {"ok": false, "message": "当前场景无法使用该物品。"}
 
-	_apply_elixir_effect(item)
+	if not _apply_map_use_effect(map_use):
+		return {"ok": false, "message": "物品效果尚未实现。"}
+	if str(item.get("category", "")) == "formation":
+		active_formation_id = ""
 	consumables.remove_at(index)
-	return {"ok": true, "message": "已使用：%s" % item.get("name", "丹药")}
+	return {"ok": true, "message": "已使用：%s" % item.get("name", "物品")}
 
 
-func _apply_elixir_effect(item: Dictionary) -> void:
-	var effect := str(item.get("effect", ""))
-	var amount := int(item.get("amount", 0))
+func _clean_artifact(item: Dictionary) -> Dictionary:
+	var clean := item.duplicate(true)
+	clean.erase("type")
+	clean.erase("active_used")
+	return clean
+
+
+func consume_pending_battle_consumable_effects() -> Array:
+	var result := pending_battle_consumable_effects.duplicate(true)
+	pending_battle_consumable_effects.clear()
+	return result
+
+
+func consume_pending_shop_bonuses() -> Dictionary:
+	var result := {
+		"discount_pct": pending_shop_discount_pct,
+		"extra_items": pending_shop_extra_items,
+	}
+	pending_shop_discount_pct = 0.0
+	pending_shop_extra_items = 0
+	return result
+
+
+func consume_pending_reward_bonuses() -> Dictionary:
+	var result := {
+		"stones_bonus": pending_reward_stones_bonus,
+		"min_rarity": pending_reward_min_rarity,
+	}
+	pending_reward_stones_bonus = 0
+	pending_reward_min_rarity = ""
+	return result
+
+
+func _apply_map_use_effect(effect_data: Dictionary) -> bool:
+	var effect := str(effect_data.get("type", ""))
+	var amount := int(effect_data.get("amount", 0))
 	match effect:
+		"compound":
+			var ok := false
+			for sub in effect_data.get("effects", []):
+				if sub is Dictionary:
+					ok = _apply_map_use_effect(sub) or ok
+			return ok
 		"heal":
 			apply_hp_change(amount)
+			return true
 		"max_hp":
 			var hp_max := int(character.get("hp_max", 60)) + amount
 			character["hp_max"] = hp_max
-			current_hp = mini(current_hp + amount, hp_max)
+			current_hp = mini(current_hp + int(effect_data.get("heal", amount)), hp_max)
+			return true
 		"hp_regen":
 			character["hp_regen"] = int(character.get("hp_regen", 0)) + amount
+			return true
 		"ling_li_regen":
 			ling_li_regen_bonus += amount
+			return true
 		"dual_regen":
 			character["hp_regen"] = int(character.get("hp_regen", 0)) + amount
 			ling_li_regen_bonus += amount
+			return true
+		"stones":
+			add_spirit_stones(amount)
+			return true
+		"next_battle":
+			_queue_next_battle_effects(effect_data)
+			return true
+		"next_shop_discount":
+			pending_shop_discount_pct = maxf(pending_shop_discount_pct, float(effect_data.get("pct", 0.0)))
+			return true
+		"next_shop_extra_items":
+			pending_shop_extra_items += amount
+			return true
+		"next_reward_stones":
+			pending_reward_stones_bonus += amount
+			return true
+		"next_reward_min_rarity":
+			_set_pending_reward_min_rarity(str(effect_data.get("rarity", "")))
+			return true
+		"next_floor_any_node":
+			return _expand_current_accessible_floor()
 		_:
-			apply_hp_change(0)
+			return false
+
+
+func _queue_next_battle_effects(effect_data: Dictionary) -> void:
+	if effect_data.has("effect") and effect_data["effect"] is Dictionary:
+		pending_battle_consumable_effects.append((effect_data["effect"] as Dictionary).duplicate(true))
+	for effect in effect_data.get("effects", []):
+		if effect is Dictionary:
+			pending_battle_consumable_effects.append((effect as Dictionary).duplicate(true))
+
+
+func _expand_current_accessible_floor() -> bool:
+	if map_accessible_ids.is_empty():
+		return false
+	var first_id := str(map_accessible_ids[0])
+	if not map_nodes.has(first_id):
+		return false
+	var target_floor := int(map_nodes[first_id].get("floor", 0))
+	if target_floor <= 0:
+		return false
+	var ids: Array[String] = []
+	if target_floor - 1 >= 0 and target_floor - 1 < map_floors.size():
+		for nid in map_floors[target_floor - 1]:
+			ids.append(str(nid))
+	else:
+		for nid in map_nodes.keys():
+			if int(map_nodes[nid].get("floor", 0)) == target_floor:
+				ids.append(str(nid))
+	if ids.is_empty():
+		return false
+	map_accessible_ids = ids
+	return true
+
+
+func _set_pending_reward_min_rarity(rarity: String) -> void:
+	if rarity.is_empty():
+		return
+	if _rarity_rank(rarity) > _rarity_rank(pending_reward_min_rarity):
+		pending_reward_min_rarity = rarity
+
+
+func _rarity_rank(rarity: String) -> int:
+	match rarity:
+		"玄品": return 1
+		"地品": return 2
+		"天品": return 3
+		_: return 0
+
+
+func _legacy_item_map_use(item: Dictionary) -> Dictionary:
+	var effect := str(item.get("effect", ""))
+	var amount := int(item.get("amount", 0))
+	match effect:
+		"heal", "max_hp", "hp_regen", "ling_li_regen", "dual_regen":
+			return {"type": effect, "amount": amount}
+		"battle_start_ling_li":
+			return {"type": "next_battle", "effect": {"type": "ling_li", "amount": amount}}
+		"battle_start_hu_ti":
+			return {"type": "next_battle", "effect": {"type": "hu_ti", "amount": amount}}
+		"battle_start_dao_xing":
+			return {"type": "next_battle", "effect": {"type": "dao_xing", "amount": amount}}
+		"battle_draw":
+			return {"type": "next_battle", "effect": {"type": "start_draw", "amount": amount}}
+		"battle_cleanse":
+			return {"type": "next_battle", "effect": {"type": "cleanse", "amount": amount}}
+		_:
+			return {}
 
 # --- 辅助方法 ---
 

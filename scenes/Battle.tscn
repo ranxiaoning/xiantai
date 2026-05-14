@@ -131,6 +131,13 @@ theme_override_font_sizes/font_size = 13
 text = "状态词条"
 horizontal_alignment = 1
 
+[node name="EnemyStatusBar" type="GridContainer" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 7
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+
 [node name="IntentLabel" type="Label" parent="Entities/EnemyCard/VBox/InfoVBox/Margin/V"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -185,6 +192,21 @@ custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 size_flags_horizontal = 3
 script = ExtResource("6_hpbar")
+
+[node name="PlayerStatusBar" type="GridContainer" parent="Entities/PlayerCard/VBox/InfoVBox/Margin/V"]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 7
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+
+[node name="PlayerStatusPlaceholderBase" type="Control" parent="Entities/PlayerCard/VBox/InfoVBox/Margin/V/PlayerStatusBar"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+
+[node name="PlayerStatusPlaceholderDao" type="Control" parent="Entities/PlayerCard/VBox/InfoVBox/Margin/V/PlayerStatusBar"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
 
 [node name="BottomUI" type="Control" parent="."]
 layout_mode = 1

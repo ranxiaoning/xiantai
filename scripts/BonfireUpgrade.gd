@@ -5,6 +5,9 @@ extends Control
 const GAME_MAP_SCENE     := "res://scenes/GameMap.tscn"
 const CardViewScene      = preload("res://scenes/CardView.tscn")
 const CardRendererScript = preload("res://scripts/CardRenderer.gd")
+const MenuUiStyle        = preload("res://scripts/ui/MenuUiStyle.gd")
+const SafeNodeUiStyle    = preload("res://scripts/ui/SafeNodeUiStyle.gd")
+const MAP_BG             = preload("res://assets/bg/map.png")
 
 const COLS        := 5
 const H_SEP       := 10
@@ -23,51 +26,88 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
+	var vp := get_viewport_rect().size
+
+	var bg_tex := TextureRect.new()
+	bg_tex.name = "BG"
+	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_tex.texture = MAP_BG
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	add_child(bg_tex)
+
 	var bg := ColorRect.new()
+	bg.name = "BonfireDim"
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.06, 0.04, 0.02, 0.97)
+	bg.color = Color(0.020, 0.012, 0.008, 0.72)
 	add_child(bg)
+
+	var panel_w := minf(vp.x * 0.92, 1180.0)
+	var panel_h := minf(vp.y * 0.86, 640.0)
+	var panel := PanelContainer.new()
+	panel.name = "BonfirePanel"
+	SafeNodeUiStyle.apply_modal_panel(panel, "bonfire")
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(panel_w, panel_h)
+	panel.offset_left = -panel_w * 0.5
+	panel.offset_top = -panel_h * 0.5
+	panel.offset_right = panel_w * 0.5
+	panel.offset_bottom = panel_h * 0.5
+	add_child(panel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		pad.add_theme_constant_override(side, 24)
+	for side in ["margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 18)
+	panel.add_child(pad)
+
+	var root_box := VBoxContainer.new()
+	root_box.add_theme_constant_override("separation", 12)
+	pad.add_child(root_box)
+
+	var title_wrap := HBoxContainer.new()
+	title_wrap.alignment = BoxContainer.ALIGNMENT_CENTER
+	root_box.add_child(title_wrap)
+
+	var title_pill := PanelContainer.new()
+	title_pill.name = "BonfireTitlePill"
+	SafeNodeUiStyle.apply_title_pill(title_pill, "red")
+	title_wrap.add_child(title_pill)
+
+	var title_pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		title_pad.add_theme_constant_override(side, 18)
+	for side in ["margin_top", "margin_bottom"]:
+		title_pad.add_theme_constant_override(side, 6)
+	title_pill.add_child(title_pad)
 
 	var title := Label.new()
 	title.text = "🔥 篝火 · 选择一张卡牌升级"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	title.offset_left   = 0
-	title.offset_top    = 16
-	title.offset_right  = 0
-	title.offset_bottom = 60
-	add_child(title)
+	MenuUiStyle.apply_heading(title, 28, Color(1.0, 0.88, 0.46, 1.0))
+	title_pad.add_child(title)
 
 	var hint := Label.new()
 	hint.text = "点击卡牌预览升级效果并确认。已升级卡牌已置灰。"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 16)
-	hint.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
-	hint.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	hint.offset_left   = 0
-	hint.offset_top    = 62
-	hint.offset_right  = 0
-	hint.offset_bottom = 98
-	add_child(hint)
+	MenuUiStyle.apply_body(hint, 15, Color(0.82, 0.86, 0.84, 0.90))
+	root_box.add_child(hint)
 
 	var scroll := ScrollContainer.new()
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_top    = 104
-	scroll.offset_bottom = -68
-	scroll.offset_left   = PAD_X * 0.5
-	scroll.offset_right  = -PAD_X * 0.5
-	add_child(scroll)
+	scroll.name = "BonfireCardScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root_box.add_child(scroll)
 
 	var grid := GridContainer.new()
+	grid.name = "BonfireCardGrid"
 	grid.columns = COLS
 	grid.add_theme_constant_override("h_separation", H_SEP)
 	grid.add_theme_constant_override("v_separation", H_SEP)
 	scroll.add_child(grid)
 
-	var vp     := get_viewport_rect().size
-	var card_w := int((vp.x - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
+	var card_w := int((panel_w - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
 	var card_h := int(card_w * CARD_ASPECT)
 
 	for i in range(GameState.deck.size()):
@@ -84,31 +124,36 @@ func _build_ui() -> void:
 
 		if already_upgraded:
 			view.setup(card_data, null, true)
-			view.modulate.a = 0.4
+			SafeNodeUiStyle.apply_choice_state(view, false, false, true, false)
 		else:
 			view.setup(card_data, null, false)
+			view.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			view.mouse_entered.connect(func() -> void:
+				SafeNodeUiStyle.animate_choice_hover(view, true)
+			)
+			view.mouse_exited.connect(func() -> void:
+				SafeNodeUiStyle.animate_choice_hover(view, false)
+			)
 			view.activated.connect(_on_card_clicked.bind(i))
 
 		grid.add_child(view)
 
 	var skip_btn := Button.new()
+	skip_btn.name = "BonfireSkipBtn"
 	skip_btn.text       = "跳过"
 	skip_btn.focus_mode = Control.FOCUS_NONE
 	skip_btn.custom_minimum_size = Vector2(120, 48)
-	skip_btn.add_theme_font_size_override("font_size", 20)
-	skip_btn.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	skip_btn.offset_left   = (vp.x - 120.0) * 0.5
-	skip_btn.offset_right  = -(vp.x - 120.0) * 0.5
-	skip_btn.offset_top    = -58
-	skip_btn.offset_bottom = -10
+	skip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	MenuUiStyle.apply_button(skip_btn, "secondary", 20)
 	skip_btn.pressed.connect(_on_skip)
-	add_child(skip_btn)
+	root_box.add_child(skip_btn)
 
 	_build_upgrade_overlay()
 
 
 func _build_upgrade_overlay() -> void:
 	_upgrade_overlay = Control.new()
+	_upgrade_overlay.name = "UpgradeOverlay"
 	_upgrade_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_upgrade_overlay.z_index = 100
 	_upgrade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -117,35 +162,56 @@ func _build_upgrade_overlay() -> void:
 
 	# 遮罩：点击此区域（非卡牌）关闭 overlay
 	var shade := ColorRect.new()
+	shade.name = "UpgradePreviewScrim"
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.0, 0.0, 0.0, 0.72)
+	SafeNodeUiStyle.apply_scrim(shade, 0.76)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	shade.gui_input.connect(_on_shade_input)
 	_upgrade_overlay.add_child(shade)
 
-	# 居中卡牌渲染器
 	var vp     := get_viewport_rect().size
 	var card_h := minf(vp.y * 0.68, 580.0)
 	var card_w := card_h / CARD_ASPECT
-	var card_x := (vp.x - card_w) * 0.5
-	var card_y := (vp.y - card_h) * 0.5 - 36.0
+
+	var panel_w := card_w + 72.0
+	var panel_h := card_h + 128.0
+	var preview_panel := PanelContainer.new()
+	preview_panel.name = "UpgradePreviewPanel"
+	SafeNodeUiStyle.apply_modal_panel(preview_panel, "bonfire")
+	preview_panel.set_anchors_preset(Control.PRESET_CENTER)
+	preview_panel.custom_minimum_size = Vector2(panel_w, panel_h)
+	preview_panel.offset_left = -panel_w * 0.5
+	preview_panel.offset_top = -panel_h * 0.5
+	preview_panel.offset_right = panel_w * 0.5
+	preview_panel.offset_bottom = panel_h * 0.5
+	_upgrade_overlay.add_child(preview_panel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 18)
+	preview_panel.add_child(pad)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	pad.add_child(box)
 
 	_overlay_renderer = CardRendererScript.new()
-	_overlay_renderer.position     = Vector2(card_x, card_y)
-	_overlay_renderer.size         = Vector2(card_w, card_h)
+	_overlay_renderer.custom_minimum_size = Vector2(card_w, card_h)
+	_overlay_renderer.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_overlay_renderer.mouse_filter = Control.MOUSE_FILTER_STOP
-	_upgrade_overlay.add_child(_overlay_renderer)
+	box.add_child(_overlay_renderer)
 
 	# 确认升级按钮（卡牌正下方）
 	var confirm := Button.new()
+	confirm.name = "UpgradeConfirmBtn"
 	confirm.text              = "确认升级"
 	confirm.focus_mode        = Control.FOCUS_NONE
 	confirm.custom_minimum_size = Vector2(160, 48)
-	confirm.add_theme_font_size_override("font_size", 20)
+	confirm.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	MenuUiStyle.apply_button(confirm, "primary", 20)
 	confirm.mouse_filter      = Control.MOUSE_FILTER_STOP
-	confirm.position          = Vector2((vp.x - 160.0) * 0.5, card_y + card_h + 20.0)
 	confirm.pressed.connect(_on_confirm_upgrade)
-	_upgrade_overlay.add_child(confirm)
+	box.add_child(confirm)
 
 
 # 点击遮罩（非卡牌区域）关闭升级预览

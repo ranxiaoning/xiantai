@@ -1,0 +1,4 @@
+interface:
+  display_name: "AudioDirection"
+  short_description: "Music and SFX direction for Godot"
+  default_prompt: "Use audio-direction to define music, SFX cues, looping, bus routing, audio prompts, and prototype-ready audio requirements."

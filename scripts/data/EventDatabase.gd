@@ -1,4 +1,4 @@
-## EventDatabase.gd  (Autoload: EventDatabase)
+﻿## EventDatabase.gd  (Autoload: EventDatabase)
 ## 奇遇事件数据库：Q-101~Q-119（第一重天）共19个事件。
 ## 提供事件池随机抽取和效果工具方法。
 extends Node
@@ -16,9 +16,9 @@ const EVENT_ARTIFACTS: Dictionary = {
 	"EVENT_R_BRONZE_GOLEM": {
 		"id": "EVENT_R_BRONZE_GOLEM",
 		"name": "铜傀随从",
-		"rarity": "yellow", "type": "passive",
+		"rarity": "yellow",
 		"effect_desc": "每场战斗第1回合，铜傀替你挡1次伤害（最多12点）。",
-		"flavor": "锈迹斑斑，却还记得主人的气息。"
+		"artifact_detail": "锈迹斑斑，却还记得主人的气息。"
 	},
 }
 

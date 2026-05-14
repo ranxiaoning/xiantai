@@ -1,0 +1,4 @@
+interface:
+  display_name: "BalanceEconomy"
+  short_description: "Balance and economy design"
+  default_prompt: "Use balance-economy to tune costs, rewards, probability, progression curves, shop economy, and exploit pressure."

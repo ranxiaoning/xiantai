@@ -112,17 +112,13 @@ func apply_instant_effects(effects: Array) -> String:
 				var art_id := str(e.get("id", ""))
 				var art := ShopDatabase.get_artifact_by_id(art_id)
 				if not art.is_empty():
-					var copy := art.duplicate(true)
-					copy["active_used"] = false
-					GameState.add_artifact(copy)
+					GameState.add_artifact(art)
 					msgs.append("获得起源宝物：%s" % art.get("name", ""))
 			"artifact_random":
 				var rarity := str(e.get("rarity", "yellow"))
 				var art := _random_artifact(rarity)
 				if not art.is_empty():
-					var copy := art.duplicate(true)
-					copy["active_used"] = false
-					GameState.add_artifact(copy)
+					GameState.add_artifact(art)
 					msgs.append("获得宝物：%s" % art.get("name", ""))
 				else:
 					msgs.append("（宝物已全部持有）")

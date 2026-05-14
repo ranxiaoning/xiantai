@@ -1,0 +1,4 @@
+interface:
+  display_name: "UIUX"
+  short_description: "UI and player experience design"
+  default_prompt: "Use ui-ux to design layout, interaction flow, visual hierarchy, readability, and control feedback."

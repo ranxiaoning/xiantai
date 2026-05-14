@@ -30,6 +30,9 @@ func run_all() -> Dictionary:
 	# ── 随机选怪机制 ────────────────────────────────
 	_t("test_random_normal_selection")
 	_t("test_random_elite_selection")
+	_t("test_boss_selection_returns_dan_yu_tong_zun")
+	_t("test_boss_dan_yu_tong_zun_cycle")
+	_t("test_all_current_enemies_have_unique_loadable_portraits")
 
 	_lines.append("  → %d 通过  %d 失败" % [_pass_count, _fail_count])
 	return {"pass": _pass_count, "fail": _fail_count, "lines": _lines}
@@ -64,7 +67,6 @@ func _load_enemy_direct(enemy_id: String) -> Dictionary:
 func _init_enemy_passives(s: Dictionary, enemy_data: Dictionary) -> void:
 	s["enemy_dao_xing"]  = enemy_data.get("passive_dao_xing_n", 0)
 	s["enemy_jing_ci"]   = enemy_data.get("passive_jing_ci_n", 0)
-	s["enemy_shen_xing"] = 0
 	s["enemy_hp_max"]    = s["enemy_hp"]
 	## 不侵被动（暗影刺客）：在 enemy_statuses 中记录剩余触发次数
 	var bu_qin_hits: int = enemy_data.get("passive_bu_qin_hits", 0)
@@ -104,6 +106,23 @@ func _has_curse_anywhere(s: Dictionary) -> bool:
 	return false
 
 
+func _count_card_id_anywhere(s: Dictionary, card_id: String) -> int:
+	var count := 0
+	for pile_name in ["hand", "draw_pile", "discard_pile"]:
+		for c in s[pile_name]:
+			if str(c.get("id", "")) == card_id:
+				count += 1
+	return count
+
+
+func _count_card_id_in_pile(s: Dictionary, pile_name: String, card_id: String) -> int:
+	var count := 0
+	for c in s[pile_name]:
+		if str(c.get("id", "")) == card_id:
+			count += 1
+	return count
+
+
 func _assert_true(cond: bool, label: String) -> void:
 	if cond:
 		_pass_count += 1
@@ -111,6 +130,26 @@ func _assert_true(cond: bool, label: String) -> void:
 	else:
 		_fail_count += 1
 		_lines.append("  ✗ %s  ← 条件为假" % label)
+
+
+func _all_current_enemy_ids() -> Array[String]:
+	return [
+		"normal_xue_ling_kuang_tu",
+		"normal_ni_ying_si_shi",
+		"normal_qing_tong_wei_jia",
+		"normal_fu_hua_zhou_shi",
+		"normal_tun_shi_you_yan",
+		"elite_xue_yu_kuang_mo",
+		"elite_an_ying_ci_ke",
+		"elite_qing_tong_ju_xiang",
+		"elite_shen_yuan_da_zhou_shi",
+		"elite_yuan_gu_shi_tian_chong",
+		"boss_dan_yu_tong_zun",
+		"event_feng_xiu_can_qu",
+		"event_tan_lan_du_jie",
+		"event_li_zhi_xiu_shi",
+		"event_shi_lian_kui_lei",
+	]
 
 
 # ═══════════════════════════════════════════════════
@@ -141,20 +180,19 @@ func test_normal_berserker_cycle() -> void:
 	_do_enemy_turn(e)
 	_assert_eq(hp3 - s["player_hp"], 6, "[血灵狂徒] R3 循环到R1 → 再次试探6伤")
 
-	e.free()
-
 
 ## 【2】蓄力爆发型 匿影死士 普通形态
-## 循环3回合：R1=屏息(身形+5) → R2=蓄力(无伤) → R3=绝影杀(20伤)
+## 循环3回合：R1=屏息(护体+5) → R2=蓄力(无伤) → R3=绝影杀(20伤)
 func test_normal_assassin_cycle() -> void:
 	var e = _make_engine_with_enemy("normal_ni_ying_si_shi")
 	var s = e.get("s")
 	_assert_eq(s["enemy_hp"], 40, "[匿影死士] 初始HP=40")
 
-	# R1：屏息，获得5点身形，玩家不受伤
+	# R1：屏息，获得5点护体，玩家不受伤
 	var hp1 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(s["player_hp"], hp1, "[匿影死士] R1 屏息 → 玩家不受伤")
+	_assert_eq(s["enemy_hu_ti"], 5, "[匿影死士] R1 屏息 → 护体5")
 
 	# R2：蓄力，无伤害，无护体
 	var hp2 = s["player_hp"]
@@ -166,12 +204,10 @@ func test_normal_assassin_cycle() -> void:
 	_do_enemy_turn(e)
 	_assert_eq(hp3 - s["player_hp"], 20, "[匿影死士] R3 绝影杀 → 玩家受到20伤")
 
-	e.free()
-
 
 ## 【3】防守反击型 青铜卫甲 普通形态
 ## 初始HP=35, 护体=15, 荆棘1层
-## R1=固化(+8护体) → R2=盾击(5伤+5身形) → R3=反震修补(+1荆棘)
+## R1=固化(+8护体) → R2=盾击(5伤+5护体) → R3=反震修补(+1荆棘)
 func test_normal_tank_cycle() -> void:
 	var e = _make_engine_with_enemy("normal_qing_tong_wei_jia")
 	var s = e.get("s")
@@ -187,12 +223,11 @@ func test_normal_tank_cycle() -> void:
 	var hp2 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(hp2 - s["player_hp"], 5, "[青铜卫甲] R2 盾击 → 玩家受5伤")
+	_assert_eq(s["enemy_hu_ti"], 28, "[青铜卫甲] R2 盾击 → 护体+5且持续保留")
 
 	# R3：反震修补，荆棘+1 → 荆棘=2
 	_do_enemy_turn(e)
 	_assert_eq(s.get("enemy_jing_ci", 0), 2, "[青铜卫甲] R3 反震修补 → 荆棘=2")
-
-	e.free()
 
 
 ## 【4】状态折磨型 腐化咒师 普通形态
@@ -216,8 +251,6 @@ func test_normal_debuffer_cycle() -> void:
 	var hp3 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(hp3 - s["player_hp"], 8, "[腐化咒师] R3 咒力释放 → 玩家受8伤")
-
-	e.free()
 
 
 ## 【5】持续成长型 吞噬蚰蜒 普通形态
@@ -247,8 +280,6 @@ func test_normal_escalating_cycle() -> void:
 	_do_enemy_turn(e)
 	_assert_eq(s.get("enemy_dao_xing", 0), 2, "[吞噬蚰蜒] 第2循环R1 → 道行=2")
 
-	e.free()
-
 
 # ═══════════════════════════════════════════════════
 # 精英怪测试
@@ -277,33 +308,31 @@ func test_elite_berserker_cycle() -> void:
 	_do_enemy_turn(e)
 	_assert_eq(hp3 - s["player_hp"], 18, "[血狱狂魔] R3 血腥狂乱 → 玩家受18伤(6×3)")
 
-	e.free()
-
 
 ## 【2E】暗影刺客 精英
-## HP=65, 不侵3次(受伤减50%), 循环2回合：瞬步蓄力(身形+10)→绝影杀(24伤)
+## HP=65, 不侵3次(受伤减50%), 循环2回合：瞬步蓄力(护体+10)→绝影杀(24伤)
 func test_elite_assassin_cycle() -> void:
 	var e = _make_engine_with_enemy("elite_an_ying_ci_ke")
 	var s = e.get("s")
 	_assert_eq(s["enemy_hp"], 65, "[暗影刺客] 初始HP=65")
 	_assert_eq(s["enemy_statuses"].get("bu_qin", 0), 3, "[暗影刺客] 初始不侵=3次")
 
-	# R1：瞬步蓄力，获得10身形，玩家不受伤
+	# R1：瞬步蓄力，获得10护体，玩家不受伤
 	var hp1 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(s["player_hp"], hp1, "[暗影刺客] R1 瞬步蓄力 → 玩家不受伤")
+	_assert_eq(s["enemy_hu_ti"], 10, "[暗影刺客] R1 瞬步蓄力 → 护体10")
 
 	# R2：绝影杀24伤
 	var hp2 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(hp2 - s["player_hp"], 24, "[暗影刺客] R2 绝影杀 → 玩家受24伤")
 
-	# R3：循环回R1，身形+10
+	# R3：循环回R1，护体+10
 	var hp3 = s["player_hp"]
 	_do_enemy_turn(e)
 	_assert_eq(s["player_hp"], hp3, "[暗影刺客] R3 循环 → 玩家不受伤")
-
-	e.free()
+	_assert_eq(s["enemy_hu_ti"], 20, "[暗影刺客] R3 循环 → 护体累计20")
 
 
 ## 【3E】青铜巨像 精英
@@ -329,8 +358,6 @@ func test_elite_tank_cycle() -> void:
 	# R3：反震修补，荆棘+2 → 荆棘=5
 	_do_enemy_turn(e)
 	_assert_eq(s.get("enemy_jing_ci", 0), 5, "[青铜巨像] R3 反震修补 → 荆棘=5(3+2)")
-
-	e.free()
 
 
 ## 【4E】深渊大咒师 精英
@@ -370,8 +397,6 @@ func test_elite_debuffer_cycle() -> void:
 	_do_enemy_turn(e)
 	_assert_eq(hp3 - s["player_hp"], 22, "[深渊大咒师] R3 咒力引爆 → 玩家受22伤(lie_shang加成，15×1.5)")
 
-	e.free()
-
 
 ## 【5E】远古噬天虫 精英
 ## HP=85, 护体=10, 初始道行=2, 每回合+1道行
@@ -396,8 +421,6 @@ func test_elite_escalating_cycle() -> void:
 	_assert_eq(hp2 - s["player_hp"], 14, "[远古噬天虫] R2 深渊吞噬(14=10+4) → 玩家受14伤")
 	# 护体=10，吸收10，HP伤害=4，吸血=4
 	_assert_true(s["enemy_hp"] >= enemy_hp2, "[远古噬天虫] R2 吸血 → 怪物HP不减")
-
-	e.free()
 
 
 # ═══════════════════════════════════════════════════
@@ -431,3 +454,74 @@ func test_random_elite_selection() -> void:
 	_assert_true(enemy.get("id", "") in elite_pool, "[随机选怪] 精英ID在合法池中")
 	_assert_true(enemy.get("type", "") == "elite", "[随机选怪] 类型=elite")
 	db.free()
+
+
+## 验证 Boss 节点返回第一重天正式 Boss：丹狱童尊
+func test_boss_selection_returns_dan_yu_tong_zun() -> void:
+	var db = load("res://scripts/data/EnemyDatabase.gd").new()
+	db.call("_ready")
+	var enemy = db.call("get_enemy_for_node", "boss", 16)
+	_assert_eq(enemy.get("id", ""), "boss_dan_yu_tong_zun", "[Boss选怪] 第16层返回丹狱童尊")
+	_assert_eq(enemy.get("type", ""), "boss", "[Boss选怪] 类型=boss")
+	_assert_eq(enemy.get("hp", 0), 150, "[丹狱童尊] 初始HP=150")
+	db.free()
+
+
+## 验证丹狱童尊四拍循环：污染 → 扣灵力 → 重击 → 回复护体
+func test_boss_dan_yu_tong_zun_cycle() -> void:
+	var enemy_data := _load_enemy_direct("boss_dan_yu_tong_zun")
+	_assert_eq(enemy_data.get("name", ""), "丹狱童尊", "[丹狱童尊] 数据库可精确读取")
+	var actions: Array = enemy_data.get("actions", [])
+	_assert_eq(actions.size(), 4, "[丹狱童尊] 拥有4个循环动作")
+	if actions.size() >= 1:
+		var inserts: Array = actions[0].get("insert_cards", [])
+		_assert_eq(inserts.size(), 3, "[丹狱童尊] 开炉吐秽配置3张烂髓丹")
+		_assert_eq(inserts[0].get("target", ""), "hand", "[丹狱童尊] 第1张烂髓丹入手牌")
+		_assert_eq(inserts[1].get("target", ""), "hand", "[丹狱童尊] 第2张烂髓丹入手牌")
+		_assert_eq(inserts[2].get("target", ""), "draw_top", "[丹狱童尊] 第3张烂髓丹入抽牌堆顶")
+
+	var e = _make_engine_with_enemy("boss_dan_yu_tong_zun")
+	var s = e.get("s")
+	s["player_hp"] = 80
+	s["player_hu_ti"] = 0
+	s["player_ling_li"] = 9
+	s["player_ling_li_regen"] = 0
+	s["player_ling_li_base_regen"] = 0
+	s["hand"] = []
+	s["draw_pile"] = []
+	s["discard_pile"] = []
+	e.set("s", s)
+
+	_do_enemy_turn(e)
+	s = e.get("s")
+	_assert_eq(_count_card_id_anywhere(s, "lan_sui_dan"), 3, "[丹狱童尊] R1 开炉吐秽 → 生成3张烂髓丹")
+	_assert_true(_count_card_id_in_pile(s, "hand", "lan_sui_dan") >= 2, "[丹狱童尊] R1 → 至少2张烂髓丹进入手牌")
+
+	_do_enemy_turn(e)
+	s = e.get("s")
+	_assert_eq(s["player_ling_li"], 5, "[丹狱童尊] R2 抽髓断灵 → 最多扣4灵力")
+
+	var hp_before := int(s["player_hp"])
+	_do_enemy_turn(e)
+	s = e.get("s")
+	_assert_eq(hp_before - int(s["player_hp"]), 24, "[丹狱童尊] R3 赤胎啸杀 → 24伤害")
+
+	s["enemy_hp"] = 100
+	s["enemy_hu_ti"] = 0
+	e.set("s", s)
+	_do_enemy_turn(e)
+	s = e.get("s")
+	_assert_eq(s["enemy_hp"], 118, "[丹狱童尊] R4 吞丹补狱 → 回复18HP")
+	_assert_eq(s["enemy_hu_ti"], 12, "[丹狱童尊] R4 吞丹补狱 → 获得12护体")
+
+
+func test_all_current_enemies_have_unique_loadable_portraits() -> void:
+	var seen_paths := {}
+	for enemy_id in _all_current_enemy_ids():
+		var enemy_data := _load_enemy_direct(enemy_id)
+		var path := str(enemy_data.get("portrait_path", ""))
+		_assert_true(not path.is_empty(), "[%s] portrait_path 非空" % enemy_id)
+		_assert_true(not seen_paths.has(path), "[%s] portrait_path 独立不重复" % enemy_id)
+		seen_paths[path] = true
+		_assert_true(load(path) is Texture2D, "[%s] portrait_path 可加载为 Texture2D" % enemy_id)
+	_assert_eq(seen_paths.size(), 15, "当前15个战斗敌人均有独立立绘路径")

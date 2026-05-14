@@ -5,6 +5,9 @@ extends Control
 const GAME_MAP_SCENE := "res://scenes/GameMap.tscn"
 const BATTLE_SCENE   := "res://scenes/Battle.tscn"
 const CardViewScene  = preload("res://scenes/CardView.tscn")
+const MenuUiStyle    = preload("res://scripts/ui/MenuUiStyle.gd")
+const SafeNodeUiStyle = preload("res://scripts/ui/SafeNodeUiStyle.gd")
+const MAP_BG         = preload("res://assets/bg/map.png")
 
 const CARD_ASPECT := 2752.0 / 1536.0
 const COLS        := 5
@@ -46,86 +49,119 @@ func _ready() -> void:
 func _build_ui() -> void:
 	var vp := get_viewport_rect().size
 
-	# 背景
+	var bg_tex := TextureRect.new()
+	bg_tex.name = "BG"
+	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_tex.texture = MAP_BG
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	add_child(bg_tex)
+
 	var bg := ColorRect.new()
+	bg.name = "EventDim"
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.06, 0.04, 0.02, 0.97)
+	bg.color = Color(0.016, 0.010, 0.008, 0.76)
 	add_child(bg)
 
-	# 标题
+	var panel_w := minf(vp.x * 0.88, 1040.0)
+	var panel_h := minf(vp.y * 0.80, 580.0)
+	var panel := PanelContainer.new()
+	panel.name = "EventPanel"
+	SafeNodeUiStyle.apply_modal_panel(panel, "event")
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(panel_w, panel_h)
+	panel.offset_left = -panel_w * 0.5
+	panel.offset_top = -panel_h * 0.5
+	panel.offset_right = panel_w * 0.5
+	panel.offset_bottom = panel_h * 0.5
+	add_child(panel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		pad.add_theme_constant_override(side, 26)
+	for side in ["margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 22)
+	panel.add_child(pad)
+
+	var root_box := VBoxContainer.new()
+	root_box.add_theme_constant_override("separation", 14)
+	pad.add_child(root_box)
+
+	var title_row := HBoxContainer.new()
+	title_row.name = "EventTitleRow"
+	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	root_box.add_child(title_row)
+
+	var title_pill := PanelContainer.new()
+	title_pill.name = "EventTitlePill"
+	SafeNodeUiStyle.apply_title_pill(title_pill, "red")
+	title_row.add_child(title_pill)
+
+	var title_pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		title_pad.add_theme_constant_override(side, 18)
+	for side in ["margin_top", "margin_bottom"]:
+		title_pad.add_theme_constant_override(side, 6)
+	title_pill.add_child(title_pad)
+
 	_title_label = Label.new()
 	_title_label.text = _event.get("title", "❓ 奇遇")
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_font_size_override("font_size", 30)
-	_title_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	_title_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_title_label.offset_top    = 16
-	_title_label.offset_bottom = 60
-	add_child(_title_label)
+	MenuUiStyle.apply_heading(_title_label, 30, Color(1.0, 0.88, 0.46, 1.0))
+	title_pad.add_child(_title_label)
 
-	# 叙事文本（可滚动）
 	var scroll_desc := ScrollContainer.new()
-	scroll_desc.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	scroll_desc.offset_top    = 68
-	scroll_desc.offset_bottom = 68 + 120
-	scroll_desc.offset_left   = PAD_X
-	scroll_desc.offset_right  = -PAD_X
-	add_child(scroll_desc)
+	scroll_desc.name = "EventDescScroll"
+	scroll_desc.custom_minimum_size = Vector2(0, 128)
+	scroll_desc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root_box.add_child(scroll_desc)
 
 	_desc_label = Label.new()
 	_desc_label.text = _event.get("desc", "")
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_desc_label.add_theme_font_size_override("font_size", 17)
-	_desc_label.add_theme_color_override("font_color", Color(0.88, 0.86, 0.80))
-	_desc_label.custom_minimum_size = Vector2(vp.x - PAD_X * 2, 0)
+	_desc_label.custom_minimum_size = Vector2(panel_w - 64, 0)
+	MenuUiStyle.apply_body(_desc_label, 17, Color(0.91, 0.89, 0.82, 0.96))
 	scroll_desc.add_child(_desc_label)
 
-	# 选项按钮区
 	_options_box = VBoxContainer.new()
+	_options_box.name = "EventOptionsBox"
 	_options_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	_options_box.add_theme_constant_override("separation", 10)
-	_options_box.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_options_box.offset_top    = 68 + 130
-	_options_box.offset_bottom = 68 + 130 + 230
-	_options_box.offset_left   = PAD_X
-	_options_box.offset_right  = -PAD_X
-	add_child(_options_box)
+	_options_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root_box.add_child(_options_box)
 
 	_build_option_buttons()
 
-	# 结果面板（隐藏）
 	_result_panel = PanelContainer.new()
-	_result_panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_result_panel.offset_top    = 68 + 370
-	_result_panel.offset_bottom = 68 + 370 + 90
-	_result_panel.offset_left   = PAD_X
-	_result_panel.offset_right  = -PAD_X
+	_result_panel.name = "EventResultPanel"
+	SafeNodeUiStyle.apply_result_panel(_result_panel)
 	_result_panel.hide()
-	add_child(_result_panel)
+	root_box.add_child(_result_panel)
+
+	var result_pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		result_pad.add_theme_constant_override(side, 14)
+	for side in ["margin_top", "margin_bottom"]:
+		result_pad.add_theme_constant_override(side, 10)
+	_result_panel.add_child(result_pad)
 
 	_result_label = Label.new()
 	_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_result_label.add_theme_font_size_override("font_size", 16)
-	_result_label.add_theme_color_override("font_color", Color(0.95, 0.92, 0.75))
-	_result_panel.add_child(_result_label)
+	MenuUiStyle.apply_body(_result_label, 16, Color(1.0, 0.93, 0.66, 0.96))
+	result_pad.add_child(_result_label)
 
-	# 继续前行按钮（隐藏）
 	_continue_btn = Button.new()
+	_continue_btn.name = "EventContinueBtn"
 	_continue_btn.text = "继续前行"
 	_continue_btn.focus_mode = Control.FOCUS_NONE
 	_continue_btn.custom_minimum_size = Vector2(200, 50)
-	_continue_btn.add_theme_font_size_override("font_size", 20)
-	_continue_btn.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_continue_btn.offset_left   = (vp.x - 200.0) * 0.5
-	_continue_btn.offset_right  = -(vp.x - 200.0) * 0.5
-	_continue_btn.offset_top    = -60
-	_continue_btn.offset_bottom = -10
+	_continue_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	MenuUiStyle.apply_button(_continue_btn, "primary", 20)
 	_continue_btn.pressed.connect(_on_continue_pressed)
 	_continue_btn.hide()
-	add_child(_continue_btn)
+	root_box.add_child(_continue_btn)
 
-	# 卡牌选择覆层（隐藏）
 	_build_card_picker()
 
 
@@ -134,16 +170,19 @@ func _build_option_buttons() -> void:
 	for i in range(options.size()):
 		var opt: Dictionary = options[i]
 		var btn := Button.new()
+		btn.name = "EventOptionBtn%d" % i
 		btn.text = opt.get("text", "选项 %d" % (i + 1))
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(0, 48)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 17)
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		MenuUiStyle.apply_button(btn, "secondary", 17)
 
 		var condition: String = opt.get("condition", "")
 		if not EventDatabase.check_condition(condition):
 			btn.disabled = true
 			btn.modulate.a = 0.45
+			btn.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			var hint := _condition_hint(condition)
 			if not hint.is_empty():
 				btn.text = btn.text + "  [%s]" % hint
@@ -156,36 +195,54 @@ func _build_card_picker() -> void:
 	var vp := get_viewport_rect().size
 
 	_card_picker = Control.new()
+	_card_picker.name = "EventCardPicker"
 	_card_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_card_picker.z_index = 100
 	_card_picker.hide()
 	add_child(_card_picker)
 
 	var shade := ColorRect.new()
+	shade.name = "EventCardPickerScrim"
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.0, 0.0, 0.0, 0.80)
-	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	SafeNodeUiStyle.apply_scrim(shade, 0.80)
 	_card_picker.add_child(shade)
+
+	var panel_w := minf(vp.x * 0.90, 1120.0)
+	var panel_h := minf(vp.y * 0.84, 620.0)
+	var panel := PanelContainer.new()
+	panel.name = "EventCardPickerPanel"
+	SafeNodeUiStyle.apply_modal_panel(panel, "event")
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(panel_w, panel_h)
+	panel.offset_left = -panel_w * 0.5
+	panel.offset_top = -panel_h * 0.5
+	panel.offset_right = panel_w * 0.5
+	panel.offset_bottom = panel_h * 0.5
+	_card_picker.add_child(panel)
+
+	var pad := MarginContainer.new()
+	for side in ["margin_left", "margin_right"]:
+		pad.add_theme_constant_override(side, 22)
+	for side in ["margin_top", "margin_bottom"]:
+		pad.add_theme_constant_override(side, 18)
+	panel.add_child(pad)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	pad.add_child(box)
 
 	var hint_lbl := Label.new()
 	hint_lbl.name = "HintLabel"
 	hint_lbl.text = "选择一张卡牌"
 	hint_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_lbl.add_theme_font_size_override("font_size", 24)
-	hint_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	hint_lbl.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	hint_lbl.offset_top    = 20
-	hint_lbl.offset_bottom = 60
-	_card_picker.add_child(hint_lbl)
+	MenuUiStyle.apply_heading(hint_lbl, 24, Color(1.0, 0.88, 0.46, 1.0))
+	box.add_child(hint_lbl)
 
 	var scroll := ScrollContainer.new()
 	scroll.name = "CardScroll"
-	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_top    = 70
-	scroll.offset_bottom = -20
-	scroll.offset_left   = PAD_X * 0.5
-	scroll.offset_right  = -PAD_X * 0.5
-	_card_picker.add_child(scroll)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
 
 	var grid := GridContainer.new()
 	grid.name = "CardGrid"
@@ -209,6 +266,7 @@ func _on_option_clicked(option_index: int) -> void:
 	for child in _options_box.get_children():
 		if child is Button:
 			(child as Button).disabled = true
+			(child as Button).mouse_default_cursor_shape = Control.CURSOR_ARROW
 
 	# 如果效果中包含 card_remove_choose 或 card_upgrade_choose，先显示卡牌选择
 	var all_effects: Array = _collect_all_effects(opt)
@@ -474,19 +532,20 @@ func _trigger_event_battle(e: Dictionary) -> void:
 # ─────────────────────────────────────────────────────────────────
 
 func _show_card_picker() -> void:
-	var hint_lbl := _card_picker.get_node("HintLabel") as Label
+	var hint_lbl := _card_picker.find_child("HintLabel", true, false) as Label
 	if _card_pick_mode == "remove":
 		hint_lbl.text = "选择一张卡牌将其永久移除"
 	else:
 		hint_lbl.text = "选择一张卡牌将其升级"
 
-	var grid := _card_picker.get_node("CardScroll/CardGrid") as GridContainer
+	var grid := _card_picker.find_child("CardGrid", true, false) as GridContainer
 	# 清空旧内容
 	for child in grid.get_children():
 		child.queue_free()
 
 	var vp := get_viewport_rect().size
-	var card_w := int((vp.x - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
+	var picker_w := minf(vp.x * 0.90, 1120.0)
+	var card_w := int((picker_w - PAD_X - H_SEP * (COLS - 1)) / float(COLS))
 	var card_h := int(card_w * CARD_ASPECT)
 
 	for i in range(GameState.deck.size()):
@@ -500,8 +559,15 @@ func _show_card_picker() -> void:
 		var view: Control = CardViewScene.instantiate()
 		view.custom_minimum_size = Vector2(card_w, card_h)
 		view.mouse_filter = Control.MOUSE_FILTER_STOP
+		view.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		view.set_hover_motion_enabled(false)
 		view.setup(cdata, null, false)
+		view.mouse_entered.connect(func() -> void:
+			SafeNodeUiStyle.animate_choice_hover(view, true)
+		)
+		view.mouse_exited.connect(func() -> void:
+			SafeNodeUiStyle.animate_choice_hover(view, false)
+		)
 		view.activated.connect(_on_card_picked.bind(i))
 		grid.add_child(view)
 

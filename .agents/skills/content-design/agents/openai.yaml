@@ -1,0 +1,4 @@
+interface:
+  display_name: "ContentDesign"
+  short_description: "Content and narrative design"
+  default_prompt: "Use content-design to create cards, enemies, events, artifacts, professions, and flavor text."

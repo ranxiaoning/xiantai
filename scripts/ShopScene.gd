@@ -29,6 +29,7 @@ var _shop_upgrade_renderer = null
 var _shop_upgrade_confirm_btn: Button = null
 var _shop_upgrade_index: int = -1
 var _shop_upgrade_price: int = 0
+var _visit_discount_pct: float = 0.0
 
 
 func _ready() -> void:
@@ -42,7 +43,9 @@ func _ready() -> void:
 func _roll_stock() -> void:
 	var floor: int = maxi(maxi(GameState.pending_battle_node_floor, GameState.map_current_floor), 1)
 	var seed: int = int(Time.get_ticks_msec() % 2147483647)
-	_stock = ShopDatabase.generate_stock(floor, _get_owned_artifact_ids(), seed)
+	var shop_bonus := GameState.consume_pending_shop_bonuses()
+	_visit_discount_pct = float(shop_bonus.get("discount_pct", 0.0))
+	_stock = ShopDatabase.generate_stock(floor, _get_owned_artifact_ids(), seed, int(shop_bonus.get("extra_items", 0)))
 
 
 func _get_owned_artifact_ids() -> Array:
@@ -174,7 +177,7 @@ func _build_card_offer(card: Dictionary) -> Control:
 
 
 func _build_items_column() -> Control:
-	var column := _section_panel("物品", "丹药可在地图使用；阵法激活后保留；符箓先入包。")
+	var column := _section_panel("物品", "背包物品可在地图或战斗中二选一使用，阵盘使用后消耗。")
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var body: VBoxContainer = column.get_meta("body")
 
@@ -259,12 +262,6 @@ func _build_artifact_offer(artifact: Dictionary) -> Control:
 	name.add_theme_font_size_override("font_size", 17)
 	name.add_theme_color_override("font_color", COLOR_TEXT)
 	top.add_child(name)
-
-	var kind := Label.new()
-	kind.text = str(artifact.get("type", "passive"))
-	kind.add_theme_font_size_override("font_size", 13)
-	kind.add_theme_color_override("font_color", COLOR_MUTED)
-	top.add_child(kind)
 
 	var desc := _muted_label(str(artifact.get("effect_desc", "")))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -758,7 +755,7 @@ func _close_overlay() -> void:
 
 
 func _discounted_price(base_price: int) -> int:
-	var disc := GameState.get_shop_discount_pct()
+	var disc := minf(0.8, GameState.get_shop_discount_pct() + _visit_discount_pct)
 	if disc > 0.0:
 		return maxi(1, int(base_price * (1.0 - disc)))
 	return base_price

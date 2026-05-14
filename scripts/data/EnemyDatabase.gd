@@ -15,9 +15,11 @@
 ##   player_status  施加给玩家的状态 {"key":..., "stacks":n}
 ##   player_status_2 第二个玩家状态（const限制，分为两个字段）
 ##   insert_card    插入污染牌 {"card_id":..., "target":"discard"/"draw_top"}
+##   insert_cards   批量插入污染牌 [{"card_id":..., "target":"hand"}, ...]
+##   ling_li_drain  扣除玩家当前灵力，上限为该值（drain类型）
+##   heal           回复敌方HP（recover类型）
 ##   heal_self_on_dmg  true=造成HP伤害时等量回血
-##   self_shield_after  攻击后自身获得身形值
-##   is_shen_xing   true=身形（临时）/false=永久护体
+##   self_shield_after  攻击后自身获得护体值
 ## ═══════════════════════════════════════════════════════════════
 extends Node
 
@@ -33,6 +35,7 @@ var ELITE_AN_YING_CI_KE: Dictionary
 var ELITE_QING_TONG_JU_XIANG: Dictionary
 var ELITE_SHEN_YUAN_DA_ZHOU_SHI: Dictionary
 var ELITE_YUAN_GU_SHI_TIAN_CHONG: Dictionary
+var BOSS_DAN_YU_TONG_ZUN: Dictionary
 
 ## 奇遇事件专用敌人
 var EVENT_FENG_XIU_CAN_QU: Dictionary    # Q-104 疯修·残躯
@@ -58,6 +61,10 @@ const ELITE_POOL: Array[String] = [
 
 var _all: Dictionary = {}
 
+
+func _portrait_path(enemy_id: String) -> String:
+	return "res://assets/portraits/enemies/%s.png" % enemy_id
+
 func _ready() -> void:
 	_init_enemies()
 	_init_event_enemies()
@@ -66,6 +73,7 @@ func _ready() -> void:
 		NORMAL_QING_TONG_WEI_JIA, NORMAL_FU_HUA_ZHOU_SHI, NORMAL_TUN_SHI_YOU_YAN,
 		ELITE_XUE_YU_KUANG_MO, ELITE_AN_YING_CI_KE,
 		ELITE_QING_TONG_JU_XIANG, ELITE_SHEN_YUAN_DA_ZHOU_SHI, ELITE_YUAN_GU_SHI_TIAN_CHONG,
+		BOSS_DAN_YU_TONG_ZUN,
 		EVENT_FENG_XIU_CAN_QU, EVENT_TAN_LAN_DU_JIE,
 		EVENT_LI_ZHI_XIU_SHI, EVENT_SHI_LIAN_KUI_LEI,
 	]:
@@ -78,6 +86,7 @@ func _init_enemies() -> void:
 	NORMAL_XUE_LING_KUANG_TU = {
 		"id": "normal_xue_ling_kuang_tu",
 		"name": "血灵狂徒",
+		"portrait_path": _portrait_path("normal_xue_ling_kuang_tu"),
 		"lore": "不断施加生存压力，检验玩家基础生存能力。",
 		"type": "normal", "archetype": "berserker",
 		"hp": 45, "hu_ti": 0,
@@ -89,15 +98,16 @@ func _init_enemies() -> void:
 	}
 
 	# ─── 2. 蓄力爆发型：匿影死士（普通） ────────────────────────────
-	# 循环3回合：屏息(身形+5) → 蓄力(无效果) → 绝影杀(20伤)
+	# 循环3回合：屏息(护体+5) → 蓄力(无效果) → 绝影杀(20伤)
 	NORMAL_NI_YING_SI_SHI = {
 		"id": "normal_ni_ying_si_shi",
 		"name": "匿影死士",
+		"portrait_path": _portrait_path("normal_ni_ying_si_shi"),
 		"lore": "前两回合无害，第三回合爆发致命伤害。",
 		"type": "normal", "archetype": "assassin",
 		"hp": 40, "hu_ti": 0,
 		"actions": [
-			{"name":"屏息","intent_text":"屏息 · 获得5身形","type":"defend","shield":5,"is_shen_xing":true},
+			{"name":"屏息","intent_text":"屏息 · 获得5护体","type":"defend","shield":5},
 			{"name":"蓄力","intent_text":"蓄力 · 下回合致命","type":"buff","damage":0},
 			{"name":"绝影杀","intent_text":"绝影杀 · 20伤害","type":"attack","damage":20},
 		],
@@ -106,10 +116,11 @@ func _init_enemies() -> void:
 
 	# ─── 3. 防守反击型：青铜卫甲（普通） ────────────────────────────
 	# 初始护体15, 荆棘1层
-	# 循环3回合：固化(+8护体) → 盾击(5伤+5身形) → 反震修补(+1荆棘)
+	# 循环3回合：固化(+8护体) → 盾击(5伤+5护体) → 反震修补(+1荆棘)
 	NORMAL_QING_TONG_WEI_JIA = {
 		"id": "normal_qing_tong_wei_jia",
 		"name": "青铜卫甲",
+		"portrait_path": _portrait_path("normal_qing_tong_wei_jia"),
 		"lore": "高护甲与反伤结合，惩罚多段攻击。",
 		"type": "normal", "archetype": "tank",
 		"hp": 35, "hu_ti": 15,
@@ -117,9 +128,9 @@ func _init_enemies() -> void:
 		"actions": [
 			{"name":"固化","intent_text":"固化 · 获得8护体","type":"defend","shield":8},
 			{
-				"name":"盾击","intent_text":"盾击 · 5伤+5身形",
+				"name":"盾击","intent_text":"盾击 · 5伤+5护体",
 				"type":"attack","damage":5,
-				"self_shield_after":5,"self_shield_is_shen_xing":true
+				"self_shield_after":5
 			},
 			{
 				"name":"反震修补","intent_text":"反震修补 · 获得1层荆棘",
@@ -135,6 +146,7 @@ func _init_enemies() -> void:
 	NORMAL_FU_HUA_ZHOU_SHI = {
 		"id": "normal_fu_hua_zhou_shi",
 		"name": "腐化咒师",
+		"portrait_path": _portrait_path("normal_fu_hua_zhou_shi"),
 		"lore": "通过污染牌和Debuff破坏玩家卡组节奏。",
 		"type": "normal", "archetype": "debuffer",
 		"hp": 38, "hu_ti": 0,
@@ -159,6 +171,7 @@ func _init_enemies() -> void:
 	NORMAL_TUN_SHI_YOU_YAN = {
 		"id": "normal_tun_shi_you_yan",
 		"name": "吞噬蚰蜒",
+		"portrait_path": _portrait_path("normal_tun_shi_you_yan"),
 		"lore": "DPS检测机，道行叠加，必须速杀。",
 		"type": "normal", "archetype": "escalating",
 		"hp": 50, "hu_ti": 0,
@@ -179,6 +192,7 @@ func _init_enemies() -> void:
 	ELITE_XUE_YU_KUANG_MO = {
 		"id": "elite_xue_yu_kuang_mo",
 		"name": "血狱狂魔",
+		"portrait_path": _portrait_path("elite_xue_yu_kuang_mo"),
 		"lore": "精英化血灵狂徒，嗜血被动使其越战越强。",
 		"type": "elite", "archetype": "berserker",
 		"hp": 75, "hu_ti": 0,
@@ -192,16 +206,17 @@ func _init_enemies() -> void:
 	}
 
 	# ─── 2E. 蓄力爆发型精英：暗影刺客 ───────────────────────────────
-	# 初始不侵3次（受伤-50%），循环2回合：瞬步蓄力(+10身形)→绝影杀(24伤)
+	# 初始不侵3次（受伤-50%），循环2回合：瞬步蓄力(+10护体)→绝影杀(24伤)
 	ELITE_AN_YING_CI_KE = {
 		"id": "elite_an_ying_ci_ke",
 		"name": "暗影刺客",
+		"portrait_path": _portrait_path("elite_an_ying_ci_ke"),
 		"lore": "精英刺客，自带不侵减伤，节奏加快为2回合。",
 		"type": "elite", "archetype": "assassin",
 		"hp": 65, "hu_ti": 0,
 		"passive_bu_qin_hits": 3,
 		"actions": [
-			{"name":"瞬步蓄力","intent_text":"瞬步蓄力 · 获得10身形","type":"defend","shield":10,"is_shen_xing":true},
+			{"name":"瞬步蓄力","intent_text":"瞬步蓄力 · 获得10护体","type":"defend","shield":10},
 			{"name":"绝影杀","intent_text":"绝影杀 · 24伤害","type":"attack","damage":24},
 		],
 		"action_cycle": [0, 1],
@@ -213,6 +228,7 @@ func _init_enemies() -> void:
 	ELITE_QING_TONG_JU_XIANG = {
 		"id": "elite_qing_tong_ju_xiang",
 		"name": "青铜巨像",
+		"portrait_path": _portrait_path("elite_qing_tong_ju_xiang"),
 		"lore": "精英铁王八，反伤3层，重盾附带震慑。",
 		"type": "elite", "archetype": "tank",
 		"hp": 55, "hu_ti": 30,
@@ -238,6 +254,7 @@ func _init_enemies() -> void:
 	ELITE_SHEN_YUAN_DA_ZHOU_SHI = {
 		"id": "elite_shen_yuan_da_zhou_shi",
 		"name": "深渊大咒师",
+		"portrait_path": _portrait_path("elite_shen_yuan_da_zhou_shi"),
 		"lore": "污染更强烈，全面剥夺同时施加枯竭和裂伤。",
 		"type": "elite", "archetype": "debuffer",
 		"hp": 60, "hu_ti": 0,
@@ -265,6 +282,7 @@ func _init_enemies() -> void:
 	ELITE_YUAN_GU_SHI_TIAN_CHONG = {
 		"id": "elite_yuan_gu_shi_tian_chong",
 		"name": "远古噬天虫",
+		"portrait_path": _portrait_path("elite_yuan_gu_shi_tian_chong"),
 		"lore": "精英养成怪，起始道行+2，每回合自动叠加，必须速杀。",
 		"type": "elite", "archetype": "escalating",
 		"hp": 85, "hu_ti": 10,
@@ -277,12 +295,40 @@ func _init_enemies() -> void:
 		"action_cycle": [0, 1],
 	}
 
+	# ─── 第一重天 Boss：丹狱童尊 ───────────────────────────────────
+	# 循环4回合：污染牌库 → 扣当前灵力 → 高额攻击 → 回复并加护体
+	BOSS_DAN_YU_TONG_ZUN = {
+		"id": "boss_dan_yu_tong_zun",
+		"name": "丹狱童尊",
+		"portrait_path": _portrait_path("boss_dan_yu_tong_zun"),
+		"lore": "被丹炉与刑狱炼成的童形伪仙，靠失败者的骨髓炼丹。",
+		"type": "boss", "archetype": "dan_prison",
+		"hp": 150, "hu_ti": 0,
+		"actions": [
+			{
+				"name": "开炉吐秽",
+				"intent_text": "开炉吐秽 · 烂髓丹×3",
+				"type": "debuff",
+				"insert_cards": [
+					{"card_id": "lan_sui_dan", "target": "hand"},
+					{"card_id": "lan_sui_dan", "target": "hand"},
+					{"card_id": "lan_sui_dan", "target": "draw_top"},
+				],
+			},
+			{"name": "抽髓断灵", "intent_text": "抽髓断灵 · 灵力-4", "type": "drain", "ling_li_drain": 4},
+			{"name": "赤胎啸杀", "intent_text": "赤胎啸杀 · 24伤害", "type": "attack", "damage": 24},
+			{"name": "吞丹补狱", "intent_text": "吞丹补狱 · 回复18+护体12", "type": "recover", "heal": 18, "shield": 12},
+		],
+		"action_cycle": [0, 1, 2, 3],
+	}
+
 
 func _init_event_enemies() -> void:
 	# ─── 疯修·残躯（Q-104 强行夺取）──────────────────────────────────
 	EVENT_FENG_XIU_CAN_QU = {
 		"id": "event_feng_xiu_can_qu",
 		"name": "疯修·残躯",
+		"portrait_path": _portrait_path("event_feng_xiu_can_qu"),
 		"lore": "失去理智的修士，徒手搏斗，力量因疯狂而倍增。",
 		"type": "normal", "archetype": "berserker",
 		"hp": 45, "hu_ti": 0,
@@ -296,6 +342,7 @@ func _init_event_enemies() -> void:
 	EVENT_TAN_LAN_DU_JIE = {
 		"id": "event_tan_lan_du_jie",
 		"name": "贪婪的渡劫者",
+		"portrait_path": _portrait_path("event_tan_lan_du_jie"),
 		"lore": "专攻富有的旅人，出手快狠准。",
 		"type": "normal", "archetype": "assassin",
 		"hp": 35, "hu_ti": 0,
@@ -309,11 +356,12 @@ func _init_event_enemies() -> void:
 	EVENT_LI_ZHI_XIU_SHI = {
 		"id": "event_li_zhi_xiu_shi",
 		"name": "理智修士",
+		"portrait_path": _portrait_path("event_li_zhi_xiu_shi"),
 		"lore": "身经百战，警觉性极高，攻防兼备。",
 		"type": "normal", "archetype": "balanced",
 		"hp": 30, "hu_ti": 0,
 		"actions": [
-			{"name": "防御", "intent_text": "防御 · 获得7身形", "type": "defend", "shield": 7, "is_shen_xing": true},
+			{"name": "防御", "intent_text": "防御 · 获得7护体", "type": "defend", "shield": 7},
 			{"name": "反击", "intent_text": "反击 · 13伤害", "type": "attack", "damage": 13},
 		],
 		"action_cycle": [0, 1],
@@ -322,6 +370,7 @@ func _init_event_enemies() -> void:
 	EVENT_SHI_LIAN_KUI_LEI = {
 		"id": "event_shi_lian_kui_lei",
 		"name": "试炼傀儡",
+		"portrait_path": _portrait_path("event_shi_lian_kui_lei"),
 		"lore": "古法阵驱动的守护者，专为考验来者而生。",
 		"type": "normal", "archetype": "tank",
 		"hp": 30, "hu_ti": 5,
@@ -347,7 +396,7 @@ func get_enemy_for_node(node_type: String, _floor: int) -> Dictionary:
 	## 根据节点类型随机返回对应池中的敌人
 	var pool: Array[String]
 	if node_type == "boss":
-		return get_enemy("elite_xue_yu_kuang_mo")
+		return get_enemy("boss_dan_yu_tong_zun")
 	elif node_type == "elite":
 		pool = ELITE_POOL
 	elif node_type == "event_battle":
