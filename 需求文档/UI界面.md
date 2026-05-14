@@ -308,7 +308,7 @@ CharacterSelect (Control)
 |------|------|------|
 | Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，含 24x24 图标 + 数值，金色）|
 | Header/BagBar | 左上 8–296px | 背包消耗品，每页 5 个，圆形 44×44，点击在地图中使用 |
-| Header/DeckBtn | 右上固定 52×约50px，预留局内菜单按钮间距 | 卡组入口改为透明背景叠卡图标 `assets/ui/menu/icon_deck.svg`，无文字；点击仍打开当前卡组弹窗，悬停 tooltip 为“查看卡组” |
+| Header/DeckBtn | 右上固定 52×约50px，预留局内菜单按钮间距 | 卡组入口改为透明背景叠卡图标 `assets/ui/menu/icon_deck.png`，无文字；点击仍打开当前卡组弹窗，悬停 tooltip 为“查看卡组” |
 | TreasureBar | Header 下方，左上 8–820px，高 80px | 宝物栏，每页 10 个 `ArtifactIcon`，无宝物时隐藏 |
 | MapScroll | 垂直 8–100% | 可垂直滚动的地图区域（禁止水平滚动） |
 | PopupScrim | 全屏，`z_index=99` | 节点弹窗暗色遮罩，阻止点击穿透地图 |

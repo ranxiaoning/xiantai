@@ -131,9 +131,11 @@ func test_safe_node_screens_do_not_parse_depend_on_optional_style_helpers() -> v
 
 
 func test_game_map_popup_show_helper_is_not_recursive() -> void:
-	var src := FileAccess.get_file_as_string("res://scripts/GameMap.gd")
+	var src := FileAccess.get_file_as_string("res://scripts/GameMap.gd").replace("\r\n", "\n").replace("\r", "\n")
 	var start := src.find("func _show_node_popup()")
 	var end := src.find("\n\n", start)
+	if end == -1:
+		end = src.length()
 	var body := src.substr(start, end - start)
 	_assert_true(body.contains("node_popup.show()"), "GameMap popup helper shows NodePopup directly")
 	_assert_true(not body.replace("func _show_node_popup()", "").contains("_show_node_popup()"), "GameMap popup helper does not recurse into itself")
