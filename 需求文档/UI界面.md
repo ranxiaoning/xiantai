@@ -281,7 +281,7 @@ CharacterSelect (Control)
 - 三块主要内容都通过 `MenuUiStyle.apply_panel()` 应用统一琉璃面板，标题/角色名使用 Noto Serif SC，正文与数值使用 Noto Sans SC。
 - 中央 `PortraitFrame` 顶边与右侧 `StatsCard` 顶边对齐；角色称号显示为立绘框内小题签，避免把画框整体下压。
 - 右侧资质格保留六格结构但压缩高度，天赋/英雄技能玉简采用“名称 + 描述”两行；`StartBtn` 收在右侧档案卡底部作为固定确认区。
-- 门派/弟子按钮使用普通、悬停、按下三态；选中态沿用 pressed 样式，颜色更亮。
+- 门派/弟子/开始按钮使用 `MenuUiStyle.apply_character_select_button()` 的平直玉条样式，不使用锯齿、尖角或牌匾齿边纹理；普通、悬停、按下三态保持清晰，选中态沿用 pressed 样式，颜色更亮。
 - 角色切换时只使用 `modulate` 与 `scale` 轻动效，不移动布局尺寸，避免 UI 抖动。
 - 立绘使用 `PortraitStage` 作为全尺寸画布，`Portrait` 在其中 full-rect 锚定，并使用零固定最小尺寸、`EXPAND_IGNORE_SIZE` 与 `STRETCH_KEEP_ASPECT_CENTERED`。`PortraitFrame` 不参与纵向扩展，720p 下显式约束为约 390px 高，避免被图片原始尺寸撑到屏幕外。
 
@@ -293,6 +293,7 @@ CharacterSelect (Control)
 - [ ] 切换门派按钮时，弟子列表和背景图同步更新
 - [ ] 点击弟子按钮，中央立绘与右侧面板立即刷新，淡入不遮挡文本
 - [ ] 立绘不变形，文本不溢出，开始按钮位于右侧档案卡底部且不压住技能说明
+- [ ] 门派按钮、弟子按钮与开始按钮均为平直边，不出现锯齿状或尖角牌匾轮廓
 - [ ] 1280×720 下 PortraitFrame 与 StatsCard 顶边对齐，灵力回复显示为纯数字，不出现“/回合”
 - [ ] 点击"开始轮回"正常跳转至 GameMap.tscn
 
@@ -309,7 +310,7 @@ CharacterSelect (Control)
 
 | 区域 | 锚点 | 内容 |
 |------|------|------|
-| Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右80–100%，含 24x24 图标 + 数值，金色）|
+| Header | 垂直 0–8% | 标题（左0–50%）+ HP（中60–80%，右对齐）+ 灵石（右侧靠近卡组 icon，含 24x24 图标 + 数值，金色）|
 | Header/BagBar | 左上 8–296px | 背包消耗品，每页 5 个，圆形 44×44，点击在地图中使用 |
 | Header/DeckBtn | 右上固定 52×约50px，预留局内菜单按钮间距 | 卡组入口改为透明背景叠卡图标 `assets/ui/menu/icon_deck.png`，无文字；点击仍打开当前卡组弹窗，悬停 tooltip 为“查看卡组” |
 | TreasureBar | Header 下方，左上 8–820px，高 80px | 宝物栏，每页 10 个 `ArtifactIcon`，无宝物时隐藏 |

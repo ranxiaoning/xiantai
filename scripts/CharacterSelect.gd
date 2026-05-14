@@ -105,7 +105,7 @@ func _apply_static_styles() -> void:
 	MenuUiStyle.apply_body(skill_title, 15, Color(0.90, 0.72, 0.34, 1.0))
 	MenuUiStyle.apply_body(talent_label, 14, Color(0.16, 0.24, 0.24, 0.98))
 	MenuUiStyle.apply_body(skill_label, 14, Color(0.16, 0.24, 0.24, 0.98))
-	MenuUiStyle.apply_button(start_btn, "primary", 18)
+	MenuUiStyle.apply_character_select_button(start_btn, true, 18)
 	for tile_name in ["HPTile", "HPRegenTile", "LingLiTile", "LingLiRegenTile", "DaoHuiTile", "DmgTile"]:
 		var tile := find_child(tile_name, true, false) as PanelContainer
 		if tile:
@@ -130,7 +130,7 @@ func _build_sect_bar() -> void:
 		btn.toggle_mode = true
 		btn.button_group = _sect_group
 		btn.custom_minimum_size = Vector2(150, 42)
-		MenuUiStyle.apply_button(btn, "secondary", 15)
+		MenuUiStyle.apply_character_select_button(btn, false, 15)
 		btn.pressed.connect(_select_sect.bind(sect))
 		sect_bar.add_child(btn)
 	if not sects.is_empty():
@@ -168,7 +168,7 @@ func _build_char_list() -> void:
 		btn.size_flags_horizontal = Control.SIZE_FILL
 		btn.custom_minimum_size = Vector2(0, 50)
 		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		MenuUiStyle.apply_button(btn, "secondary", 15)
+		MenuUiStyle.apply_character_select_button(btn, false, 15)
 		char_list_box.add_child(btn)
 		if c["id"] == _selected_char_id:
 			btn.button_pressed = true

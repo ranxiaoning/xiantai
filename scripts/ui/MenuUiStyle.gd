@@ -151,6 +151,40 @@ static func apply_button(btn: Button, kind: String = "secondary", font_size: int
 	btn.add_theme_color_override("font_focus_color", Color(0.05, 0.14, 0.15, 1.0) if gold_target_state else GOLD_LIGHT)
 
 
+static func apply_character_select_button(btn: Button, primary: bool = false, font_size: int = 16) -> void:
+	var normal_bg := Color(0.025, 0.125, 0.135, 0.88)
+	var hover_bg := Color(0.042, 0.180, 0.188, 0.96)
+	var pressed_bg := Color(0.058, 0.205, 0.205, 0.98)
+	var border := Color(0.82, 0.68, 0.38, 0.78)
+	var hover_border := Color(1.0, 0.93, 0.62, 1.0)
+	var font_color := TEXT_MAIN
+	var hover_font := GOLD_LIGHT
+	var pressed_font := GOLD_LIGHT
+	if primary:
+		normal_bg = Color(0.88, 0.72, 0.38, 0.96)
+		hover_bg = Color(0.98, 0.82, 0.46, 0.98)
+		pressed_bg = Color(0.68, 0.50, 0.22, 0.98)
+		border = Color(1.0, 0.92, 0.60, 0.95)
+		font_color = JADE_DARK
+		hover_font = JADE_DARK
+		pressed_font = Color(0.04, 0.12, 0.12, 1.0)
+	var normal := _button_flat_rect(normal_bg, border, 1)
+	var hover := _button_flat_rect(hover_bg, hover_border, 2)
+	var pressed := _button_flat_rect(pressed_bg, hover_border, 2)
+	var focus := _button_flat_rect(Color(0.0, 0.0, 0.0, 0.0), hover_border, 2)
+	btn.add_theme_font_override("font", FONT_BODY)
+	btn.add_theme_font_size_override("font_size", font_size)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", focus)
+	btn.add_theme_stylebox_override("disabled", _button_flat_rect(Color(0.04, 0.055, 0.058, 0.56), Color(0.34, 0.32, 0.25, 0.62), 1))
+	btn.add_theme_color_override("font_color", font_color)
+	btn.add_theme_color_override("font_hover_color", hover_font)
+	btn.add_theme_color_override("font_pressed_color", pressed_font)
+	btn.add_theme_color_override("font_focus_color", font_color)
+
+
 static func apply_main_menu_button(btn: Button, font_size: int = 18) -> void:
 	var normal := _button_bar(
 		Color(0.020, 0.145, 0.150, 0.78),
@@ -306,6 +340,18 @@ static func _button_flat(bg: Color, border: Color) -> StyleBoxFlat:
 	style.content_margin_bottom = 9
 	style.shadow_color = Color(0.0, 0.0, 0.0, 0.36)
 	style.shadow_size = 5
+	return style
+
+
+static func _button_flat_rect(bg: Color, border: Color, border_width: int) -> StyleBoxFlat:
+	var style := _flat(bg, border, border_width, 4)
+	style.content_margin_left = 18
+	style.content_margin_top = 9
+	style.content_margin_right = 18
+	style.content_margin_bottom = 9
+	style.shadow_color = Color(0.0, 0.018, 0.020, 0.32)
+	style.shadow_size = 5
+	style.shadow_offset = Vector2(0, 1)
 	return style
 
 
