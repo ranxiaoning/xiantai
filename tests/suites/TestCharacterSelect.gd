@@ -23,6 +23,9 @@ func run_all() -> Dictionary:
 	_t("test_character_select_scene_loads")
 	_t("test_character_select_scene_has_default_portrait")
 	_t("test_character_select_required_nodes_exist")
+	_t("test_start_button_is_inside_stats_card")
+	_t("test_hero_stage_aligns_with_stats_card_top")
+	_t("test_character_select_buttons_use_flat_styles")
 	_t("test_portrait_uses_fit_layout")
 	_t("test_chen_tian_feng_has_ui_required_fields")
 
@@ -118,7 +121,53 @@ func test_character_select_required_nodes_exist() -> void:
 	var ling_li_label := inst.find_child("LingLiValue", true, false) as Label
 	var ling_li_regen_label := inst.find_child("LingLiRegenValue", true, false) as Label
 	_assert_eq(ling_li_label.text, "20", "灵力上限 displays separately")
-	_assert_eq(ling_li_regen_label.text, "3/回合", "灵力回复 displays separately")
+	_assert_eq(ling_li_regen_label.text, "3", "灵力回复 value omits per-turn suffix")
+
+
+func test_start_button_is_inside_stats_card() -> void:
+	var inst := _load_scene_instance()
+	if inst == null:
+		_fail("CharacterSelect.tscn instance is null")
+		return
+	var stats_card := inst.find_child("StatsCard", true, false) as PanelContainer
+	var start_btn := inst.find_child("StartBtn", true, false) as Button
+	_assert_true(stats_card != null, "StatsCard node exists")
+	_assert_true(start_btn != null, "StartBtn node exists")
+	if stats_card == null or start_btn == null:
+		return
+	_assert_true(_is_descendant_of(start_btn, stats_card), "StartBtn is contained by StatsCard")
+
+
+func test_hero_stage_aligns_with_stats_card_top() -> void:
+	var inst := _load_scene_instance()
+	if inst == null:
+		_fail("CharacterSelect.tscn instance is null")
+		return
+	var hero_panel := inst.find_child("HeroPanel", true, false) as PanelContainer
+	var stats_card := inst.find_child("StatsCard", true, false) as PanelContainer
+	_assert_true(hero_panel != null, "HeroPanel node exists")
+	_assert_true(stats_card != null, "StatsCard node exists")
+	if hero_panel == null or stats_card == null:
+		return
+	_assert_eq(hero_panel.anchor_top, stats_card.anchor_top, "HeroPanel and StatsCard share top anchor")
+
+
+func test_character_select_buttons_use_flat_styles() -> void:
+	var style_script := load("res://scripts/ui/MenuUiStyle.gd")
+	_assert_true(style_script.has_method("apply_character_select_button"), "MenuUiStyle has flat CharacterSelect button helper")
+	if not style_script.has_method("apply_character_select_button"):
+		return
+	var secondary_btn := Button.new()
+	var primary_btn := Button.new()
+	_objects_to_free.append(secondary_btn)
+	_objects_to_free.append(primary_btn)
+	style_script.apply_character_select_button(secondary_btn, false, 15)
+	style_script.apply_character_select_button(primary_btn, true, 18)
+	for btn in [secondary_btn, primary_btn]:
+		_assert_true(btn.get_theme_stylebox("normal") is StyleBoxFlat, "CharacterSelect button normal style is flat")
+		_assert_true(btn.get_theme_stylebox("hover") is StyleBoxFlat, "CharacterSelect button hover style is flat")
+		_assert_true(btn.get_theme_stylebox("pressed") is StyleBoxFlat, "CharacterSelect button pressed style is flat")
+		_assert_true(btn.get_theme_stylebox("focus") is StyleBoxFlat, "CharacterSelect button focus style is flat")
 
 
 func test_portrait_uses_fit_layout() -> void:
@@ -176,6 +225,15 @@ func _load_scene_instance() -> Node:
 	var inst := packed.instantiate()
 	_objects_to_free.append(inst)
 	return inst
+
+
+func _is_descendant_of(node: Node, ancestor: Node) -> bool:
+	var current := node.get_parent()
+	while current != null:
+		if current == ancestor:
+			return true
+		current = current.get_parent()
+	return false
 
 
 func _t(method: String) -> void:

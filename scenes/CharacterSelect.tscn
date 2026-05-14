@@ -164,13 +164,14 @@ theme_override_constants/separation = 8
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.155
+anchor_top = 0.040
 anchor_right = 0.680
-anchor_bottom = 1.0
+anchor_bottom = 0.960
 
 [node name="HeroPad" type="MarginContainer" parent="MainContent/HeroPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 8
 
@@ -178,22 +179,16 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CharTitle" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "万剑门 · 剑修 · 入境"
-horizontal_alignment = 1
-
 [node name="PortraitFrame" type="PanelContainer" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 500)
+custom_minimum_size = Vector2(0, 390)
 size_flags_vertical = 1
 clip_contents = true
 
 [node name="PortraitMargin" type="MarginContainer" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
@@ -226,6 +221,22 @@ texture = ExtResource("3_portrait")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="CharTitlePill" type="PanelContainer" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.270
+anchor_top = 0.020
+anchor_right = 0.730
+anchor_bottom = 0.105
+mouse_filter = 2
+
+[node name="CharTitle" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage/CharTitlePill"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "万剑门 · 剑修 · 入境"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CharName" type="Label" parent="MainContent/HeroPanel/HeroPad/CharDetailPanel"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -250,14 +261,14 @@ anchor_bottom = 0.875
 
 [node name="StatsPad" type="MarginContainer" parent="MainContent/StatsCard"]
 layout_mode = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
 
 [node name="StatsPanel" type="VBoxContainer" parent="MainContent/StatsCard/StatsPad"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 7
 
 [node name="StatsTitle" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
@@ -267,18 +278,18 @@ text = "初始资质"
 layout_mode = 2
 columns = 2
 theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
+theme_override_constants/v_separation = 8
 
 [node name="HPTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPTile/TilePad"]
 layout_mode = 2
@@ -306,14 +317,14 @@ text = "60"
 
 [node name="HPRegenTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/HPRegenTile/TilePad"]
 layout_mode = 2
@@ -341,14 +352,14 @@ text = "5"
 
 [node name="LingLiTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiTile/TilePad"]
 layout_mode = 2
@@ -376,14 +387,14 @@ text = "20"
 
 [node name="LingLiRegenTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad"]
 layout_mode = 2
@@ -407,18 +418,18 @@ text = "灵力回复"
 [node name="LingLiRegenValue" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/LingLiRegenTile/TilePad/TileRow/Text"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "3/回合"
+text = "3"
 
 [node name="DaoHuiTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DaoHuiTile/TilePad"]
 layout_mode = 2
@@ -446,14 +457,14 @@ text = "6"
 
 [node name="DmgTile" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats"]
 layout_mode = 2
-custom_minimum_size = Vector2(132, 70)
+custom_minimum_size = Vector2(132, 58)
 
 [node name="TilePad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 8
+theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_bottom = 6
 
 [node name="TileRow" type="HBoxContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/Stats/DmgTile/TilePad"]
 layout_mode = 2
@@ -485,19 +496,20 @@ text = "天赋"
 
 [node name="TalentPanel" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 76)
+custom_minimum_size = Vector2(0, 64)
 
 [node name="TalentPad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/TalentPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
 
 [node name="TalentDesc" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/TalentPanel/TalentPad"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "【剑道之基】战斗开始时获得 1 层【道行】。"
+text = "【剑道之基】
+战斗开始时获得 1 层【道行】。"
 autowrap_mode = 3
 
 [node name="SkillTitle" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
@@ -506,29 +518,32 @@ text = "英雄技能"
 
 [node name="SkillPanel" type="PanelContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 82)
+custom_minimum_size = Vector2(0, 70)
 
 [node name="SkillPad" type="MarginContainer" parent="MainContent/StatsCard/StatsPad/StatsPanel/SkillPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
 
 [node name="SkillDesc" type="Label" parent="MainContent/StatsCard/StatsPad/StatsPanel/SkillPanel/SkillPad"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "【剑意凝神】消耗 6 点道蕴，获得 1 层【道行】。"
+text = "【剑意凝神】
+消耗 6 点道蕴，获得 1 层【道行】。"
 autowrap_mode = 3
 
-[node name="StartBtn" type="Button" parent="."]
+[node name="ActionSpacer" type="Control" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 2)
+size_flags_vertical = 3
+
+[node name="StartBtn" type="Button" parent="MainContent/StatsCard/StatsPad/StatsPanel"]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.720
-anchor_top = 0.895
-anchor_right = 0.955
-anchor_bottom = 0.968
+layout_mode = 2
+custom_minimum_size = Vector2(0, 44)
+size_flags_horizontal = 3
 text = "开始轮回"
 
-[connection signal="pressed" from="StartBtn" to="." method="_on_btn_start_pressed"]
+[connection signal="pressed" from="MainContent/StatsCard/StatsPad/StatsPanel/StartBtn" to="." method="_on_btn_start_pressed"]

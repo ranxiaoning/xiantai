@@ -213,9 +213,9 @@ Master（默认）
 | 门派选择栏 SectBar | 右上 58%–95.5%，垂直 5.5%–13% | 每个门派一个 ToggleButton，ButtonGroup 互斥 |
 | MainContent | 水平 4.5%–95.5%，垂直 17%–86% | 左侧选择 / 中央立绘 / 右侧档案三块 |
 | ├ SidebarPanel | 固定宽 220px | 当前门派弟子列表与提示，作为轻量切换控件 |
-| ├ HeroPanel | 弹性 ratio 1.55 | 角色称号、大立绘、角色名、背景故事，是单角色展示中心 |
-| └ StatsCard | 固定最小宽 350px，弹性 ratio 1.0 | 初始资质 / 天赋 / 英雄技能 |
-| StartBtn | 右下 72.5%–95.5%，垂直 89%–96.5% | “开始轮回”，确认选择并跳转地图 |
+| ├ HeroPanel | 水平 15.5%–68%，垂直顶线与 StatsCard 对齐 | 大立绘、框内称号题签、角色名、背景故事，是单角色展示中心 |
+| └ StatsCard | 水平 70%–100%，垂直顶线与 PortraitFrame 对齐 | 初始资质 / 天赋 / 英雄技能 / 开始轮回确认区 |
+| StartBtn | StatsCard 内底部 | “开始轮回”，确认选择并跳转地图，填满右栏宽度但不悬浮出卡片 |
 
 ### 节点结构
 
@@ -229,15 +229,16 @@ CharacterSelect (Control)
 │   ├── SidebarPanel/SidebarPad/CharListPanel
 │   │   └── CharListBox (VBoxContainer) *      # 角色按钮，动态创建
 │   ├── HeroPanel/HeroPad/CharDetailPanel
-│   │   ├── CharTitle (Label) *
-│   │   ├── PortraitFrame/PortraitMargin/PortraitStage/Portrait (TextureRect) *
+│   │   ├── PortraitFrame/PortraitMargin/PortraitStage
+│   │   │   ├── Portrait (TextureRect) *
+│   │   │   └── CharTitlePill/CharTitle (Label) *
 │   │   ├── CharName (Label) *
 │   │   └── Lore (Label) *
 │   └── StatsCard/StatsPad/StatsPanel
 │       ├── Stats Grid（HPValue* / HPRegenValue* / LingLiValue* / LingLiRegenValue* / DaoHuiValue* / DmgValue*）
 │       ├── TalentPanel/TalentPad/TalentDesc *
-│       └── SkillPanel/SkillPad/SkillDesc *
-└── StartBtn (Button) *           # 开始轮回
+│       ├── SkillPanel/SkillPad/SkillDesc *
+│       └── StartBtn (Button) *          # 开始轮回
 ```
 
 > `*` = `unique_name_in_owner = true`，脚本通过 `%NodeName` 访问
@@ -250,7 +251,7 @@ CharacterSelect (Control)
 - `CharacterDatabase.get_character(id)` → 单个角色完整数据（含 `portrait_path`）
 - `portrait_path` 必须能通过 `load(path) as Texture2D` 加载成功，角色选择界面据此刷新中央立绘。
 - `CharacterSelect.tscn` 的 `Portrait` 节点默认绑定 `assets/portraits/chen_tianfeng.png`，避免场景进入后的首帧出现空白立绘。
-- 初始资质中【灵力上限】与【灵力回复】分别独立成行展示，不把回复值写在括号里。
+- 初始资质中【灵力上限】与【灵力回复】分别独立成格展示；灵力回复值只显示数字（如 `3`），不追加“/回合”。
 
 ### 扩展指南
 
@@ -278,9 +279,11 @@ CharacterSelect (Control)
 
 - 背景采用冷青灰暗化，前景使用半透明深色面板和克制金色细边。
 - 三块主要内容都通过 `MenuUiStyle.apply_panel()` 应用统一琉璃面板，标题/角色名使用 Noto Serif SC，正文与数值使用 Noto Sans SC。
+- 中央 `PortraitFrame` 顶边与右侧 `StatsCard` 顶边对齐；角色称号显示为立绘框内小题签，避免把画框整体下压。
+- 右侧资质格保留六格结构但压缩高度，天赋/英雄技能玉简采用“名称 + 描述”两行；`StartBtn` 收在右侧档案卡底部作为固定确认区。
 - 门派/弟子按钮使用普通、悬停、按下三态；选中态沿用 pressed 样式，颜色更亮。
 - 角色切换时只使用 `modulate` 与 `scale` 轻动效，不移动布局尺寸，避免 UI 抖动。
-- 立绘使用 `PortraitStage` 作为全尺寸画布，`Portrait` 在其中 full-rect 锚定，并使用零固定最小尺寸、`EXPAND_IGNORE_SIZE` 与 `STRETCH_KEEP_ASPECT_CENTERED`。`PortraitFrame` 不参与纵向扩展，720p 下显式约束为约 320px 高，避免被图片原始尺寸撑到屏幕外。
+- 立绘使用 `PortraitStage` 作为全尺寸画布，`Portrait` 在其中 full-rect 锚定，并使用零固定最小尺寸、`EXPAND_IGNORE_SIZE` 与 `STRETCH_KEEP_ASPECT_CENTERED`。`PortraitFrame` 不参与纵向扩展，720p 下显式约束为约 390px 高，避免被图片原始尺寸撑到屏幕外。
 
 ### 手动验证要点
 
@@ -289,8 +292,8 @@ CharacterSelect (Control)
 - [ ] 默认进入时选中"万剑门"按钮，弟子列表显示"程天锋"，右侧属性/天赋正确
 - [ ] 切换门派按钮时，弟子列表和背景图同步更新
 - [ ] 点击弟子按钮，中央立绘与右侧面板立即刷新，淡入不遮挡文本
-- [ ] 立绘不变形，文本不溢出，开始按钮位于右下且状态清晰
-- [ ] 1280×720 下立绘完整显示，不下沉到立绘框底部，也不裁掉上半身
+- [ ] 立绘不变形，文本不溢出，开始按钮位于右侧档案卡底部且不压住技能说明
+- [ ] 1280×720 下 PortraitFrame 与 StatsCard 顶边对齐，灵力回复显示为纯数字，不出现“/回合”
 - [ ] 点击"开始轮回"正常跳转至 GameMap.tscn
 
 ---

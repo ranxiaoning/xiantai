@@ -35,6 +35,7 @@ var _display_tween: Tween = null
 @onready var hero_panel: PanelContainer = $MainContent/HeroPanel
 @onready var portrait_frame: PanelContainer = $MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame
 @onready var portrait_stage: Control = $MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage
+@onready var char_title_pill: PanelContainer = $MainContent/HeroPanel/HeroPad/CharDetailPanel/PortraitFrame/PortraitMargin/PortraitStage/CharTitlePill
 @onready var stats_card: PanelContainer = $MainContent/StatsCard
 @onready var stats_title: Label = $MainContent/StatsCard/StatsPad/StatsPanel/StatsTitle
 @onready var talent_title: Label = $MainContent/StatsCard/StatsPad/StatsPanel/TalentTitle
@@ -67,7 +68,7 @@ func _add_in_game_menu() -> void:
 func _configure_portrait_layout() -> void:
 	var viewport_h := get_viewport_rect().size.y
 	portrait_frame.clip_contents = true
-	portrait_frame.custom_minimum_size = Vector2(0.0, clampf(viewport_h * 0.60, 420.0, 640.0))
+	portrait_frame.custom_minimum_size = Vector2(0.0, clampf(viewport_h * 0.54, 380.0, 560.0))
 	portrait_frame.size_flags_vertical = Control.SIZE_FILL
 	portrait_stage.clip_contents = true
 	portrait_stage.custom_minimum_size = Vector2.ZERO
@@ -90,12 +91,13 @@ func _apply_static_styles() -> void:
 	MenuUiStyle.apply_panel(sidebar_panel, "jade")
 	MenuUiStyle.apply_panel(hero_panel, "empty")
 	MenuUiStyle.apply_panel(portrait_frame, "stage")
+	MenuUiStyle.apply_title_pill(char_title_pill, "blue")
 	MenuUiStyle.apply_panel(stats_card, "jade")
 	MenuUiStyle.apply_panel(talent_panel, "scroll")
 	MenuUiStyle.apply_panel(skill_panel, "scroll")
 	MenuUiStyle.apply_body(char_list_title, 15, Color(0.92, 0.76, 0.40, 1.0))
 	MenuUiStyle.apply_body(char_list_hint, 12, Color(0.58, 0.70, 0.74, 0.90))
-	MenuUiStyle.apply_body(char_title_label, 15, Color(0.90, 0.78, 0.48, 1.0))
+	MenuUiStyle.apply_body(char_title_label, 14, Color(0.90, 0.78, 0.48, 1.0))
 	MenuUiStyle.apply_heading(char_name_label, 42, Color(1.0, 0.96, 0.80, 1.0))
 	MenuUiStyle.apply_body(lore_label, 15, Color(0.80, 0.90, 0.92, 0.94))
 	MenuUiStyle.apply_body(stats_title, 16, Color(0.36, 0.30, 0.16, 1.0))
@@ -103,7 +105,7 @@ func _apply_static_styles() -> void:
 	MenuUiStyle.apply_body(skill_title, 15, Color(0.90, 0.72, 0.34, 1.0))
 	MenuUiStyle.apply_body(talent_label, 14, Color(0.16, 0.24, 0.24, 0.98))
 	MenuUiStyle.apply_body(skill_label, 14, Color(0.16, 0.24, 0.24, 0.98))
-	MenuUiStyle.apply_button(start_btn, "primary", 21)
+	MenuUiStyle.apply_button(start_btn, "primary", 18)
 	for tile_name in ["HPTile", "HPRegenTile", "LingLiTile", "LingLiRegenTile", "DaoHuiTile", "DmgTile"]:
 		var tile := find_child(tile_name, true, false) as PanelContainer
 		if tile:
@@ -193,11 +195,11 @@ func _refresh_display() -> void:
 	hp_label.text = str(c["hp_max"])
 	hp_regen_label.text = str(c["hp_regen"])
 	ling_li_label.text = str(c["ling_li_max"])
-	ling_li_regen_label.text = "%d/回合" % int(c["ling_li_regen"])
+	ling_li_regen_label.text = str(int(c["ling_li_regen"]))
 	dao_hui_label.text = str(c["dao_hui_max"])
 	damage_mult_label.text = "x%.1f" % c["damage_mult"]
-	talent_label.text = "【%s】%s" % [c["talent_name"], c["talent_desc"]]
-	skill_label.text = "【%s】%s" % [c["skill_name"], c["skill_desc"]]
+	talent_label.text = "【%s】\n%s" % [c["talent_name"], c["talent_desc"]]
+	skill_label.text = "【%s】\n%s" % [c["skill_name"], c["skill_desc"]]
 	_animate_selection()
 
 
