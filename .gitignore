@@ -1,54 +1,50 @@
-# Godot 编辑器可执行文件（体积过大，不入库）
-Godot_v*.exe
-Godot_v4.6.2-stable_win64.exe
-*.exe
+# Keep the Godot source project reproducible from a fresh clone.
+# Do not ignore assets/, *.import, *.uid, scenes/, scripts/, theme/, or project.godot.
 
-# Godot 4 编辑器缓存与导入数据（本地自动生成，不需要提交）
+# Local Godot editor/import cache. Godot regenerates these.
 .godot/
-
-# 导出模板下载目录
-export_presets.cfg
-
-# Godot 3 遗留（防止误提交）
 .import/
 
-# 测试结果（每次本地运行生成，不入库）
-tests/results/
+# Local Godot editor/runtime binaries and exported builds.
+# The source project is expected to run with an installed/local Godot executable.
+Godot_v*.exe
+godot*.exe
+*.exe
+*.pck
+*.apk
+*.ipa
+*.dmg
+*.app/
+exports/
+export/
+builds/
+dist/
 
-# Windows 系统文件
+# Export presets can contain local paths or signing credentials.
+export_presets.cfg
+
+# Test, capture, and debug output.
+tests/results/
+bug_image/
+*.log
+debug.log
+test_output.log
+check_output.txt
+verify_output.txt
+godot-cardgame-test.log
+
+# Python generated files.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OS metadata.
 Thumbs.db
 Desktop.ini
-
-# macOS 系统文件
 .DS_Store
 
-# 美术与音频资源（体积过大，不入库）
-assets/
-# 卡牌立绘是卡牌数据的一部分，新卡必须随代码提交对应 PNG。
-!assets/
-assets/*
-!assets/card/
-assets/card/*
-!assets/card/art/
-assets/card/art/*
-!assets/card/art/*.png
-!assets/fonts/
-assets/fonts/*
-!assets/fonts/*.otf
-!assets/fonts/*.otf.import
-!assets/fonts/OFL.txt
-!assets/ui/
-assets/ui/*
-!assets/ui/menu/
-assets/ui/menu/*
-!assets/ui/menu/*.png
-!assets/ui/menu/*.png.import
-!assets/portraits/
-assets/portraits/*
-!assets/portraits/chen_tianfeng_cutout.png
-!assets/portraits/chen_tianfeng_cutout.png.import
-bug_image/                                                                                                                                                                                                                                                                                                                                                                                                                                                             
-
-# 编辑器配置（按需取消注释）
-# .vscode/
-# .idea/
+# Local editor settings.
+.vscode/
+.idea/
+*.tmp
+*.bak
